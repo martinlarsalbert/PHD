@@ -20,3 +20,5 @@ statsmodels
 scikit-learn
 pymc
 graphviz
+sympy
+jupyterlab-mathjax3
