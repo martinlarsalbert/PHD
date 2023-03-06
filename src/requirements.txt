@@ -18,5 +18,5 @@ seaborn
 jupyter-dash
 statsmodels
 scikit-learn
-pymc3
+pymc
 graphviz
