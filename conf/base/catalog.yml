@@ -20,4 +20,24 @@
   type: vct_pipelines.ship_dict_dataset.ShipDictDataSet
   filepath: data/01_raw/{{ ship }}/{{ship}}.ship
 
+# shipdict with regressed parameters (hydrodynamic derivatives updated)
+{{ ship }}.ship_dict_from_regression:
+  type: IncrementalDataSet
+  path: data/05_model_input/ship_dict_from_regression/{{ship}}
+  dataset: vct_pipelines.ship_dict_dataset.ShipDictDataSet
+  filename_suffix: .ship
+
+{{ ship }}.derivatives:
+  type: IncrementalDataSet
+  path: data/05_model_input/derivatives/{{ship}}
+  dataset: yaml.YAMLDataSet
+  filename_suffix: .yml
+
+{{ ship }}.derivatives_std:
+  type: IncrementalDataSet
+  path: data/05_model_input/derivatives_std/{{ship}}
+  dataset: yaml.YAMLDataSet
+  filename_suffix: .yml
+
+
 {% endfor %}
