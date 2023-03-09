@@ -2,3 +2,19 @@
 #
 # Documentation for this file format can be found in "The Data Catalog"
 # Link: https://kedro.readthedocs.io/en/stable/data/data_catalog.html
+
+## Regressions:
+{% for ship in ["M5064-02-A",] %} # (vmm defined in globals.yml)
+
+### VCT data ###
+
+{{ ship }}.df_VCT:
+  type: pandas.CSVDataSet
+  filepath: data/01_raw/{{ ship }}/df_VCT_CT.csv
+  load_args:
+    index_col: 0
+  save_args:
+    index: True
+
+
+{% endfor %}

@@ -22,3 +22,5 @@ pymc
 graphviz
 sympy
 jupyterlab-mathjax3
+vct # SSPA internal package, my be skipped
+quantities
