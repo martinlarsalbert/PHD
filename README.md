@@ -1,4 +1,5 @@
-# phd
+# PhD
+This repository contains research and experiments within Martin Alexandersson's research.
 
 ## Overview
 
