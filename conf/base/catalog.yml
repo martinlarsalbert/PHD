@@ -16,5 +16,8 @@
   save_args:
     index: True
 
+{{ ship }}.shipdict_base:
+  type: vct_pipelines.ship_dict_dataset.ShipDictDataSet
+  filepath: data/01_raw/{{ ship }}/{{ship}}.ship
 
 {% endfor %}
