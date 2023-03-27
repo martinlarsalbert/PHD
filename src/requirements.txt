@@ -26,3 +26,4 @@ vct # SSPA internal package, my be skipped
 quantities
 bokeh<3.0
 vct_pipelines
+jupyter-book

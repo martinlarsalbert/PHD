@@ -5,3 +5,4 @@ format: jb-book
 root: intro
 chapters:
 - file: 01.01_situation
+- file: 02.01_solution
