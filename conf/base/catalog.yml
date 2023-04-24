@@ -4,7 +4,7 @@
 # Link: https://kedro.readthedocs.io/en/stable/data/data_catalog.html
 
 ## Regressions:
-{% for ship in ["M5064-02-A",] %} # (vmm defined in globals.yml)
+{% for ship in ["M5064-02-A","wPCC"] %} # (vmm defined in globals.yml)
 
 ### VCT data ###
 
@@ -19,6 +19,10 @@
 {{ ship }}.shipdict_base:
   type: vct_pipelines.ship_dict_dataset.ShipDictDataSet
   filepath: data/01_raw/{{ ship }}/{{ship}}.ship
+
+{{ ship }}.ship_data:  # (From Lic.)
+  type: yaml.YAMLDataSet
+  filepath: data/01_raw/{{ ship }}/ship_data.yml
 
 # shipdict with regressed parameters (hydrodynamic derivatives updated)
 {{ ship }}.ship_dict_from_regression:
@@ -39,5 +43,25 @@
   dataset: yaml.YAMLDataSet
   filename_suffix: .yml
 
+{{ ship }}.time_series:
+  type: PartitionedDataSet
+  path: data/01_raw/{{ ship }}/time_series
+  dataset:
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
+
+{{ ship }}.time_series_meta_data:
+  type: pandas.CSVDataSet
+  filepath: data/01_raw/{{ ship }}/time_series_meta_data.csv
+  load_args:
+    index_col: 0
+    encoding: 'utf-8'
+  save_args:
+    index: True
+    encoding: 'utf-8'
 
 {% endfor %}

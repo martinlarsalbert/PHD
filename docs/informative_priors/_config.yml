@@ -1,7 +1,7 @@
 # Book settings
 # Learn more at https://jupyterbook.org/customize/config.html
 
-title: Informative priors
+title: Informative priors for ship dynamics Bayesian modeling
 author: Martin Alexandersson
 #logo: logo.png
 
@@ -13,7 +13,7 @@ execute:
 # Define the name of the latex output file for PDF builds
 latex:
   latex_documents:
-    targetname: informative_priors.tex
+    targetname: informative_priors_for_ship_dynamics_Bayesian_modeling.tex
 
 # Add a bibtex file so that we can create citations
 bibtex_bibfiles:

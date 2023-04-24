@@ -1,2 +1,2 @@
-wPCC.motion_regression.exclude_parameters:
+wPCC.exclude_parameters:
   Xthrust : 0.883  # (1-tdf) 
