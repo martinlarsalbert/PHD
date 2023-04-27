@@ -4,7 +4,7 @@
 # Link: https://kedro.readthedocs.io/en/stable/data/data_catalog.html
 
 ## Regressions:
-{% for ship in ["M5064-02-A","wPCC"] %} # (vmm defined in globals.yml)
+{% for ship in ["M5064-02-A","wPCC","7m"] %} # (vmm defined in globals.yml)
 
 ### VCT data ###
 
