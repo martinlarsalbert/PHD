@@ -1,0 +1,24 @@
+## Time series
+7m.time_series_raw:
+  type: PartitionedDataSet
+  path: data/01_raw/7m/time_series_raw
+  dataset:
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
+
+# This is the first data from Ulysse, which had a slightly different format and also some interolaion errors of the angles.
+7m.time_series_raw_first_batch:
+  type: PartitionedDataSet
+  path: data/01_raw/7m/time_series_raw_first_batch
+  dataset:
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
+

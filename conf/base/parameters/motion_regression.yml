@@ -1,2 +1,4 @@
 wPCC.exclude_parameters:
-  Xthrust : 0.883  # (1-tdf) 
+  Xthrust : 0.883  # (1-tdf)
+
+7m.exclude_parameters:

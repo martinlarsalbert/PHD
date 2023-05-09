@@ -1,0 +1,9 @@
+# This is a boilerplate parameters config generated for pipeline 'load_7m'
+# using Kedro 0.18.7.
+#
+# Documentation for this file format can be found in "Parameters"
+# Link: https://docs.kedro.org/en/0.18.7/kedro_project_setup/configuration.html#parameters
+7m.GPS_position:
+  x: -2.76  # (0.74 m forward from aft, assuming lpp=loa...)
+  y: 0.495  # to starboard.
+  z: 1.30   # from base line and upward.
