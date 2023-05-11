@@ -22,3 +22,35 @@
       index: True
   filename_suffix: .csv
 
+7m.missions:
+  type: PartitionedDataSet
+  path: data/01_raw/7m/missions
+  dataset:
+    type: text.TextDataSet
+  filename_suffix: .txt
+
+7m.tests:
+  type: PartitionedDataSet
+  path: data/02_intermediate/7m/tests
+  dataset:
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
+
+7m.test_meta_data:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/7m/test_meta_data.csv
+  load_args:
+    index_col: 0
+    encoding: 'utf-8'
+    dtype:
+      id: int
+  save_args:
+    index: True
+    encoding: 'utf-8'
+
+
+

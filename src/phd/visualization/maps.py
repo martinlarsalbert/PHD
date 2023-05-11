@@ -1,5 +1,6 @@
 import folium
 import pandas as pd
+import random
 
 
 def get_map(df: pd.DataFrame, width=1000, height=600, zoom_start=14):
@@ -77,7 +78,7 @@ def plot_map(
 
 def plot_trips(
     df: pd.DataFrame,
-    time_step="30S",
+    time_step: str = None,
     width=1000,
     height=600,
     zoom_start=14,
@@ -89,7 +90,11 @@ def plot_trips(
 
     for trip_no, trip in df.groupby("trip_no"):
 
-        df_ = trip.resample(time_step).mean()
+        if time_step is None:
+            df_ = trip
+        else:
+            df_ = trip.resample(time_step).mean()
+
         df_.dropna(subset=["latitude", "longitude"], inplace=True)
 
         points = df_[["latitude", "longitude"]].to_records(index=False)
@@ -101,5 +106,75 @@ def plot_trips(
         )
 
         line.add_to(my_map)
+
+    return f
+
+
+def plot_missions(
+    df: pd.DataFrame,
+    time_step: str = None,
+    width=1000,
+    height=600,
+    zoom_start=14,
+    color_key="cog",
+    colormap=["green", "red"],
+):
+    random.seed(10)
+
+    f, my_map = get_map(df=df, width=width, height=height, zoom_start=zoom_start)
+
+    for trip_no, trip in df.groupby("trip_no"):
+
+        if time_step is None:
+            df_ = trip
+        else:
+            df_ = trip.resample(time_step).mean()
+
+        df_.dropna(subset=["latitude", "longitude"], inplace=True)
+
+        points = df_[["latitude", "longitude"]].to_records(index=False)
+        color = ["#" + "".join([random.choice("ABCDEF0123456789") for i in range(6)])]
+
+        missions_string = "".join(
+            f"\n {mission}\n\n" for mission in trip["mission"].dropna().unique()
+        )
+        popup = f"{trip_no} \n {missions_string}"
+        line = folium.PolyLine(
+            points,
+            opacity=1.0,
+            popup=popup,
+            weight=2.0,
+            color=color,
+        )
+
+        line.add_to(my_map)
+
+    # Add messages:
+    mask = df["mission"].notnull()
+    for index, row in df.loc[mask].iterrows():
+
+        mission = row["mission"]
+
+        icon = folium.Icon(color="lightblue", icon="glyphicon-edit")
+        if "ZigZag: start" in mission:
+            icon = folium.Icon(color="green", icon="glyphicon-random")
+
+        if "ZigZag: stop" in mission:
+            icon = folium.Icon(color="red", icon="glyphicon-random")
+
+        if "FollowCourse: start" in mission:
+            icon = folium.Icon(color="green", icon="glyphicon-play")
+
+        if "FollowCourse: stop" in mission:
+            icon = folium.Icon(color="red", icon="glyphicon-stop")
+
+        if "FollowCourse: start" in mission and "FollowCourse: stop" in mission:
+            icon = folium.Icon(color="lightblue", icon="glyphicon-edit")
+
+        folium.Marker(
+            [row["latitude"], row["longitude"]],
+            popup=mission,
+            icon=icon,
+        ).add_to(my_map)
 
     return f
