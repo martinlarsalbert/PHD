@@ -8,6 +8,10 @@ import numpy as np
 import geopandas
 from numpy import sin, cos
 from typing import Tuple
+import logging
+from vessel_manoeuvring_models.angles import smallest_signed_angle
+
+log = logging.getLogger(__name__)
 
 regexp = re.compile(r"\(.*\)")
 
@@ -47,7 +51,13 @@ def load(time_series_raw: dict, GPS_position: dict, missions: dict) -> dict:
     return time_series, time_series_meta_data
 
 
-def _load(loader, GPS_position: dict, missions: str):
+def derivative(df, key):
+    d = np.diff(df[key]) / np.diff(df.index)
+    d = np.concatenate((d, [d[-1]]))
+    return d
+
+
+def _load(loader, GPS_position: dict, missions: str, replace_velocities=True):
     data = loader()
     # data.index = pd.to_datetime(data.index, unit="s")  # This was used in the first batch
     data.index = pd.to_datetime(data.index, unit="us")
@@ -74,9 +84,77 @@ def _load(loader, GPS_position: dict, missions: str):
     data["psi"] = psi_
     data["phi"] = data["heelAngle"]
 
-    data = add_xy_from_latitude_and_longitude(data=data)
+    if not "r" in data or replace_velocities:
+        data["r"] = r = derivative(data, "psi")
 
+    data["u1d"] = derivative(data, "u")
+    data["v1d"] = derivative(data, "v")
+    data["r1d"] = derivative(data, "r")
+
+    data = add_xy_from_latitude_and_longitude(data=data)
     data = move_GPS_to_origo(data=data, GPS_position=GPS_position)
+
+    # data = fix_interpolated_angle(data=data, key="awaBowRAW")
+    # data = fix_interpolated_angle(data=data, key="awaSternRAW")
+    # data = fix_interpolated_angle(data=data, key="awaBow")
+    # data = fix_interpolated_angle(data=data, key="awaStern")
+
+    return data
+
+
+def fix_interpolated_angle(
+    data: pd.DataFrame,
+    key: str,
+    max_change=0.4,
+) -> pd.DataFrame:
+    """Some of the angles in the data have been interpolated numerically so that false points exist in around 0 degrees.
+    This method tried to remove these false points (but it is not perfect as some points are hard to distinquish)
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        _description_
+    key : str
+        _description_
+    limit : float, optional
+        maximum change of angle between two time steps, by default 0.4
+
+    Returns
+    -------
+    pd.DataFrame
+        _description_
+    """
+
+    log.info(f"fix_interpolated_angle for {key}")
+
+    y = data[key].values.copy()
+
+    condition = np.abs(np.diff(np.unwrap(y))) > max_change
+    data_ = data.copy()
+    ok = False
+    for _ in range(len(data)):
+        if not np.max(condition):
+            ok = True
+            break
+        i = np.argmax(condition)
+        data_.drop(index=data_.index[i + 1], inplace=True)
+        y = data_[key].values
+        condition = np.abs(np.diff(np.unwrap(y))) > max_change
+        # print(i)
+    data_[key] = np.unwrap(data_[key])
+
+    assert (
+        data.index[-1] == data_.index[-1]
+    ), f"Something went wrong in the fix_interpolation_angle for {key} (increasing 'max_change' parameter might help)"
+
+    assert ok, f"Max number of iterations exceeded for {key}"
+
+    # New interpolation:
+    x = np.cos(data_[key])
+    y = np.sin(data_[key])
+    x_interp = np.interp(data.index, data_.index, x)
+    y_interp = np.interp(data.index, data_.index, y)
+    data[key] = np.unwrap(np.arctan2(y_interp, x_interp))
 
     return data
 
@@ -242,6 +320,9 @@ def divide_into_tests(data: dict) -> Tuple[dict, pd.DataFrame]:
     for id, df in tests.items():
         df["global time"] = df.index
         df.index -= df.index[0]
+        df["psi"] -= df["psi"].iloc[0] - smallest_signed_angle(df["psi"].iloc[0])
+        df["cog"] -= df["cog"].iloc[0] - smallest_signed_angle(df["cog"].iloc[0])
+
         df.drop(columns=["zigzag_test_id", "inbetween_zigzags_id"], inplace=True)
 
     tests = {str(int(key)): value for key, value in tests.items()}

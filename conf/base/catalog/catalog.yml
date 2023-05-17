@@ -24,6 +24,15 @@
   type: yaml.YAMLDataSet
   filepath: data/01_raw/{{ ship }}/ship_data.yml
 
+### Wind data ###
+{{ ship }}.wind_data:
+  type: pandas.CSVDataSet
+  filepath: data/01_raw/{{ ship }}/wind_data.csv
+  load_args:
+    index_col: 0
+  save_args:
+    index: True
+
 # shipdict with regressed parameters (hydrodynamic derivatives updated)
 {{ ship }}.ship_dict_from_regression:
   type: IncrementalDataSet
@@ -64,6 +73,26 @@
   save_args:
     index: True
     encoding: 'utf-8'
+
+{{ ship }}.time_series_preprocessed.ek_smooth:
+  type: PartitionedDataSet
+  path: data/03_primary/time_series_preprocessed/{{ ship }}/ek_smooth
+  dataset:
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
+
+## Models
+{{ ship }}.models:
+  type: PartitionedDataSet
+  path: data/06_models/{{ ship }}
+  dataset:
+    type: pickle.PickleDataSet
+    backend: dill
+  filename_suffix: .pkl
 
 
 
