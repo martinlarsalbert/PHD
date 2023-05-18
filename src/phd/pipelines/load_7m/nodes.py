@@ -10,6 +10,8 @@ from numpy import sin, cos
 from typing import Tuple
 import logging
 from vessel_manoeuvring_models.angles import smallest_signed_angle
+from vessel_manoeuvring_models.angles import mean_angle
+from phd.helpers import apparent_wind_angle_to_true, apparent_wind_speed_to_true
 
 log = logging.getLogger(__name__)
 
@@ -74,7 +76,7 @@ def _load(loader, GPS_position: dict, missions: str, replace_velocities=True):
     renames = {column: regexp.sub("", column) for column in data.columns}
     data.rename(columns=renames, inplace=True)
 
-    data["V"] = V_ = data["sog"]
+    data["V"] = data["U"] = V_ = data["sog"]
     cog_ = np.unwrap(data["cog"])
     psi_ = np.unwrap(data["yaw"])
     data["beta"] = beta_ = psi_ - cog_  # Drift angle
@@ -93,6 +95,9 @@ def _load(loader, GPS_position: dict, missions: str, replace_velocities=True):
 
     data = add_xy_from_latitude_and_longitude(data=data)
     data = move_GPS_to_origo(data=data, GPS_position=GPS_position)
+
+    estimate_apparent_wind(data=data)
+    calculate_true_wind(data=data)
 
     # data = fix_interpolated_angle(data=data, key="awaBowRAW")
     # data = fix_interpolated_angle(data=data, key="awaSternRAW")
@@ -227,6 +232,31 @@ def move_GPS_to_origo(data: pd.DataFrame, GPS_position: dict) -> pd.DataFrame:
     data["y0"] = data["y_GPS"] - pY
 
     return data
+
+
+def estimate_apparent_wind(data: pd.DataFrame):
+    """Estimate the apparent wind, taking the average between bow and stern anomemeter.
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        _description_
+    """
+    data["aws"] = data[["awsBowRAW", "awsSternRAW"]].mean(axis=1)
+    data["awa"] = np.unwrap(mean_angle(data[["awaBowRAW", "awaSternRAW"]], axis=1))
+
+
+def calculate_true_wind(data: pd.DataFrame):
+    """Calculate true wind speed and angle from apparent wind.
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        _description_
+    """
+
+    data["tws"] = apparent_wind_speed_to_true(**data)
+    data["twa"] = apparent_wind_angle_to_true(**data)
 
 
 def add_missions(data: pd.DataFrame, missions: str) -> pd.DataFrame:

@@ -44,10 +44,12 @@ def track_plots(
             ## Plot wind:
             twa_mean = mean_angle(twa)
             R = np.sqrt((x0 - x0.iloc[0]) ** 2 + (y0 - y0.iloc[0]) ** 2).max()
-            x = y0.mean() + 0.35 * R * np.cos(twa_mean)
-            y = x0.mean() + 0.35 * R * np.sin(twa_mean)
-            dx = -0.1 * R * np.cos(twa_mean)
-            dy = -0.1 * R * np.sin(twa_mean)
+
+            x = y0.mean() + 0.35 * R * np.sin(twa_mean)
+            y = x0.mean() + 0.35 * R * np.cos(twa_mean)
+
+            dx = -0.1 * R * np.sin(twa_mean)
+            dy = -0.1 * R * np.cos(twa_mean)
             ax.arrow(
                 x=x, y=y, dx=dx, dy=dy, width=10**-2 * R, color="m", label="Wind"
             )
