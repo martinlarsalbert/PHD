@@ -11,7 +11,10 @@ from typing import Tuple
 import logging
 from vessel_manoeuvring_models.angles import smallest_signed_angle
 from vessel_manoeuvring_models.angles import mean_angle
-from phd.helpers import apparent_wind_angle_to_true, apparent_wind_speed_to_true
+from vessel_manoeuvring_models.apparent_wind import (
+    apparent_wind_angle_to_true,
+    apparent_wind_speed_to_true,
+)
 
 log = logging.getLogger(__name__)
 
