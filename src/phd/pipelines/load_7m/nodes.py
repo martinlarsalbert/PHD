@@ -168,7 +168,8 @@ def fix_interpolated_angle(
 
 
 def run_statistics(data) -> pd.Series:
-    statistics = data.select_dtypes(include=float).abs().max()
+    statistics = data.select_dtypes(include=float).mean()
+
     statistics["date"] = data.iloc[0]["date"]
     return statistics
 
@@ -319,6 +320,10 @@ def sync_and_merge_missions(data: pd.DataFrame, s_mission: pd.Series) -> pd.Seri
     return s_mission_merged
 
 
+def zero_angle(angle: pd.Series) -> pd.Series:
+    return angle - (angle.iloc[0] - smallest_signed_angle(angle.iloc[0]))
+
+
 def divide_into_tests(data: dict) -> Tuple[dict, pd.DataFrame]:
     """Divide time series into tests (zigzag tests etc.)
 
@@ -353,8 +358,16 @@ def divide_into_tests(data: dict) -> Tuple[dict, pd.DataFrame]:
     for id, df in tests.items():
         df["global time"] = df.index
         df.index -= df.index[0]
-        df["psi"] -= df["psi"].iloc[0] - smallest_signed_angle(df["psi"].iloc[0])
-        df["cog"] -= df["cog"].iloc[0] - smallest_signed_angle(df["cog"].iloc[0])
+
+        angles = [
+            "psi",
+            "cog",
+            "twa",
+            "awa",
+        ]
+
+        for key in angles:
+            df[key] = zero_angle(df[key])
 
         df.drop(columns=["zigzag_test_id", "inbetween_zigzags_id"], inplace=True)
 

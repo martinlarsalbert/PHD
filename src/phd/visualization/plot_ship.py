@@ -34,27 +34,64 @@ def track_plots(
         time_window=time_window,
     )
 
+    include_wind = False
     for df in dataframes.values():
 
         if "twa" in df:
             twa = df["twa"]
+            tws = df["tws"]
             x0 = df["x0"]
             y0 = df["y0"]
 
             ## Plot wind:
+
+            # True wind:
             twa_mean = mean_angle(twa)
-            R = np.sqrt((x0 - x0.iloc[0]) ** 2 + (y0 - y0.iloc[0]) ** 2).max()
 
-            x = y0.mean() + 0.35 * R * np.sin(twa_mean)
-            y = x0.mean() + 0.35 * R * np.cos(twa_mean)
+            x = -50
+            y = 0
 
-            dx = -0.1 * R * np.sin(twa_mean)
-            dy = -0.1 * R * np.cos(twa_mean)
+            mean_wind = tws.mean()
+            l = 3 * lpp * mean_wind / 10
+            dx = -l * lpp * np.sin(twa_mean)
+            dy = -l * lpp * np.cos(twa_mean)
+
             ax.arrow(
-                x=x, y=y, dx=dx, dy=dy, width=10**-2 * R, color="m", label="Wind"
+                x=x,
+                y=y,
+                dx=dx,
+                dy=dy,
+                width=1.0 * beam,
+                color="m",
+                label=f"True wind {np.round(mean_wind,1)} m/s",
             )
-            ax.legend(loc="best")
 
+            # Apparent wind:
+
+            awa = (
+                df["awa"] + df["psi"]
+            )  # Apparent wind angle in Earth fixed coordinates
+            awa_mean = mean_angle(awa)
+
+            x = 50
+            y = 0
+
+            mean_wind = df["aws"].mean()
+            l = 3 * lpp * mean_wind / 10
+            dx = -l * lpp * np.sin(awa_mean)
+            dy = -l * lpp * np.cos(awa_mean)
+
+            ax.arrow(
+                x=x,
+                y=y,
+                dx=dx,
+                dy=dy,
+                width=1.0 * beam,
+                color="c",
+                label=f"Apparent {np.round(mean_wind,1)} m/s",
+            )
+
+            ax.legend(loc="lower right")
             break
 
     return ax

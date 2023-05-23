@@ -85,6 +85,39 @@
       index: True
   filename_suffix: .csv
 
+{{ ship }}.simulation_no_wind:
+  type: PartitionedDataSet
+  path: data/07_model_output/{{ ship }}/simulation/no_wind
+  dataset:
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
+
+{{ ship }}.simulation_wind:
+  type: PartitionedDataSet
+  path: data/07_model_output/{{ ship }}/simulation/wind
+  dataset:
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
+
+{{ ship }}.simulation_MDL_vmm_abkowitz_diminished:
+  type: PartitionedDataSet
+  path: data/07_model_output/{{ ship }}/simulation/MDL_vmm_abkowitz_diminished
+  dataset:
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
+
 ## Models
 {{ ship }}.models:
   type: PartitionedDataSet
