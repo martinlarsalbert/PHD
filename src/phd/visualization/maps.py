@@ -1,6 +1,7 @@
 import folium
 import pandas as pd
 import random
+import numpy as np
 
 
 def get_map(df: pd.DataFrame, width=1000, height=600, zoom_start=14):
@@ -176,5 +177,73 @@ def plot_missions(
             popup=mission,
             icon=icon,
         ).add_to(my_map)
+
+    return f
+
+
+def plot_tests(
+    df: pd.DataFrame,
+    meta_data=pd.DataFrame,
+    time_step: str = None,
+    width=1000,
+    height=600,
+    zoom_start=14,
+):
+    random.seed(10)
+
+    f, my_map = get_map(df=df, width=width, height=height, zoom_start=zoom_start)
+
+    for id, trip in df.groupby("id"):
+
+        if time_step is None:
+            df_ = trip
+        else:
+            df_ = trip.resample(time_step).mean()
+
+        df_.dropna(subset=["latitude", "longitude"], inplace=True)
+
+        points = df_[["latitude", "longitude"]].to_records(index=False)
+        color = ["#" + "".join([random.choice("ABCDEF0123456789") for i in range(6)])]
+
+        missions_string = "".join(
+            f"\n {mission}\n\n" for mission in trip["mission"].dropna().unique()
+        )
+
+        if int(id) in meta_data.index:
+            data = meta_data.loc[int(id)]
+            numeric_data = meta_data.select_dtypes(include=[int, float]).loc[int(id)]
+            popup = f"Id: {id} \n type: {data['type']}\n"
+            popup += "".join(
+                f"{key}:{np.round(value,decimals=3)}\n"
+                for key, value in sorted(numeric_data.items())
+                if pd.notnull(value)
+            )
+
+        else:
+            popup = f"{id}"
+
+        line = folium.PolyLine(
+            points,
+            opacity=1.0,
+            popup=popup,
+            weight=4.0,
+            color=color,
+        )
+
+        line.add_to(my_map)
+
+    ## Start
+    row = df.iloc[0]
+    folium.Marker(
+        [row["latitude"], row["longitude"]],
+        icon=folium.Icon(color="green", icon="glyphicon-play"),
+    ).add_to(my_map)
+
+    ## Stop
+    row = df.iloc[-1]
+    folium.Marker(
+        [row["latitude"], row["longitude"]],
+        icon=folium.Icon(color="red", icon="glyphicon-stop"),
+    ).add_to(my_map)
 
     return f

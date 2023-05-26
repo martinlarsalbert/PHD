@@ -13,11 +13,11 @@ def create_pipeline(**kwargs) -> Pipeline:
             node(
                 func=load,
                 inputs=["7m.time_series_raw", "params:7m.GPS_position", "7m.missions"],
-                outputs=["7m.time_series", "7m.time_series_meta_data"],
+                outputs=["7m.time_series", "7m.time_series_meta_data", "7m.units"],
             ),
             node(
                 func=divide_into_tests,
-                inputs=["7m.time_series"],
+                inputs=["7m.time_series", "7m.units"],
                 outputs=["7m.tests", "7m.test_meta_data"],
             ),
         ]

@@ -64,6 +64,10 @@
       index: True
   filename_suffix: .csv
 
+{{ ship }}.units:
+  type: yaml.YAMLDataSet
+  filepath: data/01_raw/{{ ship }}/units.yml
+  
 {{ ship }}.time_series_meta_data:
   type: pandas.CSVDataSet
   filepath: data/01_raw/{{ ship }}/time_series_meta_data.csv

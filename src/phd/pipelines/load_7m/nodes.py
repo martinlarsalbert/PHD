@@ -18,8 +18,6 @@ from vessel_manoeuvring_models.apparent_wind import (
 
 log = logging.getLogger(__name__)
 
-regexp = re.compile(r"\(.*\)")
-
 
 def load(time_series_raw: dict, GPS_position: dict, missions: dict) -> dict:
     """_summary_
@@ -42,24 +40,28 @@ def load(time_series_raw: dict, GPS_position: dict, missions: dict) -> dict:
         time_series_meta_data
     """
     time_series = {}
+    units_all = {}
     _ = []
     for key, loader in time_series_raw.items():
         missions = missions[key]()
-        time_series[key] = data = _load(
-            loader=loader, GPS_position=GPS_position, missions=missions
-        )
-        statistics = run_statistics(data=data)
+        data, units = _load(loader=loader, GPS_position=GPS_position, missions=missions)
+        units_all.update(units)
+        time_series[key] = data
+        statistics = run_statistics(data=data, units=units)
         statistics.name = key
         _.append(statistics)
 
     time_series_meta_data = pd.DataFrame(_)
-    return time_series, time_series_meta_data
+    return time_series, time_series_meta_data, units_all
 
 
 def derivative(df, key):
     d = np.diff(df[key]) / np.diff(df.index)
     d = np.concatenate((d, [d[-1]]))
     return d
+
+
+regexp = re.compile(r"\((.*)\)")
 
 
 def _load(loader, GPS_position: dict, missions: str, replace_velocities=True):
@@ -74,40 +76,67 @@ def _load(loader, GPS_position: dict, missions: str, replace_velocities=True):
     data["delta"] = -np.deg2rad(
         data["rudderAngle(deg)"]
     )  # (Change the convention of rudder angle)
+    units = {"delta": "rad"}
+    # Extract and remove the units from column names:
+    renames = {}
+    for column in data.columns:
+        result = regexp.search(column)
+        if result:
+            remove = result.group(0)
+            new_column = column.replace(remove, "")
+            renames[column] = new_column
+            if len(result.groups()) > 0:
+                units[new_column] = result.group(1)
 
-    # Remove the units from column names:
-    renames = {column: regexp.sub("", column) for column in data.columns}
     data.rename(columns=renames, inplace=True)
 
     data["V"] = data["U"] = V_ = data["sog"]
+    units["V"] = units["U"] = units["sog"]
     cog_ = np.unwrap(data["cog"])
     psi_ = np.unwrap(data["yaw"])
     data["beta"] = beta_ = psi_ - cog_  # Drift angle
+    units["beta"] = "rad"
     data["u"] = V_ * np.cos(beta_)
     data["v"] = -V_ * np.sin(beta_)
+    units["u"] = "m/s"
+    units["v"] = "m/s"
 
     data["psi"] = psi_
     data["phi"] = data["heelAngle"]
+    units["psi"] = "rad"
+    units["phi"] = "rad"
 
     if not "r" in data or replace_velocities:
         data["r"] = r = derivative(data, "psi")
+        units["r"] = "rad/s"
 
     data["u1d"] = derivative(data, "u")
     data["v1d"] = derivative(data, "v")
     data["r1d"] = derivative(data, "r")
+    units["u1d"] = "m/s2"
+    units["v1d"] = "m/s2"
+    units["r1d"] = "rad/s2"
 
     data = add_xy_from_latitude_and_longitude(data=data)
+    units["x_GPS"] = "m"
+    units["y_GPS"] = "m"
     data = move_GPS_to_origo(data=data, GPS_position=GPS_position)
+    units["x0"] = "m"
+    units["y0"] = "m"
 
     estimate_apparent_wind(data=data)
+    units["aws"] = "m/s"
+    units["awa"] = "rad"
     calculate_true_wind(data=data)
+    units["tws"] = "m/s"
+    units["twa"] = "rad"
 
     # data = fix_interpolated_angle(data=data, key="awaBowRAW")
     # data = fix_interpolated_angle(data=data, key="awaSternRAW")
     # data = fix_interpolated_angle(data=data, key="awaBow")
     # data = fix_interpolated_angle(data=data, key="awaStern")
 
-    return data
+    return data, units
 
 
 def fix_interpolated_angle(
@@ -167,10 +196,20 @@ def fix_interpolated_angle(
     return data
 
 
-def run_statistics(data) -> pd.Series:
+def run_statistics(data: pd.DataFrame, units: dict) -> pd.Series:
     statistics = data.select_dtypes(include=float).mean()
 
+    for key, unit in units.items():
+        if unit == "rad":
+            statistics[key] = mean_angle(data[key])
+
     statistics["date"] = data.iloc[0]["date"]
+
+    mask = data["mission"].notnull()
+    statistics["missions"] = "".join(
+        f"{mission}," for mission in data.loc[mask, "mission"]
+    )
+
     return statistics
 
 
@@ -324,7 +363,7 @@ def zero_angle(angle: pd.Series) -> pd.Series:
     return angle - (angle.iloc[0] - smallest_signed_angle(angle.iloc[0]))
 
 
-def divide_into_tests(data: dict) -> Tuple[dict, pd.DataFrame]:
+def divide_into_tests(data: dict, units: dict) -> Tuple[dict, pd.DataFrame]:
     """Divide time series into tests (zigzag tests etc.)
 
     Parameters
@@ -345,7 +384,9 @@ def divide_into_tests(data: dict) -> Tuple[dict, pd.DataFrame]:
     for key, loader in data.items():
 
         data_ = loader()
-        tests_, time_series_meta_data_ = _divide_into_tests(data=data_, id0=id0)
+        tests_, time_series_meta_data_ = _divide_into_tests(
+            data=data_, units=units, id0=id0
+        )
         time_series_meta_data_["time_series"] = key
         tests.update(tests_)
         _.append(time_series_meta_data_)
@@ -376,7 +417,9 @@ def divide_into_tests(data: dict) -> Tuple[dict, pd.DataFrame]:
     return tests, time_series_meta_data
 
 
-def _divide_into_tests(data: pd.DataFrame, id0=0) -> Tuple[dict, pd.DataFrame]:
+def _divide_into_tests(
+    data: pd.DataFrame, units: dict, id0=0
+) -> Tuple[dict, pd.DataFrame]:
 
     find_zigzags(data=data, id0=id0)
 
@@ -389,8 +432,7 @@ def _divide_into_tests(data: pd.DataFrame, id0=0) -> Tuple[dict, pd.DataFrame]:
             continue
 
         tests[id] = df
-        run_statistics(df)
-        statistics = run_statistics(data=df)
+        statistics = run_statistics(data=df, units=units)
         statistics.name = id
         statistics["type"] = "zigzag"
         _.append(statistics)
@@ -402,8 +444,7 @@ def _divide_into_tests(data: pd.DataFrame, id0=0) -> Tuple[dict, pd.DataFrame]:
             continue
 
         tests[id] = df
-        run_statistics(df)
-        statistics = run_statistics(data=df)
+        statistics = run_statistics(data=df, units=units)
         statistics.name = id
         statistics["type"] = "inbetween"
         _.append(statistics)

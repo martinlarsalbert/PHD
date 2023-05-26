@@ -48,11 +48,14 @@ def track_plots(
             # True wind:
             twa_mean = mean_angle(twa)
 
-            x = -50
-            y = 0
+            # x = -50
+            # y = 0
+
+            x = y0.mean() - 10
+            y = x0.mean()
 
             mean_wind = tws.mean()
-            l = 3 * lpp * mean_wind / 10
+            l = 2 * lpp * mean_wind / 10
             dx = -l * lpp * np.sin(twa_mean)
             dy = -l * lpp * np.cos(twa_mean)
 
@@ -64,6 +67,7 @@ def track_plots(
                 width=1.0 * beam,
                 color="m",
                 label=f"True wind {np.round(mean_wind,1)} m/s",
+                zorder=10,
             )
 
             # Apparent wind:
@@ -73,11 +77,13 @@ def track_plots(
             )  # Apparent wind angle in Earth fixed coordinates
             awa_mean = mean_angle(awa)
 
-            x = 50
-            y = 0
+            # x = 50
+            # y = 0
+
+            x = y0.median() + 10
+            y = x0.mean()
 
             mean_wind = df["aws"].mean()
-            l = 3 * lpp * mean_wind / 10
             dx = -l * lpp * np.sin(awa_mean)
             dy = -l * lpp * np.cos(awa_mean)
 
@@ -89,6 +95,7 @@ def track_plots(
                 width=1.0 * beam,
                 color="c",
                 label=f"Apparent {np.round(mean_wind,1)} m/s",
+                zorder=10,
             )
 
             ax.legend(loc="lower right")
