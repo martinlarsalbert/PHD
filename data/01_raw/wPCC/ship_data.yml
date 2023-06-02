@@ -13,3 +13,4 @@ TWIN: 1
 x_p: -2.42219908951329  # Propeller x-position from lpp/2
 D: 0.12135922330097086
 w_p0: 0.151
+n_prop: 2
