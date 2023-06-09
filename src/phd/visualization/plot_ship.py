@@ -70,6 +70,7 @@ def track_plots(
                 zorder=10,
             )
 
+        if "awa" in df:
             # Apparent wind:
 
             awa = (
