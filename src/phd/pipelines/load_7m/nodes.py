@@ -90,25 +90,35 @@ def _load(loader, GPS_position: dict, missions: str, replace_velocities=True):
 
     data.rename(columns=renames, inplace=True)
 
-    data["V"] = data["U"] = V_ = data["sog"]
-    units["V"] = units["U"] = units["sog"]
     cog_ = np.unwrap(data["cog"])
-    psi_ = np.unwrap(data["yaw"])
-    data["beta"] = beta_ = psi_ - cog_  # Drift angle
-    units["beta"] = "rad"
-    data["u"] = V_ * np.cos(beta_)
-    data["v"] = -V_ * np.sin(beta_)
-    units["u"] = "m/s"
-    units["v"] = "m/s"
-
-    data["psi"] = psi_
+    psi = np.unwrap(data["yaw"])
+    data["psi"] = psi
     data["phi"] = data["heelAngle"]
     units["psi"] = "rad"
     units["phi"] = "rad"
 
+    data = add_xy_from_latitude_and_longitude(data=data)
+    units["x_GPS"] = "m"
+    units["y_GPS"] = "m"
+    data = move_GPS_to_origo(data=data, GPS_position=GPS_position)
+    units["x0"] = "m"
+    units["y0"] = "m"
+
+    dxdt = derivative(data, "x0")
+    dydt = derivative(data, "y0")
+    psi = data["psi"]
+
+    if not "u" in data or replace_velocities:
+        data["u"] = dxdt * np.cos(psi) + dydt * np.sin(psi)
+
+    if not "v" in data or replace_velocities:
+        data["v"] = v = -dxdt * np.sin(psi) + dydt * np.cos(psi)
+    units["u"] = "m/s"
+    units["v"] = "m/s"
+
     if not "r" in data or replace_velocities:
         data["r"] = r = derivative(data, "psi")
-        units["r"] = "rad/s"
+    units["r"] = "rad/s"
 
     data["u1d"] = derivative(data, "u")
     data["v1d"] = derivative(data, "v")
@@ -117,12 +127,9 @@ def _load(loader, GPS_position: dict, missions: str, replace_velocities=True):
     units["v1d"] = "m/s2"
     units["r1d"] = "rad/s2"
 
-    data = add_xy_from_latitude_and_longitude(data=data)
-    units["x_GPS"] = "m"
-    units["y_GPS"] = "m"
-    data = move_GPS_to_origo(data=data, GPS_position=GPS_position)
-    units["x0"] = "m"
-    units["y0"] = "m"
+    data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
+    data["beta"] = -np.arctan2(data["v"], data["u"])  # Drift angle
+    units["beta"] = "rad"
 
     estimate_apparent_wind(data=data)
     units["aws"] = "m/s"
