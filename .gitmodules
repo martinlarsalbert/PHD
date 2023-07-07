@@ -1,0 +1,3 @@
+[submodule "docs/paper3"]
+	path = docs/paper3
+	url = https://github.com/martinlarsalbert/Adopting-a-laboratory-system-based-manoeuvring-model-to-a-real-sea-environment

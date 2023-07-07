@@ -80,11 +80,14 @@ def track_plots(
 
             # x = 50
             # y = 0
-
+            x0 = df["x0"]
+            y0 = df["y0"]
             x = y0.median() + 10
             y = x0.mean()
 
             mean_wind = df["aws"].mean()
+            l = 2 * lpp * mean_wind / 10
+
             dx = -l * lpp * np.sin(awa_mean)
             dy = -l * lpp * np.cos(awa_mean)
 
