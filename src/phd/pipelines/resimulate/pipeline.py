@@ -30,5 +30,15 @@ def create_pipeline(**kwargs) -> Pipeline:
                 name="wPCC.MDL.VCT_MDL_resistance_optimized_kappa.resimulate_node",
                 tags=["MDL", "wPCC", "VCT_MDL_resistance_optimized_kappa"],
             ),
+            node(
+                func=resimulate_all,
+                inputs=[
+                    "wPCC.time_series_preprocessed.ek_smooth",
+                    "wPCC.models.MDL_inverse_dynamics",
+                ],
+                outputs="wPCC.MDL.MDL_inverse_dynamics.resimulate",
+                name="wPCC.MDL.MDL_inverse_dynamics.resimulate_node",
+                tags=["MDL", "wPCC", "MDL_inverse_dynamics"],
+            ),
         ]
     )

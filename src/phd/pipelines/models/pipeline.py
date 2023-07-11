@@ -11,6 +11,7 @@ from .nodes import (
     regress_hull_VCT,
     correct_vct_resistance,
     optimize_kappa,
+    regress_hull_inverse_dynamics,
 )
 
 
@@ -69,6 +70,16 @@ def create_pipeline(**kwargs) -> Pipeline:
                 outputs="wPCC.models.VCT_MDL_resistance_optimized_kappa",
                 name="optimize_kappa_node",
                 tags=["optimize_kappa"],
+            ),
+            node(
+                func=regress_hull_inverse_dynamics,
+                inputs=[
+                    "wPCC.vmm_7m_vct",
+                    "wPCC.time_series_preprocessed.ek_smooth",
+                ],
+                outputs="wPCC.models.MDL_inverse_dynamics",
+                name="regress_hull_inverse_dynamics_node",
+                tags=["hull_inverse_dynamics"],
             ),
         ]
     )

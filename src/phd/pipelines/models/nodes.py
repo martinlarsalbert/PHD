@@ -21,19 +21,12 @@ from vessel_manoeuvring_models.parameters import df_parameters
 p = df_parameters["symbol"]
 
 from vessel_manoeuvring_models.models.subsystem import PrimeEquationSubSystem
-from vessel_manoeuvring_models.models.wind_force import (
-    WindForceSystem,
-    DummyWindForceSystem,
-)
 from vessel_manoeuvring_models.substitute_dynamic_symbols import run
 from wPCC_pipeline.pipelines.vct_data.nodes import vct_scaling
-from vessel_manoeuvring_models.models.propeller import PropellersSystem
-from vessel_manoeuvring_models.models.semiempirical_rudder import (
-    SemiempiricalRudderSystem,
-)
 from vessel_manoeuvring_models.models.diff_eq_to_matrix import DiffEqToMatrix
 import statsmodels.api as sm
 from vessel_manoeuvring_models.models.modular_simulator import subs_simpler
+from .subsystems import add_propeller, add_rudder, add_dummy_wind_force_system
 
 import logging
 
@@ -105,6 +98,11 @@ def vmm_7m_vct(main_model: ModularVesselSimulator) -> ModularVesselSimulator:
         ship=model, equations=equations_hull, create_jacobians=True
     )
     model.subsystems["hull"] = hull
+
+    add_propeller(model=model)
+    add_rudder(model=model)
+    add_dummy_wind_force_system(model=model)
+
     return model
 
 
@@ -130,12 +128,12 @@ def main_model_with_scale(
     return model
 
 
-def regress_hull_VCT(main_model: ModularVesselSimulator, df_VCT: pd.DataFrame):
+def regress_hull_VCT(vmm_model: ModularVesselSimulator, df_VCT: pd.DataFrame):
 
     log.info("Regressing VCT")
     from .regression_pipeline import pipeline, fit
 
-    model = main_model.copy()
+    model = vmm_model.copy()
 
     ## scale VCT data
     df_VCT = vct_scaling(data=df_VCT, ship_data=model.ship_parameters)
@@ -168,51 +166,6 @@ def regress_hull_VCT(main_model: ModularVesselSimulator, df_VCT: pd.DataFrame):
     models, new_parameters = fit(regression_pipeline=regression_pipeline)
     model.parameters.update(new_parameters)
     model_summaries = {key: fit.summary().as_text() for key, fit in models.items()}
-
-    ## Add propeller:
-    propellers = PropellersSystem(ship=model, create_jacobians=True)
-    model.subsystems["propellers"] = propellers
-    # Propeller coefficients (regressed in 06.10_wPCC_vmm_propeller_model.ipynb)
-    params = {
-        "C0_w_p0": 0.10378571428571445,
-        "C1_w_p0": 0.24690520231438584,
-        "k_0": 0.576581716472807,
-        "k_1": -0.3683675998138215,
-        "k_2": -0.07542975438913463,
-    }
-    model.parameters.update(params)
-    g_ = 9.81
-    model.parameters["g"] = g_
-    model.parameters["Xthrust"] = 1 - model.ship_parameters["tdf"]
-
-    prop_data = {
-        "r_0": model.ship_parameters["D"] / 2,
-        "x": 0.10,  # Guessing...
-    }
-    model.ship_parameters.update(prop_data)
-
-    ## Add rudder:
-    rudders = SemiempiricalRudderSystem(ship=model, create_jacobians=False)
-    model.subsystems["rudders"] = rudders
-    rudder_particulars = {
-        "x_R": model.ship_parameters["x_r"],
-        "y_R": 0,
-        "z_R": 0,
-        "w_f": model.ship_parameters["w_p0"],
-    }
-    model.ship_parameters.update(rudder_particulars)
-    rudder_parameters = {
-        "C_L_tune": 1.0,
-        # "delta_lim": np.deg2rad(40),
-        "delta_lim": 2 * 0.6981317007977318,
-        "kappa": 0.5,  # (Small value means much flow straightening)
-        "nu": 1.18849e-06,
-    }
-    model.parameters.update(rudder_parameters)
-
-    ## Add dummy wind system:
-    wind_force = DummyWindForceSystem(ship=model, create_jacobians=True)
-    model.subsystems["wind_force"] = wind_force
 
     return model, model_summaries
 
@@ -319,17 +272,17 @@ def optimize_kappa(
 
 
 def regress_hull_inverse_dynamics(
-    main_model: ModularVesselSimulator, time_series_smooth: dict
+    vmm_model: ModularVesselSimulator, time_series_smooth: dict
 ) -> ModularVesselSimulator:
 
     log.info("Regressing MDL with inverse dynamics")
     from vessel_manoeuvring_models.models.vmm_7m_vct import eq_X_H, eq_Y_H, eq_N_H
 
-    f_X_H = sp.Function("X_H")(u, v, r)
-    f_Y_H = sp.Function("Y_H")(u, v, r)
-    f_N_H = sp.Function("N_H")(u, v, r)
+    f_X_H = sp.Function("X_H")(u, v, r, delta)
+    f_Y_H = sp.Function("Y_H")(u, v, r, delta)
+    f_N_H = sp.Function("N_H")(u, v, r, delta)
 
-    model = main_model.copy()
+    model = vmm_model.copy()
 
     # Solving X_H, Y_H, N_H from the model main equation:
     # This result in an expression like:
@@ -341,25 +294,31 @@ def regress_hull_inverse_dynamics(
     data = time_series_smooth["wpcc.updated.joined.ek_smooth"]()
     data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
     data["rev"] = data[["Prop/SB/Rpm", "Prop/PS/Rpm"]].mean(axis=1)
+    data.drop(columns=["thrust"], inplace=True)
     data["beta"] = -np.arctan2(data["v"], data["u"])
 
     # Precalculate the rudders, propellers and wind_force:
-    df_calculation = pd.DataFrame(
-        model.calculate_forces(
-            states_dict=data[model.states_str], control=data[model.control_keys]
+    calculation = {}
+    for system_name, system in model.subsystems.items():
+        if system_name == "hull":
+            continue
+        system.calculate_forces(
+            states_dict=data[model.states_str],
+            control=data[model.control_keys],
+            calculation=calculation,
         )
-    )
-    keys_calculation = [
-        "X_R" "Y_R" "N_R" "X_P" "X_W" "Y_W" "N_W",
-        "thrust",
-    ]
-    data = pd.concat((data, df_calculation[keys_calculation]), axis=1)
+
+    df_calculation = pd.DataFrame(calculation, index=data.index)
+    data = pd.concat((data, df_calculation), axis=1)
+    data_u0 = data.copy()
+    V0_ = float(data["u"].min())
+    data_u0["u"] -= V0_
+    hull = model.subsystems["hull"]
+    hull.V0 = V0_
 
     data_prime = model.prime_system.prime(
-        data[
-            model.states_str
-            + ["u1d", "v1d", "r1d", "fx", "fy", "mz", "rev"]
-            + keys_calculation
+        data_u0[
+            model.states_str + ["u1d", "v1d", "r1d"] + list(df_calculation.columns)
         ],
         U=data["U"],
     )
@@ -392,3 +351,20 @@ def regress_hull_inverse_dynamics(
     eq_to_matrix_Y_H = DiffEqToMatrix(eq_Y_H, label=Y_H, base_features=[u, v, r])
 
     eq_to_matrix_N_H = DiffEqToMatrix(eq_N_H, label=N_H, base_features=[u, v, r])
+
+    models = {}
+    new_parameters = {}
+    for eq_to_matrix in [eq_to_matrix_X_H, eq_to_matrix_Y_H, eq_to_matrix_N_H]:
+        key = eq_to_matrix.acceleration_equation.lhs.name
+        log.info(f"Regressing:{key}")
+        X, y = eq_to_matrix.calculate_features_and_label(
+            data=data_prime, y=data_prime[key]
+        )
+        ols = sm.OLS(y, X)
+        models[key] = ols_fit = ols.fit()
+        new_parameters.update(ols_fit.params)
+        log.info(ols_fit.summary().as_text())
+
+    model.parameters.update(new_parameters)
+
+    return model
