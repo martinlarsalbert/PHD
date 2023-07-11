@@ -168,6 +168,7 @@
   filename_suffix: .csv
 
 ## Models
+### Model templates (half finished models, where propeller are missing etc.):
 main_model:
   type: pickle.PickleDataSet
   filepath: data/06_models/main_model.pkl
@@ -177,7 +178,13 @@ main_model:
   type: pickle.PickleDataSet
   filepath: data/06_models/{{ ship }}.main_model.pkl
   backend: dill
-    
+
+{{ ship }}.vmm_7m_vct:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/{{ ship }}.vmm_7m_vct.pkl
+  backend: dill
+
+### Complete models:
 {{ ship }}.models:
   type: PartitionedDataSet
   path: data/06_models/{{ ship }}

@@ -33,6 +33,7 @@ from vessel_manoeuvring_models.models.semiempirical_rudder import (
 )
 from vessel_manoeuvring_models.models.diff_eq_to_matrix import DiffEqToMatrix
 import statsmodels.api as sm
+from vessel_manoeuvring_models.models.modular_simulator import subs_simpler
 
 import logging
 
@@ -94,6 +95,19 @@ def main_model() -> ModularVesselSimulator:
     return main_model
 
 
+def vmm_7m_vct(main_model: ModularVesselSimulator) -> ModularVesselSimulator:
+    from vessel_manoeuvring_models.models.vmm_7m_vct import eq_X_H, eq_Y_H, eq_N_H
+
+    model = main_model.copy()
+
+    equations_hull = [eq_X_H, eq_Y_H, eq_N_H]
+    hull = PrimeEquationSubSystem(
+        ship=model, equations=equations_hull, create_jacobians=True
+    )
+    model.subsystems["hull"] = hull
+    return model
+
+
 def add_added_mass(model: ModularVesselSimulator):
 
     mask = df_parameters["state"] == "dot"
@@ -119,7 +133,6 @@ def main_model_with_scale(
 def regress_hull_VCT(main_model: ModularVesselSimulator, df_VCT: pd.DataFrame):
 
     log.info("Regressing VCT")
-    from vessel_manoeuvring_models.models.vmm_7m_vct import eq_X_H, eq_Y_H, eq_N_H
     from .regression_pipeline import pipeline, fit
 
     model = main_model.copy()
@@ -147,11 +160,8 @@ def regress_hull_VCT(main_model: ModularVesselSimulator, df_VCT: pd.DataFrame):
     df_VCT_prime["Y_H"] = df_VCT_prime["fy_hull"]
     df_VCT_prime["N_H"] = df_VCT_prime["mz_hull"]
 
-    equations_hull = [eq_X_H, eq_Y_H, eq_N_H]
-    hull = PrimeEquationSubSystem(
-        ship=model, equations=equations_hull, create_jacobians=True, V0=V0_
-    )
-    model.subsystems["hull"] = hull
+    hull = model.subsystems["hull"]
+    hull.V0 = V0_  # Important!
 
     ## Regression:
     regression_pipeline = pipeline(df_VCT_prime=df_VCT_prime, hull=hull)
@@ -263,6 +273,20 @@ def correct_vct_resistance(
 def optimize_kappa(
     model: ModularVesselSimulator, time_series_smooth: dict
 ) -> ModularVesselSimulator:
+    """Attempt to determine flow straightening 'kappa' based on mz forces from MDL tests
+
+    Parameters
+    ----------
+    model : ModularVesselSimulator
+        _description_
+    time_series_smooth : dict
+        _description_
+
+    Returns
+    -------
+    ModularVesselSimulator
+        _description_
+    """
     from .optimize_kappa import fit_kappa
 
     log.info(
@@ -292,3 +316,79 @@ def optimize_kappa(
         log.warning(f"Optimisation failed with message:{result.message}")
 
     return model_optimized_kappa
+
+
+def regress_hull_inverse_dynamics(
+    main_model: ModularVesselSimulator, time_series_smooth: dict
+) -> ModularVesselSimulator:
+
+    log.info("Regressing MDL with inverse dynamics")
+    from vessel_manoeuvring_models.models.vmm_7m_vct import eq_X_H, eq_Y_H, eq_N_H
+
+    f_X_H = sp.Function("X_H")(u, v, r)
+    f_Y_H = sp.Function("Y_H")(u, v, r)
+    f_N_H = sp.Function("N_H")(u, v, r)
+
+    model = main_model.copy()
+
+    # Solving X_H, Y_H, N_H from the model main equation:
+    # This result in an expression like:
+    # X_H(u, v, r, delta) = -X_{\dot{u}}*\dot{u} + \dot{u}*m - m*r**2*x_G - m*r*v - X_P(u, v, r, rev) - X_R(u, v, r, delta, thrust) - X_W
+    eq_f_X_H = sp.Eq(f_X_H, sp.solve(model.X_eq, f_X_H)[0])
+    eq_f_Y_H = sp.Eq(f_Y_H, sp.solve(model.Y_eq, f_Y_H)[0])
+    eq_f_N_H = sp.Eq(f_N_H, sp.solve(model.N_eq, f_N_H)[0])
+
+    data = time_series_smooth["wpcc.updated.joined.ek_smooth"]()
+    data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
+    data["rev"] = data[["Prop/SB/Rpm", "Prop/PS/Rpm"]].mean(axis=1)
+    data["beta"] = -np.arctan2(data["v"], data["u"])
+
+    # Precalculate the rudders, propellers and wind_force:
+    df_calculation = pd.DataFrame(
+        model.calculate_forces(
+            states_dict=data[model.states_str], control=data[model.control_keys]
+        )
+    )
+    keys_calculation = [
+        "X_R" "Y_R" "N_R" "X_P" "X_W" "Y_W" "N_W",
+        "thrust",
+    ]
+    data = pd.concat((data, df_calculation[keys_calculation]), axis=1)
+
+    data_prime = model.prime_system.prime(
+        data[
+            model.states_str
+            + ["u1d", "v1d", "r1d", "fx", "fy", "mz", "rev"]
+            + keys_calculation
+        ],
+        U=data["U"],
+    )
+
+    eqs = [eq_f_X_H, eq_f_Y_H, eq_f_N_H]
+    lambdas = {
+        eq.lhs.name: lambdify(eq.rhs.subs(subs_simpler), substitute_functions=True)
+        for eq in eqs
+    }
+
+    for key, lambda_ in lambdas.items():
+
+        data_prime[key] = run(
+            lambda_,
+            inputs=data_prime,
+            **model.ship_parameters_prime,
+            **model.parameters,
+        )
+
+    ## Regression
+    exclude_parameters = {"Xthrust": model.parameters["Xthrust"]}
+
+    eq_to_matrix_X_H = DiffEqToMatrix(
+        eq_X_H,
+        label=X_H,
+        base_features=[u, v, r, thrust],
+        exclude_parameters=exclude_parameters,
+    )
+
+    eq_to_matrix_Y_H = DiffEqToMatrix(eq_Y_H, label=Y_H, base_features=[u, v, r])
+
+    eq_to_matrix_N_H = DiffEqToMatrix(eq_N_H, label=N_H, base_features=[u, v, r])

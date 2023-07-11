@@ -7,6 +7,7 @@ from kedro.pipeline import Pipeline, node, pipeline
 from .nodes import (
     main_model,
     main_model_with_scale,
+    vmm_7m_vct,
     regress_hull_VCT,
     correct_vct_resistance,
     optimize_kappa,
@@ -35,8 +36,15 @@ def create_pipeline(**kwargs) -> Pipeline:
                 name="7m.main_model_node",
             ),
             node(
+                func=vmm_7m_vct,
+                inputs=["wPCC.main_model"],
+                outputs="wPCC.vmm_7m_vct",
+                name="vmm_7m_vct_node",
+                tags="vmm_7m_vct",
+            ),
+            node(
                 func=regress_hull_VCT,
-                inputs=["wPCC.main_model", "wPCC.df_VCT"],
+                inputs=["wPCC.vmm_7m_vct", "wPCC.df_VCT"],
                 outputs=["wPCC.models.vct", "wPCC.models.vct.model_summaries"],
                 name="regress_hull_VCT_node",
                 tags="vct",
