@@ -1,0 +1,16 @@
+# This is a boilerplate parameters config generated for pipeline 'filter'
+# using Kedro 0.18.7.
+#
+# Documentation for this file format can be found in "Parameters"
+# Link: https://docs.kedro.org/en/0.18.7/kedro_project_setup/configuration.html#parameters
+
+7m:
+  ek_covariance_input:
+    process_variance:
+      u : 0.01
+      v : 0.01
+      r : 0.01  # [deg]
+    measurement_error_max:
+      positions: 0.1
+      psi: 1  # [deg]
+  filter_model_name: VCT_MDL_resistance

@@ -90,7 +90,8 @@ def _load(loader, GPS_position: dict, missions: str, replace_velocities=True):
 
     data.rename(columns=renames, inplace=True)
 
-    cog_ = np.unwrap(data["cog"])
+    data["thrusterTarget"] = data["thrusterTarget"].fillna(method="ffill")
+
     psi = np.unwrap(data["yaw"])
     data["psi"] = psi
     data["phi"] = data["heelAngle"]
@@ -127,14 +128,12 @@ def _load(loader, GPS_position: dict, missions: str, replace_velocities=True):
     units["v1d"] = "m/s2"
     units["r1d"] = "rad/s2"
 
-    data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
-    data["beta"] = -np.arctan2(data["v"], data["u"])  # Drift angle
-    units["beta"] = "rad"
-
     estimate_apparent_wind(data=data)
     units["aws"] = "m/s"
     units["awa"] = "rad"
-    calculate_true_wind(data=data)
+
+    calculated_signals(data=data)
+    units["beta"] = "rad"
     units["tws"] = "m/s"
     units["twa"] = "rad"
 
@@ -144,6 +143,16 @@ def _load(loader, GPS_position: dict, missions: str, replace_velocities=True):
     # data = fix_interpolated_angle(data=data, key="awaStern")
 
     return data, units
+
+
+def calculated_signals(data: pd.DataFrame) -> pd.DataFrame:
+    data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
+    data["beta"] = -np.arctan2(data["v"], data["u"])  # Drift angle
+    data["cog"] = smallest_signed_angle(data["psi"]) - smallest_signed_angle(
+        data["beta"]
+    )
+
+    calculate_true_wind(data=data)
 
 
 def fix_interpolated_angle(
@@ -407,15 +416,14 @@ def divide_into_tests(data: dict, units: dict) -> Tuple[dict, pd.DataFrame]:
         df["global time"] = df.index
         df.index -= df.index[0]
 
-        angles = [
-            "psi",
-            "cog",
-            "twa",
-            "awa",
-        ]
-
-        for key in angles:
-            df[key] = zero_angle(df[key])
+        # angles = [
+        #    "psi",
+        #    "cog",
+        #    "twa",
+        #    "awa",
+        # ]
+        # for key in angles:
+        #    df[key] = zero_angle(df[key])
 
         df.drop(columns=["zigzag_test_id", "inbetween_zigzags_id"], inplace=True)
 

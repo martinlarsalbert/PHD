@@ -64,6 +64,18 @@
       index: True
   filename_suffix: .csv
 
+{{ ship }}.time_series_rev:
+  type: PartitionedDataSet
+  path: data/02_intermediate/{{ ship }}/time_series_rev
+  dataset:
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
+
+
 {{ ship }}.units:
   type: yaml.YAMLDataSet
   filepath: data/01_raw/{{ ship }}/units.yml
@@ -77,6 +89,17 @@
   save_args:
     index: True
     encoding: 'utf-8'
+
+{{ ship }}.time_series_preprocessed.ek:
+  type: PartitionedDataSet
+  path: data/03_primary/time_series_preprocessed/{{ ship }}/ek
+  dataset:
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
 
 {{ ship }}.time_series_preprocessed.ek_smooth:
   type: PartitionedDataSet
@@ -145,6 +168,16 @@
   filename_suffix: .csv
 
 ## Models
+main_model:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/main_model.pkl
+  backend: dill
+
+{{ ship }}.main_model:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/{{ ship }}.main_model.pkl
+  backend: dill
+    
 {{ ship }}.models:
   type: PartitionedDataSet
   path: data/06_models/{{ ship }}
@@ -153,6 +186,22 @@
     backend: dill
   filename_suffix: .pkl
 
+{{ ship }}.models.vct:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/{{ ship }}/vct.pkl
+  backend: dill
+
+{{ ship }}.models.vct.model_summaries:
+  type: PartitionedDataSet
+  path: data/06_models/{{ ship }}/vct/model_summaries
+  dataset:
+    type: text.TextDataSet
+  filename_suffix: .txt
+
+{{ ship }}.models.VCT_MDL_resistance:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/{{ ship }}/VCT_MDL_resistance.pkl
+  backend: dill
 
 
 {% endfor %}

@@ -15,3 +15,5 @@ D: 0.12135922330097086
 w_p0: 0.151
 n_prop: 2
 tdf: 0.117   # Thrust deduction factor
+A_R: 0.041238571024601746  # Rudder area [m2]
+b_R: 0.17427184466019416   # Rudder height [m]

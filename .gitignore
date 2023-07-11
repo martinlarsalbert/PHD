@@ -158,3 +158,4 @@ venv.bak/
 # mypy
 .mypy_cache/
 **/_build/*
+src/phd/Making-Cool-Maps-In-Python/templates/the_map.html
