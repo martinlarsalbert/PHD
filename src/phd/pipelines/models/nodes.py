@@ -218,24 +218,12 @@ def correct_vct_resistance(
     time_series_meta_data.rename(columns={"test_type": "test type"}, inplace=True)
 
     ## Gather reference speed runs from MDL:
-    _ = []
-    for id, row in (
-        time_series_meta_data.groupby(by=["test type"])
-        .get_group("reference speed")
-        .iterrows()
-    ):
-        try:
-            data_ = time_series_smooth[f"wpcc.updated.{id}.ek_smooth"]()
-        except:
-            continue
+    from .mdl_resistance import reference_test_resistance
 
-        data_["V"] = data_["U"] = np.sqrt(data_["u"] ** 2 + data_["v"] ** 2)
-        data_["rev"] = data_[["Prop/SB/Rpm", "Prop/PS/Rpm"]].mean(axis=1)
-        _.append(pd.Series(data_.mean(), name=id))
-
-    df_reference_speed = pd.concat(_, axis=1).transpose()
-    df_reference_speed["X_H"] = (
-        -(1 - model.ship_parameters["tdf"]) * df_reference_speed["thrust"]
+    df_reference_speed = reference_test_resistance(
+        model=model,
+        time_series_meta_data=time_series_meta_data,
+        time_series_smooth=time_series_smooth,
     )
 
     df_reference_speed_u = df_reference_speed.copy()
@@ -270,3 +258,37 @@ def correct_vct_resistance(
     log.info(ols_fit.summary().as_text())
 
     return model2
+
+
+def optimize_kappa(
+    model: ModularVesselSimulator, time_series_smooth: dict
+) -> ModularVesselSimulator:
+    from .optimize_kappa import fit_kappa
+
+    log.info(
+        "Optimizing rudder flow straightening 'kappa' based on mz forces from MDL tests"
+    )
+    data = time_series_smooth["wpcc.updated.joined.ek_smooth"]()
+    data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
+    data["rev"] = data[["Prop/SB/Rpm", "Prop/PS/Rpm"]].mean(axis=1)
+    data["beta"] = -np.arctan2(data["v"], data["u"])
+
+    R_min = 10
+    mask = (
+        data["r"].abs() > (data["u"].mean() / (R_min * model.ship_parameters["L"]))
+    ) & (data["beta"].abs() > np.deg2rad(5))
+    data_selected = data.loc[mask]
+    log.info(
+        f"Using {len(data_selected)} from {len(data)} total samples in the kappa optimization (excluding tests with small drift angle or yaw rate)."
+    )
+
+    result = fit_kappa(model=model.copy(), data=data_selected)
+    model_optimized_kappa = model.copy()
+    if result.success:
+        kappa = result.x[0]
+        log.info(f"Optimisation suceeded with estimated kappa:{kappa}")
+        model_optimized_kappa.parameters["kappa"] = kappa
+    else:
+        log.warning(f"Optimisation failed with message:{result.message}")
+
+    return model_optimized_kappa

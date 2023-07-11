@@ -203,5 +203,27 @@ main_model:
   filepath: data/06_models/{{ ship }}/VCT_MDL_resistance.pkl
   backend: dill
 
+{{ ship }}.models.VCT_MDL_resistance_optimized_kappa:
+  type: pickle.PickleDataSet
+  filepath: data/06_models/{{ ship }}/VCT_MDL_resistance_optimized_kappa.pkl
+  backend: dill
+
+## Resimulate
+  {% for data_source in ["MDL","Lake"] %}
+    {% for model in ["VCT_MDL_resistance","VCT_MDL_resistance_optimized_kappa"] %}
+
+{{ ship }}.{{ data_source }}.{{ model }}.resimulate:
+  type: PartitionedDataSet
+  path: data/07_model_output/{{ ship }}/resimulation/{{ data_source }}/{{ model }}
+  dataset:
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
+    
+    {% endfor %}
+{% endfor %}
 
 {% endfor %}
