@@ -26,7 +26,12 @@ from wPCC_pipeline.pipelines.vct_data.nodes import vct_scaling
 from vessel_manoeuvring_models.models.diff_eq_to_matrix import DiffEqToMatrix
 import statsmodels.api as sm
 from vessel_manoeuvring_models.models.modular_simulator import subs_simpler
-from .subsystems import add_propeller, add_rudder, add_dummy_wind_force_system
+from .subsystems import (
+    add_propeller,
+    add_propeller_simple,
+    add_rudder,
+    add_dummy_wind_force_system,
+)
 
 import logging
 
@@ -56,10 +61,12 @@ def main_model() -> ModularVesselSimulator:
     f_N_W = function_eq(eq_N_W).lhs
 
     f_X_P = sp.Function("X_P")(u, v, r, rev)
+    f_Y_P = sp.Function("Y_P")(u, v, r, rev)
+    f_N_P = sp.Function("N_P")(u, v, r, rev)
 
     eq_X_force = fx_eq.subs(X_D, f_X_H + f_X_R + f_X_P + f_X_W)
-    eq_Y_force = fy_eq.subs(Y_D, f_Y_H + f_Y_R + f_Y_W)
-    eq_N_force = mz_eq.subs(N_D, f_N_H + f_N_R + f_N_W)
+    eq_Y_force = fy_eq.subs(Y_D, f_Y_H + f_Y_R + f_Y_P + f_Y_W)
+    eq_N_force = mz_eq.subs(N_D, f_N_H + f_N_R + f_N_P + f_N_W)
 
     X_eq = X_eom.subs(X_force, eq_X_force.rhs)
     Y_eq = Y_eom.subs(Y_force, eq_Y_force.rhs)
@@ -88,6 +95,26 @@ def main_model() -> ModularVesselSimulator:
     return main_model
 
 
+def add_added_mass(model: ModularVesselSimulator):
+    mask = df_parameters["state"] == "dot"
+    lambdas_added_mass = df_parameters.loc[mask, "brix_lambda"].dropna()
+    added_masses = {
+        key: run(lambda_, **model.ship_parameters)
+        for key, lambda_ in lambdas_added_mass.items()
+    }
+    model.parameters.update(added_masses)
+
+
+def main_model_with_scale(
+    main_model: ModularVesselSimulator, ship_data: dict
+) -> ModularVesselSimulator:
+    model = main_model.copy()
+    model.set_ship_parameters(ship_data)
+    add_added_mass(model)
+
+    return model
+
+
 def vmm_7m_vct(main_model: ModularVesselSimulator) -> ModularVesselSimulator:
     from vessel_manoeuvring_models.models.vmm_7m_vct import eq_X_H, eq_Y_H, eq_N_H
 
@@ -106,30 +133,95 @@ def vmm_7m_vct(main_model: ModularVesselSimulator) -> ModularVesselSimulator:
     return model
 
 
-def add_added_mass(model: ModularVesselSimulator):
-
-    mask = df_parameters["state"] == "dot"
-    lambdas_added_mass = df_parameters.loc[mask, "brix_lambda"].dropna()
-    added_masses = {
-        key: run(lambda_, **model.ship_parameters)
-        for key, lambda_ in lambdas_added_mass.items()
-    }
-    model.parameters.update(added_masses)
-
-
-def main_model_with_scale(
-    main_model: ModularVesselSimulator, ship_data: dict
-) -> ModularVesselSimulator:
+def vmm_martins_simple(main_model: ModularVesselSimulator) -> ModularVesselSimulator:
+    from vessel_manoeuvring_models.models.vmm_martin_simple import (
+        X_qs_eq,
+        Y_qs_eq,
+        N_qs_eq,
+    )
 
     model = main_model.copy()
-    model.set_ship_parameters(ship_data)
-    add_added_mass(model)
+
+    subs = [
+        (X_D, X_H),
+        (Y_D, Y_H),
+        (N_D, N_H),
+        (delta, 0),
+        (thrust, 0),
+    ]
+    eq_X_H = X_qs_eq.subs(subs)
+    eq_Y_H = Y_qs_eq.subs(subs)
+    eq_N_H = N_qs_eq.subs(subs)
+
+    equations_hull = [eq_X_H, eq_Y_H, eq_N_H]
+    hull = PrimeEquationSubSystem(
+        ship=model, equations=equations_hull, create_jacobians=True
+    )
+    model.subsystems["hull"] = hull
+
+    add_propeller(model=model)
+    add_rudder(model=model)
+    add_dummy_wind_force_system(model=model)
+
+    return model
+
+
+def vmm_martins_simple_thrust(
+    main_model: ModularVesselSimulator,
+) -> ModularVesselSimulator:
+    from vessel_manoeuvring_models.models.vmm_martin_simple import (
+        X_qs_eq,
+        Y_qs_eq,
+        N_qs_eq,
+    )
+
+    model = main_model.copy()
+    model.control_keys = ["delta", "thrust"]  # Note!
+
+    subs = [
+        (X_D, X_H),
+        (Y_D, Y_H),
+        (N_D, N_H),
+        (delta, 0),
+        (thrust, 0),
+    ]
+    eq_X_H = X_qs_eq.subs(subs)
+    eq_Y_H = Y_qs_eq.subs(subs)
+    eq_N_H = N_qs_eq.subs(subs)
+
+    equations_hull = [eq_X_H, eq_Y_H, eq_N_H]
+    hull = PrimeEquationSubSystem(
+        ship=model, equations=equations_hull, create_jacobians=True
+    )
+    model.subsystems["hull"] = hull
+
+    ## Simple propellers:
+    eq_X_P = sp.Eq(X_P, X_qs_eq.rhs - eq_X_H.rhs).subs(delta, 0)
+    eq_Y_P = sp.Eq(Y_P, Y_qs_eq.rhs - eq_Y_H.rhs).subs(delta, 0)
+    eq_N_P = sp.Eq(N_P, N_qs_eq.rhs - eq_N_H.rhs).subs(delta, 0)
+    equations_propellers = [eq_X_P, eq_Y_P, eq_N_P]
+    propellers = PrimeEquationSubSystem(
+        ship=model, equations=equations_propellers, create_jacobians=True
+    )
+    model.subsystems["propellers"] = propellers
+    model.parameters["Xthrust"] = 1 - model.ship_parameters["tdf"]
+
+    ## Simple rudders:
+    eq_X_R = sp.Eq(X_R, X_qs_eq.rhs - eq_X_H.rhs - eq_X_P.rhs)
+    eq_Y_R = sp.Eq(Y_R, Y_qs_eq.rhs - eq_Y_H.rhs - eq_Y_P.rhs)
+    eq_N_R = sp.Eq(N_R, N_qs_eq.rhs - eq_N_H.rhs - eq_N_P.rhs)
+    equations_rudders = [eq_X_R, eq_Y_R, eq_N_R]
+    rudders = PrimeEquationSubSystem(
+        ship=model, equations=equations_rudders, create_jacobians=True
+    )
+    model.subsystems["rudders"] = rudders
+
+    add_dummy_wind_force_system(model=model)
 
     return model
 
 
 def regress_hull_VCT(vmm_model: ModularVesselSimulator, df_VCT: pd.DataFrame):
-
     log.info("Regressing VCT")
     from .regression_pipeline import pipeline, fit
 
@@ -165,9 +257,11 @@ def regress_hull_VCT(vmm_model: ModularVesselSimulator, df_VCT: pd.DataFrame):
     regression_pipeline = pipeline(df_VCT_prime=df_VCT_prime, hull=hull)
     models, new_parameters = fit(regression_pipeline=regression_pipeline)
     model.parameters.update(new_parameters)
-    model_summaries = {key: fit.summary().as_text() for key, fit in models.items()}
+    for key, fit in models.items():
+        log.info(f"Regression:{key}")
+        log.info(fit.summary().as_text())
 
-    return model, model_summaries
+    return model
 
 
 def correct_vct_resistance(
@@ -274,9 +368,7 @@ def optimize_kappa(
 def regress_hull_inverse_dynamics(
     vmm_model: ModularVesselSimulator, time_series_smooth: dict
 ) -> ModularVesselSimulator:
-
-    log.info("Regressing MDL with inverse dynamics")
-    from vessel_manoeuvring_models.models.vmm_7m_vct import eq_X_H, eq_Y_H, eq_N_H
+    log.info("Regressing only hull from MDL with inverse dynamics")
 
     f_X_H = sp.Function("X_H")(u, v, r, delta)
     f_Y_H = sp.Function("Y_H")(u, v, r, delta)
@@ -295,6 +387,7 @@ def regress_hull_inverse_dynamics(
     data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
     data["rev"] = data[["Prop/SB/Rpm", "Prop/PS/Rpm"]].mean(axis=1)
     data.drop(columns=["thrust"], inplace=True)
+
     data["beta"] = -np.arctan2(data["v"], data["u"])
 
     # Precalculate the rudders, propellers and wind_force:
@@ -314,6 +407,7 @@ def regress_hull_inverse_dynamics(
     V0_ = float(data["u"].min())
     data_u0["u"] -= V0_
     hull = model.subsystems["hull"]
+
     hull.V0 = V0_
 
     data_prime = model.prime_system.prime(
@@ -330,7 +424,6 @@ def regress_hull_inverse_dynamics(
     }
 
     for key, lambda_ in lambdas.items():
-
         data_prime[key] = run(
             lambda_,
             inputs=data_prime,
@@ -342,19 +435,94 @@ def regress_hull_inverse_dynamics(
     exclude_parameters = {"Xthrust": model.parameters["Xthrust"]}
 
     eq_to_matrix_X_H = DiffEqToMatrix(
-        eq_X_H,
+        hull.equations["X_H"],
         label=X_H,
         base_features=[u, v, r, thrust],
         exclude_parameters=exclude_parameters,
     )
 
-    eq_to_matrix_Y_H = DiffEqToMatrix(eq_Y_H, label=Y_H, base_features=[u, v, r])
+    eq_to_matrix_Y_H = DiffEqToMatrix(
+        hull.equations["Y_H"], label=Y_H, base_features=[u, v, r]
+    )
 
-    eq_to_matrix_N_H = DiffEqToMatrix(eq_N_H, label=N_H, base_features=[u, v, r])
+    eq_to_matrix_N_H = DiffEqToMatrix(
+        hull.equations["N_H"], label=N_H, base_features=[u, v, r]
+    )
 
     models = {}
     new_parameters = {}
     for eq_to_matrix in [eq_to_matrix_X_H, eq_to_matrix_Y_H, eq_to_matrix_N_H]:
+        key = eq_to_matrix.acceleration_equation.lhs.name
+        log.info(f"Regressing:{key}")
+        X, y = eq_to_matrix.calculate_features_and_label(
+            data=data_prime, y=data_prime[key]
+        )
+        ols = sm.OLS(y, X)
+        models[key] = ols_fit = ols.fit()
+        new_parameters.update(ols_fit.params)
+        log.info(ols_fit.summary().as_text())
+
+    model.parameters.update(new_parameters)
+
+    return model
+
+
+def regress_inverse_dynamics(
+    vmm_model: ModularVesselSimulator, time_series_smooth: dict
+) -> ModularVesselSimulator:
+    log.info("Regressing hull, propellers, and rudders from MDL with inverse dynamics")
+
+    model = vmm_model.copy()
+
+    data = time_series_smooth["wpcc.updated.joined.ek_smooth"]()
+    data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
+    data["beta"] = -np.arctan2(data["v"], data["u"])
+
+    data = model.forces_from_motions(data=data)
+    data["X_D"] = data["fx"]
+    data["Y_D"] = data["fy"]
+    data["N_D"] = data["mz"]
+
+    data_u0 = data.copy()
+    V0_ = float(data["u"].min())
+    data_u0["u"] -= V0_
+    model.subsystems["hull"].V0 = V0_
+    model.subsystems["propellers"].V0 = V0_
+    model.subsystems["rudders"].V0 = V0_
+
+    data_prime = model.prime_system.prime(
+        data_u0[
+            model.states_str
+            + ["u1d", "v1d", "r1d", "X_D", "Y_D", "N_D"]
+            + model.control_keys
+        ],
+        U=data["U"],
+    )
+
+    ## Regression
+    exclude_parameters = {"Xthrust": model.parameters["Xthrust"]}
+
+    eq_X_D = model.expand_subsystemequations(model.X_D_eq)
+    eq_to_matrix_X_D = DiffEqToMatrix(
+        eq_X_D,
+        label=X_D_,
+        base_features=[u, v, r, delta, thrust],
+        exclude_parameters=exclude_parameters,
+    )
+
+    eq_Y_D = model.expand_subsystemequations(model.Y_D_eq)
+    eq_to_matrix_Y_D = DiffEqToMatrix(
+        eq_Y_D, label=Y_D_, base_features=[u, v, r, delta, thrust]
+    )
+
+    eq_N_D = model.expand_subsystemequations(model.N_D_eq)
+    eq_to_matrix_N_D = DiffEqToMatrix(
+        eq_N_D, label=N_D_, base_features=[u, v, r, delta, thrust]
+    )
+
+    models = {}
+    new_parameters = {}
+    for eq_to_matrix in [eq_to_matrix_X_D, eq_to_matrix_Y_D, eq_to_matrix_N_D]:
         key = eq_to_matrix.acceleration_equation.lhs.name
         log.info(f"Regressing:{key}")
         X, y = eq_to_matrix.calculate_features_and_label(

@@ -3,8 +3,14 @@
 # Documentation for this file format can be found in "The Data Catalog"
 # Link: https://kedro.readthedocs.io/en/stable/data/data_catalog.html
 
+{% set vmms = ["vmm_7m_vct","vmm_martins_simple","vmm_martins_simple_thrust"] %}
+{% set regressions = ["vct","VCT_MDL_resistance","VCT_MDL_resistance_optimized_kappa","MDL_hull_inverse_dynamics","MDL_inverse_dynamics"] %}
+{% set data_sources = ["MDL","Lake"] %}
+{% set ships = ["wPCC","7m"] %}
+
 ## Regressions:
-{% for ship in ["M5064-02-A","wPCC","7m"] %} # (vmm defined in globals.yml)
+{% for ship in ships %}
+
 
 ### VCT data ###
 
@@ -179,10 +185,12 @@ main_model:
   filepath: data/06_models/{{ ship }}.main_model.pkl
   backend: dill
 
-{{ ship }}.vmm_7m_vct:
+  {% for vmm in vmms %}
+{{ ship }}.{{ vmm }}:
   type: pickle.PickleDataSet
-  filepath: data/06_models/{{ ship }}.vmm_7m_vct.pkl
+  filepath: data/06_models/{{ ship }}.{{ vmm }}.pkl
   backend: dill
+  {% endfor %}
 
 ### Complete models:
 {{ ship }}.models:
@@ -193,40 +201,38 @@ main_model:
     backend: dill
   filename_suffix: .pkl
 
-{{ ship }}.models.vct:
+  {% for vmm in vmms %}
+    {% for model in regressions %}
+{{ ship }}.models.{{ vmm }}.{{ model }}:
   type: pickle.PickleDataSet
-  filepath: data/06_models/{{ ship }}/vct.pkl
+  filepath: data/06_models/{{ ship }}/{{ vmm }}.{{ model }}.pkl
   backend: dill
-
-{{ ship }}.models.vct.model_summaries:
-  type: PartitionedDataSet
-  path: data/06_models/{{ ship }}/vct/model_summaries
-  dataset:
-    type: text.TextDataSet
-  filename_suffix: .txt
-
-{{ ship }}.models.VCT_MDL_resistance:
-  type: pickle.PickleDataSet
-  filepath: data/06_models/{{ ship }}/VCT_MDL_resistance.pkl
-  backend: dill
-
-{{ ship }}.models.VCT_MDL_resistance_optimized_kappa:
-  type: pickle.PickleDataSet
-  filepath: data/06_models/{{ ship }}/VCT_MDL_resistance_optimized_kappa.pkl
-  backend: dill
-
-{{ ship }}.models.MDL_inverse_dynamics:
-  type: pickle.PickleDataSet
-  filepath: data/06_models/{{ ship }}/MDL_inverse_dynamics.pkl
-  backend: dill
+    {% endfor %}
+  {% endfor %}
+#{{ ship }}.models.VCT_MDL_resistance:
+#  type: pickle.PickleDataSet
+#  filepath: data/06_models/{{ ship }}/VCT_MDL_resistance.pkl
+#  backend: dill
+#
+#{{ ship }}.models.VCT_MDL_resistance_optimized_kappa:
+#  type: pickle.PickleDataSet
+#  filepath: data/06_models/{{ ship }}/VCT_MDL_resistance_optimized_kappa.pkl
+#  backend: dill
+#
+#{{ ship }}.models.MDL_inverse_dynamics:
+#  type: pickle.PickleDataSet
+#  filepath: data/06_models/{{ ship }}/MDL_inverse_dynamics.pkl
+#  backend: dill
 
 ## Resimulate
-  {% for data_source in ["MDL","Lake"] %}
-    {% for model in ["VCT_MDL_resistance","VCT_MDL_resistance_optimized_kappa","MDL_inverse_dynamics"] %}
+  {% for data_source in data_sources %}
+    {% for vmm in vmms %}
 
-{{ ship }}.{{ data_source }}.{{ model }}.resimulate:
+      {% for model in regressions %}
+
+{{ ship }}.{{ data_source }}.{{ vmm }}.{{ model }}.resimulate:
   type: PartitionedDataSet
-  path: data/07_model_output/{{ ship }}/resimulation/{{ data_source }}/{{ model }}
+  path: data/07_model_output/{{ ship }}/resimulation/{{ data_source }}/{{ vmm }}/{{ model }}
   dataset:
     type: pandas.CSVDataSet
     load_args:
@@ -234,8 +240,9 @@ main_model:
     save_args:
       index: True
   filename_suffix: .csv
-    
+      
+      {% endfor %}
     {% endfor %}
-{% endfor %}
+  {% endfor %}
 
 {% endfor %}

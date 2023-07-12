@@ -8,37 +8,27 @@ from .nodes import resimulate_all
 
 
 def create_pipeline(**kwargs) -> Pipeline:
-    return pipeline(
-        [
-            node(
-                func=resimulate_all,
-                inputs=[
-                    "wPCC.time_series_preprocessed.ek_smooth",
-                    "wPCC.models.VCT_MDL_resistance",
-                ],
-                outputs="wPCC.MDL.VCT_MDL_resistance.resimulate",
-                name="wPCC.MDL.VCT_MDL_resistance.resimulate_node",
-                tags=["MDL", "wPCC", "VCT_MDL_resistance"],
-            ),
-            node(
-                func=resimulate_all,
-                inputs=[
-                    "wPCC.time_series_preprocessed.ek_smooth",
-                    "wPCC.models.VCT_MDL_resistance_optimized_kappa",
-                ],
-                outputs="wPCC.MDL.VCT_MDL_resistance_optimized_kappa.resimulate",
-                name="wPCC.MDL.VCT_MDL_resistance_optimized_kappa.resimulate_node",
-                tags=["MDL", "wPCC", "VCT_MDL_resistance_optimized_kappa"],
-            ),
-            node(
-                func=resimulate_all,
-                inputs=[
-                    "wPCC.time_series_preprocessed.ek_smooth",
-                    "wPCC.models.MDL_inverse_dynamics",
-                ],
-                outputs="wPCC.MDL.MDL_inverse_dynamics.resimulate",
-                name="wPCC.MDL.MDL_inverse_dynamics.resimulate_node",
-                tags=["MDL", "wPCC", "MDL_inverse_dynamics"],
-            ),
-        ]
-    )
+    vmms = {
+        "vmm_7m_vct": ["VCT_MDL_resistance", "MDL_hull_inverse_dynamics"],
+        "vmm_martins_simple": ["VCT_MDL_resistance", "MDL_hull_inverse_dynamics"],
+        "vmm_martins_simple_thrust": ["MDL_inverse_dynamics"],
+    }
+
+    data_sources = ["MDL"]
+    nodes = []
+    for data_source_name in data_sources:
+        for vmm, models in vmms.items():
+            for model_name in models:
+                new_node = node(
+                    func=resimulate_all,
+                    inputs=[
+                        f"wPCC.time_series_preprocessed.ek_smooth",
+                        f"wPCC.models.{vmm}.{model_name}",
+                    ],
+                    outputs=f"wPCC.{data_source_name}.{vmm}.{model_name}.resimulate",
+                    name=f"wPCC.{data_source_name}.{vmm}.{model_name}.resimulate_node",
+                    tags=[data_source_name, vmm, "wPCC", f"{model_name}"],
+                )
+                nodes.append(new_node)
+
+    return pipeline(nodes)
