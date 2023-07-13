@@ -35,7 +35,8 @@ def resimulate(
 ) -> pd.DataFrame:
     data = data.copy()
     data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
-    data["rev"] = data[["Prop/SB/Rpm", "Prop/PS/Rpm"]].mean(axis=1)
+    if not "rev" in data:
+        data["rev"] = data[["Prop/SB/Rpm", "Prop/PS/Rpm"]].mean(axis=1)
 
     result = model.simulate(data)
     return result

@@ -245,4 +245,15 @@ main_model:
     {% endfor %}
   {% endfor %}
 
+## Predict
+{{ ship }}.force_prediction_scores:
+  type: pandas.CSVDataSet
+  filepath: data/08_reporting/{{ ship }}.force_prediction_scores.csv
+  load_args:
+    index_col: 0
+    encoding: 'utf-8'
+  save_args:
+    index: True
+    encoding: 'utf-8'
+
 {% endfor %}

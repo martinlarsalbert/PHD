@@ -15,6 +15,7 @@ from .nodes import (
     optimize_kappa,
     regress_hull_inverse_dynamics,
     regress_inverse_dynamics,
+    scale_model,
 )
 
 
@@ -125,5 +126,28 @@ def create_pipeline(**kwargs) -> Pipeline:
             ),
         ]
         nodes += vmm_inverse_dynamics_nodes
+
+    vmms = {
+        "vmm_7m_vct": ["VCT_MDL_resistance", "MDL_hull_inverse_dynamics"],
+        "vmm_martins_simple": ["VCT_MDL_resistance", "MDL_hull_inverse_dynamics"],
+        "vmm_martins_simple_thrust": ["MDL_inverse_dynamics"],
+    }
+
+    ## Scale from 5m to 7m:
+    for vmm, models in vmms.items():
+        for model in models:
+            scale_nodes = [
+                node(
+                    func=scale_model,
+                    inputs=[
+                        f"wPCC.models.{vmm}.{model}",
+                        "7m.ship_data",
+                    ],
+                    outputs=f"7m.models.{vmm}.{model}",
+                    name=f"{vmm}.{model}.scale_model_node",
+                    tags=["scale_model"],
+                ),
+            ]
+            nodes += scale_nodes
 
     return pipeline(nodes)

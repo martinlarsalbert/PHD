@@ -31,6 +31,7 @@ from .subsystems import (
     add_propeller_simple,
     add_rudder,
     add_dummy_wind_force_system,
+    add_wind_force_system,
 )
 
 import logging
@@ -536,3 +537,27 @@ def regress_inverse_dynamics(
     model.parameters.update(new_parameters)
 
     return model
+
+
+def scale_model(
+    model: ModularVesselSimulator, ship_data: dict
+) -> ModularVesselSimulator:
+    model_scaled = model.copy()
+
+    scale_7 = ship_data["scale_factor"]
+    scale_5 = model.ship_parameters["scale_factor"]
+    scaling = scale_5 / scale_7
+    ship_data["r_0"] = ship_data["D"] / 2
+    ship_data["w_f"] = model.ship_parameters["w_p0"]
+
+    if "x" in model.ship_parameters:
+        ship_data["x"] = model.ship_parameters["x"] * scaling
+    # ship_data["A_R"] = ship_parameters["A_R"] * (scale_5**2) / (scale_7**2)
+    # ship_data["b_R"] = ship_parameters["b_R"] * scaling
+    ship_data["x_p"] = model.ship_parameters["x_p"] * scaling
+    ship_data["x_R"] = ship_data["x_r"]
+    if "y_R" in model.ship_parameters:
+        ship_data["y_R"] = model.ship_parameters["y_R"] * scaling
+
+    model_scaled.set_ship_parameters(ship_data)
+    return model_scaled
