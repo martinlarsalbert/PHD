@@ -2,6 +2,7 @@
 This is a boilerplate pipeline 'models'
 generated using Kedro 0.18.7
 """
+import pandas as pd
 from vessel_manoeuvring_models.symbols import *
 from vessel_manoeuvring_models.nonlinear_vmm_equations import (
     X_eom,
@@ -31,8 +32,8 @@ from .subsystems import (
     add_propeller_simple,
     add_rudder,
     add_dummy_wind_force_system,
-    add_wind_force_system,
 )
+from .subsystems import add_wind_force_system as add_wind
 
 import logging
 
@@ -222,6 +223,50 @@ def vmm_martins_simple_thrust(
     return model
 
 
+def add_wind_force_system(
+    model: ModularVesselSimulator, wind_data_HMD: pd.DataFrame
+) -> ModularVesselSimulator:
+    model_wind = model.copy()
+    add_wind(model_wind)
+    model_wind = regress_wind_tunnel_test(model_wind, wind_data_HMD=wind_data_HMD)
+    return model_wind
+
+
+def regress_wind_tunnel_test(
+    vmm_model: ModularVesselSimulator, wind_data_HMD: pd.DataFrame
+) -> ModularVesselSimulator:
+    from vessel_manoeuvring_models.models.wind_force import (
+        eq_C_x,
+        eq_C_y,
+        eq_C_n,
+        C_x,
+        C_y,
+        C_n,
+    )
+
+    eq_to_matrix_C_x = DiffEqToMatrix(eq_C_x, label=C_x, base_features=[awa])
+    eq_to_matrix_C_y = DiffEqToMatrix(eq_C_y, label=C_y, base_features=[awa])
+    eq_to_matrix_C_n = DiffEqToMatrix(eq_C_n, label=C_n, base_features=[awa])
+
+    ## Regression:
+    params_wind = {}
+    for key, eq_to_matrix in zip(
+        ["cx", "cy", "cn"], [eq_to_matrix_C_x, eq_to_matrix_C_y, eq_to_matrix_C_n]
+    ):
+        X, y = eq_to_matrix.calculate_features_and_label(
+            data=wind_data_HMD, y=wind_data_HMD[key], simplify_names=False
+        )
+        ols = sm.OLS(y, X, hasconst=False)
+        ols_fit = ols.fit()
+        params_wind.update(ols_fit.params)
+
+    params_wind = {key: value / 2 for key, value in params_wind.items()}  # Note 1/2
+    model = vmm_model.copy()
+    model.parameters.update(params_wind)
+
+    return model
+
+
 def regress_hull_VCT(vmm_model: ModularVesselSimulator, df_VCT: pd.DataFrame):
     log.info("Regressing VCT")
     from .regression_pipeline import pipeline, fit
@@ -233,9 +278,9 @@ def regress_hull_VCT(vmm_model: ModularVesselSimulator, df_VCT: pd.DataFrame):
     df_VCT["U"] = df_VCT["V"]
 
     ## Prime system
-    V0_ = df_VCT["V"].min()
+    U0_ = df_VCT["V"].min()
     df_VCT_u0 = df_VCT.copy()
-    df_VCT_u0["u"] -= V0_
+    df_VCT_u0["u"] -= U0_
 
     units = {
         "fx_hull": "force",
@@ -252,7 +297,7 @@ def regress_hull_VCT(vmm_model: ModularVesselSimulator, df_VCT: pd.DataFrame):
     df_VCT_prime["N_H"] = df_VCT_prime["mz_hull"]
 
     hull = model.subsystems["hull"]
-    hull.V0 = V0_  # Important!
+    hull.U0 = U0_  # Important!
 
     ## Regression:
     regression_pipeline = pipeline(df_VCT_prime=df_VCT_prime, hull=hull)
@@ -286,7 +331,7 @@ def correct_vct_resistance(
 
     df_reference_speed_u = df_reference_speed.copy()
     hull = model.subsystems["hull"]
-    df_reference_speed_u["u"] -= hull.V0
+    df_reference_speed_u["u"] -= hull.U0
     df_reference_speed_u_prime = model.prime_system.prime(
         df_reference_speed_u[["u", "v", "r", "X_H"]], U=df_reference_speed_u["V"]
     )
@@ -387,6 +432,13 @@ def regress_hull_inverse_dynamics(
     data = time_series_smooth["wpcc.updated.joined.ek_smooth"]()
     data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
     data["rev"] = data[["Prop/SB/Rpm", "Prop/PS/Rpm"]].mean(axis=1)
+
+    if not "twa" in data:
+        data["twa"] = 0
+
+    if not "tws" in data:
+        data["tws"] = 0
+
     data.drop(columns=["thrust"], inplace=True)
 
     data["beta"] = -np.arctan2(data["v"], data["u"])
@@ -405,11 +457,11 @@ def regress_hull_inverse_dynamics(
     df_calculation = pd.DataFrame(calculation, index=data.index)
     data = pd.concat((data, df_calculation), axis=1)
     data_u0 = data.copy()
-    V0_ = float(data["u"].min())
-    data_u0["u"] -= V0_
+    U0_ = float(data["u"].min())
+    data_u0["u"] -= U0_
     hull = model.subsystems["hull"]
 
-    hull.V0 = V0_
+    hull.U0 = U0_
 
     data_prime = model.prime_system.prime(
         data_u0[
@@ -485,11 +537,11 @@ def regress_inverse_dynamics(
     data["N_D"] = data["mz"]
 
     data_u0 = data.copy()
-    V0_ = float(data["u"].min())
-    data_u0["u"] -= V0_
-    model.subsystems["hull"].V0 = V0_
-    model.subsystems["propellers"].V0 = V0_
-    model.subsystems["rudders"].V0 = V0_
+    U0_ = float(data["u"].min())
+    data_u0["u"] -= U0_
+    model.subsystems["hull"].U0 = U0_
+    model.subsystems["propellers"].U0 = U0_
+    model.subsystems["rudders"].U0 = U0_
 
     data_prime = model.prime_system.prime(
         data_u0[

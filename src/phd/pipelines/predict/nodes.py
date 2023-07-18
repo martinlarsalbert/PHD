@@ -6,11 +6,13 @@ generated using Kedro 0.18.7
 import pandas as pd
 import numpy as np
 from sklearn.metrics import r2_score, mean_squared_error
+from vessel_manoeuvring_models.models.modular_simulator import ModularVesselSimulator
 import logging
+
 
 log = logging.getLogger(__name__)
 
-
+dofs = ["X_D", "Y_D", "N_D"]
 def force_prediction_score(models: dict, time_series: dict) -> pd.DataFrame:
     _ = []
     for id, data_loader in time_series.items():
@@ -61,33 +63,36 @@ def force_prediction_score(models: dict, time_series: dict) -> pd.DataFrame:
                 else:
                     raise e
 
-            s = pd.Series()
-            dofs = ["X_D", "Y_D", "N_D"]
-            r2_keys = [f"r2({dof})" for dof in dofs]
-            rmse_keys = [f"rmse({dof})" for dof in dofs]
-
-            for dof in dofs:
-                s[f"r2({dof})"] = r2_score(
-                    y_true=df_force[dof], y_pred=df_force_predicted[dof]
-                )
-                s[f"rmse({dof})"] = np.sqrt(
-                    mean_squared_error(
-                        y_true=df_force[dof], y_pred=df_force_predicted[dof]
-                    )
-                )
-
+            s = score(df_force=df_force, df_force_predicted=df_force_predicted)
             s["model"] = model_name
             s["test_id"] = id
             _.append(s)
 
     force_prediction_scores = pd.DataFrame(_)
+    r2_keys = [f"r2({dof})" for dof in dofs]
+    rmse_keys = [f"rmse({dof})" for dof in dofs]
     force_prediction_scores["mean(r2)"] = force_prediction_scores[r2_keys].mean(axis=1)
     force_prediction_scores["mean(rmse)"] = force_prediction_scores[rmse_keys].mean(
         axis=1
     )
 
     return force_prediction_scores
+   
+def score(df_force:pd.DataFrame, df_force_predicted:pd.DataFrame):
+    s = pd.Series()
+    
 
+    for dof in dofs:
+        s[f"r2({dof})"] = r2_score(
+            y_true=df_force[dof], y_pred=df_force_predicted[dof]
+        )
+        s[f"rmse({dof})"] = np.sqrt(
+            mean_squared_error(
+                y_true=df_force[dof], y_pred=df_force_predicted[dof]
+            )
+        )
+
+    return s
 
 def select_prediction_dataset_7m(
     time_series: dict, test_meta_data: pd.DataFrame

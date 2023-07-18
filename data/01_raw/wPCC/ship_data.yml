@@ -8,11 +8,14 @@ m: 441.0267843660858
 I_z: 693.124396594905
 volume: 0.4410267843660858
 scale_factor: 41.2
-x_r: -2.42219908951329  # Rudder x-position from lpp/2
+x_r: -2.5072  # Rudder x-position from lpp/2
 TWIN: 1
 x_p: -2.42219908951329  # Propeller x-position from lpp/2
 D: 0.12135922330097086
 w_p0: 0.151
+A_XV: 0.5938354227542653  # Transverse projected area above the waterline including superstructures
+A_YV: 3.3958124999999995  # Longitudinal projected area above the waterline including superstructures
+rho_A: 1.225 # Mass density of air [kg/m3]
 n_prop: 2
 tdf: 0.117   # Thrust deduction factor
 A_R: 0.041238571024601746  # Rudder area [m2]

@@ -3,7 +3,7 @@
 # Documentation for this file format can be found in "The Data Catalog"
 # Link: https://kedro.readthedocs.io/en/stable/data/data_catalog.html
 
-{% set vmms = ["vmm_7m_vct","vmm_martins_simple","vmm_martins_simple_thrust"] %}
+{% set vmms = ["vmm_7m_vct","vmm_martins_simple","vmm_martins_simple_thrust","vmm_7m_vct_wind"] %}
 {% set regressions = ["vct","VCT_MDL_resistance","VCT_MDL_resistance_optimized_kappa","MDL_hull_inverse_dynamics","MDL_inverse_dynamics"] %}
 {% set data_sources = ["MDL","Lake"] %}
 {% set ships = ["wPCC","7m"] %}

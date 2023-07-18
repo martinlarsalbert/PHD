@@ -38,5 +38,11 @@ def resimulate(
     if not "rev" in data:
         data["rev"] = data[["Prop/SB/Rpm", "Prop/PS/Rpm"]].mean(axis=1)
 
+    if not "twa" in data:
+        data["twa"] = 0
+
+    if not "tws" in data:
+        data["tws"] = 0
+
     result = model.simulate(data)
     return result

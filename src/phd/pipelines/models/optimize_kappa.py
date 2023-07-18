@@ -5,7 +5,6 @@ from scipy.optimize import least_squares
 
 
 def calculate_mz(model: ModularVesselSimulator, data: pd.DataFrame, kappa: float):
-
     control = data[model.control_keys]
     states = data[["x0", "y0", "psi", "u", "v", "r"]]
 
@@ -19,13 +18,20 @@ def calculate_mz(model: ModularVesselSimulator, data: pd.DataFrame, kappa: float
 
 
 def predict_mz_kappa(x, model: ModularVesselSimulator, data: pd.DataFrame):
-
     df_force_predicted = calculate_mz(model=model, data=data, kappa=x[0])
     residual = data["mz"] - df_force_predicted["mz"]
     return residual
 
 
 def fit_kappa(model: ModularVesselSimulator, data: pd.DataFrame):
+    if not "rev" in data:
+        data["rev"] = data[["Prop/SB/Rpm", "Prop/PS/Rpm"]].mean(axis=1)
+
+    if not "twa" in data:
+        data["twa"] = 0
+
+    if not "tws" in data:
+        data["tws"] = 0
 
     df_force = model.forces_from_motions(data=data)
 

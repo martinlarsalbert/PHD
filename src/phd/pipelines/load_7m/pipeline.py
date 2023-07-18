@@ -4,7 +4,7 @@ generated using Kedro 0.18.7
 """
 
 from kedro.pipeline import Pipeline, node, pipeline
-from .nodes import load, divide_into_tests
+from .nodes import load, divide_into_tests, ship_data_7m
 
 
 def create_pipeline(**kwargs) -> Pipeline:
@@ -19,6 +19,11 @@ def create_pipeline(**kwargs) -> Pipeline:
                 func=divide_into_tests,
                 inputs=["7m.time_series", "7m.units"],
                 outputs=["7m.tests", "7m.test_meta_data"],
+            ),
+            node(
+                func=ship_data_7m,
+                inputs=["wPCC.ship_data", "7m.scale_factor","7m.rho"],
+                outputs="7m.ship_data",
             ),
         ]
     )

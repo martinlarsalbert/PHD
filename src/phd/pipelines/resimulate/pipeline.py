@@ -10,6 +10,7 @@ from .nodes import resimulate_all
 def create_pipeline(**kwargs) -> Pipeline:
     vmms = {
         "vmm_7m_vct": ["VCT_MDL_resistance", "MDL_hull_inverse_dynamics"],
+        "vmm_7m_vct_wind": ["VCT_MDL_resistance", "MDL_hull_inverse_dynamics"],
         "vmm_martins_simple": ["VCT_MDL_resistance", "MDL_hull_inverse_dynamics"],
         "vmm_martins_simple_thrust": ["MDL_inverse_dynamics"],
     }
@@ -33,6 +34,7 @@ def create_pipeline(**kwargs) -> Pipeline:
     ## Resimulate Field data:
     vmms = {
         "vmm_7m_vct": ["VCT_MDL_resistance", "MDL_hull_inverse_dynamics"],
+        "vmm_7m_vct_wind": ["VCT_MDL_resistance", "MDL_hull_inverse_dynamics"],
         "vmm_martins_simple": ["VCT_MDL_resistance", "MDL_hull_inverse_dynamics"],
     }
     data_source_name = "Lake"

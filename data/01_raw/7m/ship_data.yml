@@ -12,7 +12,7 @@ scale_factor: 30
 TWIN: 1
 D: 0.17
 A_XV: 1.120  # Transverse projected area above the waterline including superstructures
-A_YV: 6.037  # Longitudinal projected area above the waterline including superstructures
+A_YV: 6.4046533  # Longitudinal projected area above the waterline including superstructures
 rho_A: 1.225 # Mass density of air [kg/m3]
 n_prop: 2
 tdf: 0.117   # Thrust deduction factor
