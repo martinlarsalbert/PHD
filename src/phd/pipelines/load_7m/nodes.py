@@ -526,11 +526,18 @@ def find_zigzags(data: pd.DataFrame, id0=0):
 
 def scale_ship_data(ship_data_wPCC:dict,scale_factor:float, rho:float)-> dict:
     
-    lpp = ship_data_wPCC['L']*ship_data_wPCC['scale_factor']/scale_factor
-    prime_system = PrimeSystem(L=lpp, rho=rho)
-    ship_data_7m =prime_system.unprime(ship_data_wPCC)
+    prime_system_wPCC = PrimeSystem(L=ship_data_wPCC['L'], rho=ship_data_wPCC['rho'])
+    ship_data_wPCC_prime = prime_system_wPCC.prime(ship_data_wPCC)
     
-    ship_data_7m['x_G'] = -4.784/100*ship_data_7m['L']  # wPCC has x_G=0 because motions are given at CG.
+    lpp = ship_data_wPCC['L']*ship_data_wPCC['scale_factor']/scale_factor 
+    prime_system_7m = PrimeSystem(L=lpp, rho=rho)
+    ship_data_7m =prime_system_7m.unprime(ship_data_wPCC_prime)
+    
+    ship_data_7m['x_G'] = -4.784/100*ship_data_7m['L']  # Value taken from hydrostatics(wPCC has x_G=0 because motions are given at CG).
     ship_data_7m['x_r'] -=0.05  # E-mail from Ulysse: "...This means that the rudders stick out a little bit aft of the boat (something like 5-6 cm). "  
+    
+    ship_data_7m['scale_factor'] = scale_factor
+    assert ship_data_7m['L']*scale_factor == ship_data_wPCC['L']*ship_data_wPCC['scale_factor']
+    
     return ship_data_7m
     

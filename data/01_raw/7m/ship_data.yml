@@ -1,20 +1,22 @@
-T: 0.284
-L: 7.0  # This is actually Loa
+A_R: 0.07777777777777778
+A_XV: 1.1200000000000003
+A_YV: 6.4046533
 B: 1.3
-rho: 1025
-x_G: -0.3266666666666667
-m: 1155
-I_z: 3386.0314842592607
-volume: 1.063551724137931
-CB: 0.41152752056103203
-x_r: -3.3168459992407717
+CB: 0.45034232324249973
+D: 0.16666666666666666
+I_z: 3430.04989355463
+L: 6.886666666666668
+T: 0.2833333333333332
+TWIN: 1.0
+b_R: 0.23933333333333334
+m: 1157.1836666666663
+n_prop: 2.0
+rho: 1013.0
+rho_A: 1.2409250000000003
 scale_factor: 30
-TWIN: 1
-D: 0.17
-A_XV: 1.120  # Transverse projected area above the waterline including superstructures
-A_YV: 6.4046533  # Longitudinal projected area above the waterline including superstructures
-rho_A: 1.225 # Mass density of air [kg/m3]
-n_prop: 2
-tdf: 0.117   # Thrust deduction factor
-A_R: 0.07777777777777778  # Rudder area [m2]
-b_R: 0.23933333333333331   # Rudder height [m]
+tdf: 0.117
+volume: 1.1423333333333332
+w_p0: 0.151
+x_G: -0.3294581333333334
+x_p: -3.326486749598252
+x_r: -3.4932213333333335
