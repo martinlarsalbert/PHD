@@ -13,6 +13,8 @@ import logging
 log = logging.getLogger(__name__)
 
 dofs = ["X_D", "Y_D", "N_D"]
+
+
 def force_prediction_score(models: dict, time_series: dict) -> pd.DataFrame:
     _ = []
     for id, data_loader in time_series.items():
@@ -77,22 +79,19 @@ def force_prediction_score(models: dict, time_series: dict) -> pd.DataFrame:
     )
 
     return force_prediction_scores
-   
-def score(df_force:pd.DataFrame, df_force_predicted:pd.DataFrame):
+
+
+def score(df_force: pd.DataFrame, df_force_predicted: pd.DataFrame):
     s = pd.Series()
-    
 
     for dof in dofs:
-        s[f"r2({dof})"] = r2_score(
-            y_true=df_force[dof], y_pred=df_force_predicted[dof]
-        )
+        s[f"r2({dof})"] = r2_score(y_true=df_force[dof], y_pred=df_force_predicted[dof])
         s[f"rmse({dof})"] = np.sqrt(
-            mean_squared_error(
-                y_true=df_force[dof], y_pred=df_force_predicted[dof]
-            )
+            mean_squared_error(y_true=df_force[dof], y_pred=df_force_predicted[dof])
         )
 
     return s
+
 
 def select_prediction_dataset_7m(
     time_series: dict, test_meta_data: pd.DataFrame
@@ -103,7 +102,7 @@ def select_prediction_dataset_7m(
     log.info(f"selecting tests:{str(test_meta_data_selected.index)}")
 
     time_series_prediction = {
-        id: time_series[str(id)] for id in test_meta_data_selected.index
+        str(id): time_series[str(id)] for id in test_meta_data_selected.index
     }
 
     return time_series_prediction

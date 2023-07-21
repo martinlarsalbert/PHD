@@ -1,5 +1,6 @@
 import pandas as pd
 from vessel_manoeuvring_models.models.subsystem import PrimeEquationSubSystem
+from vessel_manoeuvring_models.models.modular_simulator import ModularVesselSimulator
 from vessel_manoeuvring_models.symbols import *
 from vessel_manoeuvring_models.models.diff_eq_to_matrix import DiffEqToMatrix
 import statsmodels.api as sm
@@ -8,7 +9,9 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def pipeline(df_VCT_prime: pd.DataFrame, hull: PrimeEquationSubSystem) -> dict:
+def pipeline(df_VCT_prime: pd.DataFrame, model: ModularVesselSimulator) -> dict:
+    hull = model.subsystems["hull"]
+    assert isinstance(hull, PrimeEquationSubSystem)
 
     tests = df_VCT_prime.groupby(by="test type")
 
@@ -87,6 +90,29 @@ def pipeline(df_VCT_prime: pd.DataFrame, hull: PrimeEquationSubSystem) -> dict:
     return regression_pipeline
 
 
+def pipeline_with_rudder(
+    df_VCT_prime: pd.DataFrame, model: ModularVesselSimulator
+) -> dict:
+    regression_pipeline = pipeline(df_VCT_prime=df_VCT_prime, model=model)
+
+    rudders = model.subsystems["rudders"]
+    assert isinstance(rudders, PrimeEquationSubSystem)
+    tests = df_VCT_prime.groupby(by="test type")
+
+    rudder_pipeline = {
+        "Rudder fy": {
+            "eq": rudders.equations["Y_R"],
+            "data": tests.get_group("Rudder angle resistance (no propeller)"),
+        },
+        "Rudder mz": {
+            "eq": rudders.equations["N_R"],
+            "data": tests.get_group("Rudder angle resistance (no propeller)"),
+        },
+    }
+    regression_pipeline.update(rudder_pipeline)
+    return regression_pipeline
+
+
 def fit(regression_pipeline: dict):
     models = {}
     exclude_parameters = {}
@@ -102,7 +128,7 @@ def fit(regression_pipeline: dict):
         eq_to_matrix = DiffEqToMatrix(
             eq,
             label=label,
-            base_features=[u, v, r, thrust],
+            base_features=[u, v, r, thrust, delta],
             exclude_parameters=exclude_parameters,
         )
 

@@ -10,7 +10,9 @@ from .nodes import (
     vmm_7m_vct,
     vmm_martins_simple,
     vmm_martins_simple_thrust,
+    vmm_simple,
     regress_hull_VCT,
+    regress_hull_rudder_VCT,
     correct_vct_resistance,
     optimize_kappa,
     regress_hull_inverse_dynamics,
@@ -64,10 +66,17 @@ def create_pipeline(**kwargs) -> Pipeline:
             name="vmm_martins_simple_thrust_node",
             tags="vmm_martins_simple_thrust",
         ),
+        node(
+            func=vmm_simple,
+            inputs=["wPCC.main_model"],
+            outputs="wPCC.vmm_simple",
+            name="vmm_simple_node",
+            tags="vmm_simple",
+        ),
     ]
 
     ## Add models with wind:
-    for vmm in ["vmm_7m_vct"]:
+    for vmm in ["vmm_7m_vct", "vmm_simple"]:
         nodes += [
             node(
                 func=add_wind_force_system,
@@ -78,13 +87,13 @@ def create_pipeline(**kwargs) -> Pipeline:
             ),
         ]
 
-    ## VCT
+    ## VCT hull
     for vmm in [
         "vmm_7m_vct",
         "vmm_martins_simple",
         "vmm_7m_vct_wind",
     ]:
-        vmm_vct_nodes = [
+        vmm_vct_hull_nodes = [
             node(
                 func=regress_hull_VCT,
                 inputs=[f"wPCC.{vmm}", "wPCC.df_VCT"],
@@ -114,7 +123,41 @@ def create_pipeline(**kwargs) -> Pipeline:
             #    tags=["optimize_kappa"],
             # ),
         ]
-        nodes += vmm_vct_nodes
+        nodes += vmm_vct_hull_nodes
+
+    ## VCT hull rudder
+    for vmm in ["vmm_simple", "vmm_simple_wind"]:
+        vmm_vct_hull_rudder_nodes = [
+            node(
+                func=regress_hull_rudder_VCT,
+                inputs=[f"wPCC.{vmm}", "wPCC.df_VCT"],
+                outputs=f"wPCC.models.{vmm}.vct",
+                name=f"{vmm}.regress_hull_rudder_VCT",
+                tags="vct",
+            ),
+            node(
+                func=correct_vct_resistance,
+                inputs=[
+                    f"wPCC.models.{vmm}.vct",
+                    "wPCC.time_series_meta_data",
+                    "wPCC.time_series_preprocessed.ek_smooth",
+                ],
+                outputs=f"wPCC.models.{vmm}.VCT_MDL_resistance",
+                name=f"{vmm}.correct_vct_resistance_node",
+                tags=["correct_resistance"],
+            ),
+            # node(
+            #    func=optimize_kappa,
+            #    inputs=[
+            #        f"wPCC.models.{vmm}.VCT_MDL_resistance",
+            #        "wPCC.time_series_preprocessed.ek_smooth",
+            #    ],
+            #    outputs=f"wPCC.models.{vmm}.VCT_MDL_resistance_optimized_kappa",
+            #    name=f"{vmm}.optimize_kappa_node",
+            #    tags=["optimize_kappa"],
+            # ),
+        ]
+        nodes += vmm_vct_hull_rudder_nodes
 
     ## Inverse hull dynamics
     for vmm in ["vmm_7m_vct", "vmm_martins_simple", "vmm_7m_vct_wind"]:
@@ -153,6 +196,8 @@ def create_pipeline(**kwargs) -> Pipeline:
         "vmm_7m_vct_wind": ["VCT_MDL_resistance", "MDL_hull_inverse_dynamics"],
         "vmm_martins_simple": ["VCT_MDL_resistance", "MDL_hull_inverse_dynamics"],
         "vmm_martins_simple_thrust": ["MDL_inverse_dynamics"],
+        "vmm_simple": ["VCT_MDL_resistance"],
+        "vmm_simple_wind": ["VCT_MDL_resistance"],
     }
 
     ## Scale from 5m to 7m:

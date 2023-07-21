@@ -34,6 +34,7 @@ from .subsystems import (
     add_dummy_wind_force_system,
 )
 from .subsystems import add_wind_force_system as add_wind
+from vessel_manoeuvring_models.prime_system import PrimeSystem
 
 import logging
 
@@ -168,6 +169,36 @@ def vmm_martins_simple(main_model: ModularVesselSimulator) -> ModularVesselSimul
     return model
 
 
+def vmm_simple(main_model: ModularVesselSimulator) -> ModularVesselSimulator:
+    from .vmm_simple import (
+        eq_X_H,
+        eq_Y_H,
+        eq_N_H,
+        eq_X_R,
+        eq_Y_R,
+        eq_N_R,
+    )
+
+    model = main_model.copy()
+    equations_hull = [eq_X_H, eq_Y_H, eq_N_H]
+    hull = PrimeEquationSubSystem(
+        ship=model, equations=equations_hull, create_jacobians=True
+    )
+    model.subsystems["hull"] = hull
+
+    ## Add rudder:
+    equations_rudders = [eq_X_R, eq_Y_R, eq_N_R]
+    rudders = PrimeEquationSubSystem(
+        ship=model, equations=equations_rudders, create_jacobians=True
+    )
+    model.subsystems["rudders"] = rudders
+
+    add_propeller(model=model)
+    add_dummy_wind_force_system(model=model)
+
+    return model
+
+
 def vmm_martins_simple_thrust(
     main_model: ModularVesselSimulator,
 ) -> ModularVesselSimulator:
@@ -267,45 +298,87 @@ def regress_wind_tunnel_test(
     return model
 
 
-def regress_hull_VCT(vmm_model: ModularVesselSimulator, df_VCT: pd.DataFrame):
-    log.info("Regressing VCT")
-    from .regression_pipeline import pipeline, fit
+def regress_VCT(
+    vmm_model: ModularVesselSimulator, df_VCT: pd.DataFrame, pipeline: dict
+):
+    from .regression_pipeline import fit
 
     model = vmm_model.copy()
 
     ## scale VCT data
-    df_VCT = vct_scaling(data=df_VCT, ship_data=model.ship_parameters)
+    # df_VCT = vct_scaling(data=df_VCT, ship_data=model.ship_parameters)
     df_VCT["U"] = df_VCT["V"]
+
+    df_VCT["X_D"] = df_VCT["fx"]
+    df_VCT["Y_D"] = df_VCT["fy"]
+    df_VCT["N_D"] = df_VCT["mz"]
+    df_VCT["X_H"] = df_VCT["fx_hull"]
+    df_VCT["Y_H"] = df_VCT["fy_hull"]
+    df_VCT["N_H"] = df_VCT["mz_hull"]
+    df_VCT["X_R"] = df_VCT["fx_rudders"]
+    df_VCT["Y_R"] = df_VCT["fy_rudders"]
+    df_VCT["N_R"] = df_VCT["mz_rudders"]
+    df_VCT["x0"] = 0
+    df_VCT["y0"] = 0
+    df_VCT["psi"] = 0
+    df_VCT["twa"] = 0
+    df_VCT["tws"] = 0
 
     ## Prime system
     U0_ = df_VCT["V"].min()
     df_VCT_u0 = df_VCT.copy()
     df_VCT_u0["u"] -= U0_
 
-    units = {
-        "fx_hull": "force",
-        "fy_hull": "force",
-        "mz_hull": "moment",
-    }
-    df_VCT_prime = model.prime_system.prime(
-        df_VCT_u0[["u", "v", "r", "fx_hull", "fy_hull", "mz_hull", "test type"]],
-        U=df_VCT["U"],
-        units=units,
+    keys = (
+        model.states_str
+        + ["beta", "V", "U"]
+        + model.control_keys
+        + ["X_D", "Y_D", "N_D", "X_H", "Y_H", "N_H", "X_R", "Y_R", "N_R"]
+        + ["test type", "model_name"]
     )
-    df_VCT_prime["X_H"] = df_VCT_prime["fx_hull"]
-    df_VCT_prime["Y_H"] = df_VCT_prime["fy_hull"]
-    df_VCT_prime["N_H"] = df_VCT_prime["mz_hull"]
+    prime_system_ship = PrimeSystem(
+        L=model.ship_parameters["L"] * model.ship_parameters["scale_factor"],
+        rho=df_VCT.iloc[0]["rho"],
+    )
+    df_VCT_prime = prime_system_ship.prime(df_VCT_u0[keys], U=df_VCT["U"])
 
-    hull = model.subsystems["hull"]
-    hull.U0 = U0_  # Important!
+    for name, subsystem in model.subsystems.items():
+        if isinstance(subsystem, PrimeEquationSubSystem):
+            subsystem.U0 = U0_ / np.sqrt(
+                model.ship_parameters["scale_factor"]
+            )  # Important!
 
     ## Regression:
-    regression_pipeline = pipeline(df_VCT_prime=df_VCT_prime, hull=hull)
+    regression_pipeline = pipeline(df_VCT_prime=df_VCT_prime, model=model)
     models, new_parameters = fit(regression_pipeline=regression_pipeline)
     model.parameters.update(new_parameters)
     for key, fit in models.items():
         log.info(f"Regression:{key}")
         log.info(fit.summary().as_text())
+
+    return model
+
+
+def regress_hull_VCT(vmm_model: ModularVesselSimulator, df_VCT: pd.DataFrame):
+    log.info("Regressing hull VCT")
+    from .regression_pipeline import pipeline, fit
+
+    model = regress_VCT(vmm_model=vmm_model, df_VCT=df_VCT, pipeline=pipeline)
+
+    return model
+
+
+def regress_hull_rudder_VCT(vmm_model: ModularVesselSimulator, df_VCT: pd.DataFrame):
+    log.info("Regressing hull and rudder VCT")
+    from .regression_pipeline import pipeline_with_rudder, fit
+
+    # Note! Including the rudder forcces in the hull forces in this regression:
+    df_VCT["fy_hull"] = df_VCT["fy_hull"] + df_VCT["fy_rudders"]
+    df_VCT["mz_hull"] = df_VCT["mz_hull"] + df_VCT["mz_rudders"]
+
+    model = regress_VCT(
+        vmm_model=vmm_model, df_VCT=df_VCT, pipeline=pipeline_with_rudder
+    )
 
     return model
 
