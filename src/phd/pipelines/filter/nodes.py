@@ -8,12 +8,14 @@ from vessel_manoeuvring_models.extended_kalman_vmm import ExtendedKalmanModular
 import logging
 import numpy as np
 from phd.pipelines.load_7m.nodes import calculated_signals, divide_into_tests
+from vessel_manoeuvring_models.data.lowpass_filter import lowpass_filter
+from numpy import cos as cos
+from numpy import sin as sin
 
 log = logging.getLogger(__name__)
 
 
 def guess_covariance_matrixes_many(ek_covariance_input: dict, datas: dict) -> dict:
-
     covariance_matrixes_many = {}
     for name, loader in datas.items():
         data = loader()
@@ -26,7 +28,6 @@ def guess_covariance_matrixes_many(ek_covariance_input: dict, datas: dict) -> di
 
 
 def guess_covariance_matrixes(ek_covariance_input: dict, data: pd.DataFrame) -> dict:
-
     process_variance = ek_covariance_input["process_variance"]
     variance_u = process_variance["u"]
     variance_v = process_variance["v"]
@@ -45,7 +46,16 @@ def guess_covariance_matrixes(ek_covariance_input: dict, data: pd.DataFrame) -> 
     sigma_psi = error_max_psi / 3
     variance_psi = sigma_psi**2
 
-    Rd = np.diag([variance_pos, variance_pos, variance_psi])
+    diag = [variance_pos, variance_pos, variance_psi]
+
+    if "r" in measurement_error_max:
+        # Yaw rate is also a measurement!
+        error_max_r = np.deg2rad(measurement_error_max["r"])
+        sigma_r = error_max_r / 3
+        variance_r = sigma_r**2
+        diag.append(variance_r)
+
+    Rd = np.diag(diag)
 
     P_prd = np.diag(
         [
@@ -70,7 +80,6 @@ def guess_covariance_matrixes(ek_covariance_input: dict, data: pd.DataFrame) -> 
 def initial_state_many(
     datas: dict, state_columns=["x0", "y0", "psi", "u", "v", "r"]
 ) -> np.ndarray:
-
     x0_many = {}
     for name, loader in datas.items():
         data = loader()
@@ -96,7 +105,6 @@ def filter_many(
     x0: dict,
     filter_model_name: str,
 ) -> dict:
-
     ek_many = {}
     time_steps_many = {}
     df_kalman_many = {}
@@ -122,7 +130,6 @@ def filter(
     x0: list,
     filter_model_name: str,
 ) -> pd.DataFrame:
-
     if not filter_model_name in models:
         raise ValueError(f"model: {filter_model_name} does not exist.")
 
@@ -205,7 +212,6 @@ def smoother(
     time_steps,
     covariance_matrixes: dict,
 ):
-
     ## Update parameters
     ek = ek.copy()
 
@@ -251,7 +257,6 @@ def estimate_propeller_speed_many(
 def estimate_propeller_speed(
     data: pd.DataFrame, models: dict, filter_model_name: str
 ) -> pd.DataFrame:
-
     if not filter_model_name in models:
         raise ValueError(f"model: {filter_model_name} does not exist.")
 
@@ -277,4 +282,61 @@ def estimate_propeller_speed(
 
 def divide_into_tests_filtered(data: pd.DataFrame, units: dict) -> pd.DataFrame:
     tests, time_series_meta_data = divide_into_tests(data=data, units=units)
-    return tests
+    return tests, time_series_meta_data
+
+
+def derivative(df, key):
+    d = np.diff(df[key]) / np.diff(df.index)
+    d = np.concatenate((d, [d[-1]]))
+    return d
+
+
+def lowpass(df: pd.DataFrame, cutoff: float = 1.0, order=1) -> pd.DataFrame:
+    """Lowpass filter and calculate velocities and accelerations with numeric differentiation
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        [description]
+    cutoff : float
+        Cut off frequency of the lowpass filter [Hz]
+    order : int, optional
+        order of the filter, by default 1
+
+    Returns
+    -------
+    pd.DataFrame
+        lowpassfiltered positions, velocities and accelerations
+    """
+
+    df_lowpass = df.copy()
+    t = df_lowpass.index
+    ts = np.mean(np.diff(t))
+    fs = 1 / ts
+
+    position_keys = ["x0", "y0", "psi"]
+    for key in position_keys:
+        df_lowpass[key] = lowpass_filter(
+            data=df_lowpass[key], fs=fs, cutoff=cutoff, order=order
+        )
+
+    df_lowpass["x01d_gradient"] = x1d_ = derivative(df_lowpass, "x0")
+    df_lowpass["y01d_gradient"] = y1d_ = derivative(df_lowpass, "y0")
+    df_lowpass["r"] = r_ = derivative(df_lowpass, "psi")
+
+    psi_ = df_lowpass["psi"]
+
+    df_lowpass["u"] = x1d_ * cos(psi_) + y1d_ * sin(psi_)
+    df_lowpass["v"] = -x1d_ * sin(psi_) + y1d_ * cos(psi_)
+
+    velocity_keys = ["u", "v", "r"]
+    for key in velocity_keys:
+        df_lowpass[key] = lowpass_filter(
+            data=df_lowpass[key], fs=fs, cutoff=cutoff, order=order
+        )
+
+    df_lowpass["u1d"] = r_ = derivative(df_lowpass, "u")
+    df_lowpass["v1d"] = r_ = derivative(df_lowpass, "v")
+    df_lowpass["r1d"] = r_ = derivative(df_lowpass, "r")
+
+    return df_lowpass

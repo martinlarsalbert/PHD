@@ -17,8 +17,8 @@ def track_plots(
     styles: dict = {},
     flip=False,
     time_window=[0, np.inf],
+    include_wind=True,
 ) -> plt.axes:
-
     ax = plot.track_plots(
         dataframes=dataframes,
         lpp=lpp,
@@ -34,9 +34,10 @@ def track_plots(
         time_window=time_window,
     )
 
-    include_wind = False
-    for df in dataframes.values():
+    if not include_wind:
+        return ax
 
+    for df in dataframes.values():
         if "twa" in df:
             twa = df["twa"]
             tws = df["tws"]

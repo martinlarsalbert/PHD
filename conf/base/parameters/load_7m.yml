@@ -9,5 +9,7 @@
     y: 0.495  # to starboard.
     z: 1.30   # from base line and upward.
 
+7m.psi_correction: 0  # Correction of heading [deg]
+
 7m.scale_factor: 30
 7m.rho: 1013

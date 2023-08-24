@@ -15,12 +15,14 @@ from vessel_manoeuvring_models.apparent_wind import (
     apparent_wind_angle_to_true,
     apparent_wind_speed_to_true,
 )
-from vessel_manoeuvring_models.prime_system import PrimeSystem     
+from vessel_manoeuvring_models.prime_system import PrimeSystem
 
 log = logging.getLogger(__name__)
 
 
-def load(time_series_raw: dict, GPS_position: dict, missions: dict) -> dict:
+def load(
+    time_series_raw: dict, GPS_position: dict, missions: dict, psi_correction=0
+) -> dict:
     """_summary_
 
     Parameters
@@ -31,6 +33,9 @@ def load(time_series_raw: dict, GPS_position: dict, missions: dict) -> dict:
         GPS position in ship reference frame:
             'x' position from lpp/2 -> fwd
             'y' position from center line -> stbd
+
+    psi_correction : float
+        correction of the heading [deg] (psi=psi+np.deg2rad(psi_correction))
 
     Returns
     -------
@@ -44,8 +49,17 @@ def load(time_series_raw: dict, GPS_position: dict, missions: dict) -> dict:
     units_all = {}
     _ = []
     for key, loader in time_series_raw.items():
-        missions = missions[key]()
-        data, units = _load(loader=loader, GPS_position=GPS_position, missions=missions)
+        if key in missions:
+            missions_str = missions[key]()
+        else:
+            missions_str = ""  # No missions string
+
+        data, units = _load(
+            loader=loader,
+            GPS_position=GPS_position,
+            missions=missions_str,
+            psi_correction=psi_correction,
+        )
         units_all.update(units)
         time_series[key] = data
         statistics = run_statistics(data=data, units=units)
@@ -65,7 +79,9 @@ def derivative(df, key):
 regexp = re.compile(r"\((.*)\)")
 
 
-def _load(loader, GPS_position: dict, missions: str, replace_velocities=True):
+def _load(
+    loader, GPS_position: dict, missions: str, replace_velocities=True, psi_correction=0
+):
     data = loader()
     # data.index = pd.to_datetime(data.index, unit="s")  # This was used in the first batch
     data.index = pd.to_datetime(data.index, unit="us")
@@ -94,7 +110,7 @@ def _load(loader, GPS_position: dict, missions: str, replace_velocities=True):
     data["thrusterTarget"] = data["thrusterTarget"].fillna(method="ffill")
 
     psi = np.unwrap(data["yaw"])
-    data["psi"] = psi
+    data["psi"] = psi + np.deg2rad(psi_correction)  # Note the correction!
     data["phi"] = data["heelAngle"]
     units["psi"] = "rad"
     units["phi"] = "rad"
@@ -320,7 +336,6 @@ def calculate_true_wind(data: pd.DataFrame):
 
 
 def add_missions(data: pd.DataFrame, missions: str) -> pd.DataFrame:
-
     s_mission = parse_mission_string(missions=missions)
     data["mission"] = sync_and_merge_missions(data=data, s_mission=s_mission)
 
@@ -331,15 +346,18 @@ def parse_mission_string(missions: str) -> pd.Series:
     _missions = []
     _times = []
 
-    for row in missions.split("\n"):
-        parts = row.split(" ", 1)
-        _times.append(int(parts[0]))
-        _missions.append(parts[1])
+    if len(missions) > 0:
+        for row in missions.split("\n"):
+            parts = row.split(" ", 1)
+            _times.append(int(parts[0]))
+            _missions.append(parts[1])
 
-    s_mission = pd.Series(_missions, index=_times, name="mission")
-    s_mission.index = pd.to_datetime(s_mission.index, unit="us")
-    s_mission.index.name = "time(us)"
-    assert s_mission.index.is_unique
+        s_mission = pd.Series(_missions, index=_times, name="mission")
+        s_mission.index = pd.to_datetime(s_mission.index, unit="us")
+        s_mission.index.name = "time(us)"
+        assert s_mission.index.is_unique
+    else:
+        s_mission = pd.Series(_missions, index=_times, name="mission")
 
     return s_mission
 
@@ -399,7 +417,6 @@ def divide_into_tests(data: dict, units: dict) -> Tuple[dict, pd.DataFrame]:
     _ = []
     id0 = 0
     for key, loader in data.items():
-
         data_ = loader()
         tests_, time_series_meta_data_ = _divide_into_tests(
             data=data_, units=units, id0=id0
@@ -426,7 +443,10 @@ def divide_into_tests(data: dict, units: dict) -> Tuple[dict, pd.DataFrame]:
         # for key in angles:
         #    df[key] = zero_angle(df[key])
 
-        df.drop(columns=["zigzag_test_id", "inbetween_zigzags_id"], inplace=True)
+        try:
+            df.drop(columns=["zigzag_test_id", "inbetween_zigzags_id"], inplace=True)
+        except:
+            pass
 
     tests = {str(int(key)): value for key, value in tests.items()}
 
@@ -436,14 +456,21 @@ def divide_into_tests(data: dict, units: dict) -> Tuple[dict, pd.DataFrame]:
 def _divide_into_tests(
     data: pd.DataFrame, units: dict, id0=0
 ) -> Tuple[dict, pd.DataFrame]:
+    if data["mission"].isnull().all():
+        id = 100
+        tests = {id: data}
+        statistics = run_statistics(data=data, units=units)
+        statistics.name = id
+        statistics["type"] = "rolldecay"
+        time_series_meta_data = pd.DataFrame([statistics])
+
+        return tests, time_series_meta_data
 
     find_zigzags(data=data, id0=id0)
-
     tests = {}
     _ = []
     # ZigZags:
     for id, df in data.groupby(by="zigzag_test_id"):
-
         if pd.isnull(id):
             continue
 
@@ -455,7 +482,6 @@ def _divide_into_tests(
 
     # Inbetweens:
     for id, df in data.groupby(by="inbetween_zigzags_id"):
-
         if pd.isnull(id):
             continue
 
@@ -471,7 +497,6 @@ def _divide_into_tests(
 
 
 def find_zigzags(data: pd.DataFrame, id0=0):
-
     ## Zigzags:
     data["zigzag_test_id"] = np.NaN
     mission_rows = data["mission"].dropna()
@@ -484,7 +509,6 @@ def find_zigzags(data: pd.DataFrame, id0=0):
     data.loc[zigzag_stops, "zigzag_test_id"] = np.arange(0, len(zigzag_stops))
 
     for i, zigzag_start in enumerate(zigzag_starts):
-
         if i == len(zigzag_stops):
             data.loc[zigzag_start:, "zigzag_test_id"] = i
         else:
@@ -494,7 +518,6 @@ def find_zigzags(data: pd.DataFrame, id0=0):
     ## Inbetweens:
     data["inbetween_zigzags_id"] = np.NaN
     for i, zigzag_stop in enumerate(zigzag_stops[0:-1]):
-
         next_zigzag_start = zigzag_starts[i + 1]
         zigzag_stop_i = data.index.get_loc(zigzag_stop)
         next_zigzag_start_i = data.index.get_loc(next_zigzag_start)
@@ -524,20 +547,26 @@ def find_zigzags(data: pd.DataFrame, id0=0):
         | (data["zigzag_test_id"].isnull() & data["inbetween_zigzags_id"].notnull())
     ).all()
 
-def scale_ship_data(ship_data_wPCC:dict,scale_factor:float, rho:float)-> dict:
-    
-    prime_system_wPCC = PrimeSystem(L=ship_data_wPCC['L'], rho=ship_data_wPCC['rho'])
+
+def scale_ship_data(ship_data_wPCC: dict, scale_factor: float, rho: float) -> dict:
+    prime_system_wPCC = PrimeSystem(L=ship_data_wPCC["L"], rho=ship_data_wPCC["rho"])
     ship_data_wPCC_prime = prime_system_wPCC.prime(ship_data_wPCC)
-    
-    lpp = ship_data_wPCC['L']*ship_data_wPCC['scale_factor']/scale_factor 
+
+    lpp = ship_data_wPCC["L"] * ship_data_wPCC["scale_factor"] / scale_factor
     prime_system_7m = PrimeSystem(L=lpp, rho=rho)
-    ship_data_7m =prime_system_7m.unprime(ship_data_wPCC_prime)
-    
-    ship_data_7m['x_G'] = -4.784/100*ship_data_7m['L']  # Value taken from hydrostatics(wPCC has x_G=0 because motions are given at CG).
-    ship_data_7m['x_r'] -=0.05  # E-mail from Ulysse: "...This means that the rudders stick out a little bit aft of the boat (something like 5-6 cm). "  
-    
-    ship_data_7m['scale_factor'] = scale_factor
-    assert ship_data_7m['L']*scale_factor == ship_data_wPCC['L']*ship_data_wPCC['scale_factor']
-    
+    ship_data_7m = prime_system_7m.unprime(ship_data_wPCC_prime)
+
+    ship_data_7m["x_G"] = (
+        -4.784 / 100 * ship_data_7m["L"]
+    )  # Value taken from hydrostatics(wPCC has x_G=0 because motions are given at CG).
+    ship_data_7m[
+        "x_r"
+    ] -= 0.05  # E-mail from Ulysse: "...This means that the rudders stick out a little bit aft of the boat (something like 5-6 cm). "
+
+    ship_data_7m["scale_factor"] = scale_factor
+    assert (
+        ship_data_7m["L"] * scale_factor
+        == ship_data_wPCC["L"] * ship_data_wPCC["scale_factor"]
+    )
+
     return ship_data_7m
-    

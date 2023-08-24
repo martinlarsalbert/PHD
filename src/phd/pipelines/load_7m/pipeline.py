@@ -12,13 +12,20 @@ def create_pipeline(**kwargs) -> Pipeline:
         [
             node(
                 func=scale_ship_data,
-                inputs=["wPCC.ship_data", "params:7m.scale_factor","params:7m.rho"],
+                inputs=["wPCC.ship_data", "params:7m.scale_factor", "params:7m.rho"],
                 outputs="7m.ship_data",
+                name="7m.scale_ship_data",
             ),
             node(
                 func=load,
-                inputs=["7m.time_series_raw", "params:7m.GPS_position", "7m.missions"],
+                inputs=[
+                    "7m.time_series_raw",
+                    "params:7m.GPS_position",
+                    "7m.missions",
+                    "params:7m.psi_correction",
+                ],
                 outputs=["7m.time_series", "7m.time_series_meta_data", "7m.units"],
+                name="7m.load",
             ),
             node(
                 func=divide_into_tests,

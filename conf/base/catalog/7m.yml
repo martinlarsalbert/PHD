@@ -52,6 +52,20 @@
     index: True
     encoding: 'utf-8'
 
+7m.test_ek_smooth_meta_data:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/tests_preprocessed/7m/test_ek_smooth_meta_data.csv
+  load_args:
+    index_col: 0
+    encoding: 'utf-8'
+    dtype:
+      id: int
+  save_args:
+    index: True
+    encoding: 'utf-8'
+
+
+
 7m.tests_ek:
   type: PartitionedDataSet
   path: data/03_primary/tests_preprocessed/7m/ek
@@ -77,6 +91,18 @@
 HMD_PCTC.wind_data:
   type: pandas.CSVDataSet
   filepath: data/01_raw/7m/HMD_PCTC.wind_data.csv
+  load_args:
+    index_col: 0
+    encoding: 'utf-8'
+    dtype:
+      id: int
+  save_args:
+    index: True
+    encoding: 'utf-8'
+
+7m.resistance:
+  type: pandas.CSVDataSet
+  filepath: data/01_raw/7m/resistance.csv
   load_args:
     index_col: 0
     encoding: 'utf-8'
