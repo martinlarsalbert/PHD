@@ -149,9 +149,10 @@ def filter(
 
     Cd = np.array(
         [
-            [1, 0, 0, 0, 0, 0],
-            [0, 1, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0, 0],
+            [1, 0, 0, 0, 0, 0],  # x0 is measured
+            [0, 1, 0, 0, 0, 0],  # y0 is measured
+            [0, 0, 1, 0, 0, 0],  # psi is measured
+            [0, 0, 0, 0, 0, 1],  # r is measured (GyroZ)
         ]
     )
 
@@ -176,6 +177,8 @@ def filter(
         Cd=Cd,
         input_columns=model.control_keys,
         x0_=x0_,
+        measurement_columns=["x0", "y0", "psi", "GyroZ"],
+        do_checks=False,
     )
 
     df = ek.df_kalman.copy()
