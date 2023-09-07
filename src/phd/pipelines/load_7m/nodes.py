@@ -28,6 +28,7 @@ def load(
     accelerometer_position: dict,
     missions: dict,
     psi_correction=0,
+    remove_GPS_pattern=True,
 ) -> dict:
     """_summary_
 
@@ -48,6 +49,9 @@ def load(
 
     psi_correction : float
         correction of the heading [deg] (psi=psi+np.deg2rad(psi_correction))
+
+    remove_GPS_pattern: bool, default True
+        tries to remove a pattern from the GPS signals.
 
     Returns
     -------
@@ -72,6 +76,7 @@ def load(
             accelerometer_position=accelerometer_position,
             missions=missions_str,
             psi_correction=psi_correction,
+            remove_GPS_pattern=remove_GPS_pattern,
         )
         units_all.update(units)
         time_series[key] = data
@@ -99,6 +104,7 @@ def _load(
     missions: str,
     replace_velocities=True,
     psi_correction=0,
+    remove_GPS_pattern=True,
 ):
     data = loader()
     # data.index = pd.to_datetime(data.index, unit="s")  # This was used in the first batch
@@ -151,6 +157,9 @@ def _load(
     units["x0"] = "m"
     units["y0"] = "m"
 
+    if remove_GPS_pattern:
+        do_remove_GPS_pattern(data=data)
+
     dxdt = derivative(data, "x0")
     dydt = derivative(data, "y0")
     psi = data["psi"]
@@ -191,6 +200,33 @@ def _load(
     # data = fix_interpolated_angle(data=data, key="awaStern")
 
     return data, units
+
+
+def do_remove_GPS_pattern(data: pd.DataFrame) -> pd.DataFrame:
+    """A pattern repeting every 5 samples has been observed in the GPS signals (latitude, longitude).
+    This method removes this pattern from the signal, by taking the average value of 5 samples wide windows.
+    The sampling frequency is maintained by interpolation.
+
+    Parameters
+    ----------
+    data : pd.DataFrame
+        _description_
+
+    Returns
+    -------
+    pd.DataFrame
+        GPS removed from longitude and latitude.
+    """
+    # keys = ["longitude", "latitude"]
+    keys = ["x0", "y0", "x_GPS", "y_GPS"]
+    df__ = data[keys].rolling(window=5, center=True).mean(numeric_only=True)
+    for key in keys:
+        data[key] = np.interp(x=data.index, xp=df__.index, fp=df__[key])
+
+    mask = data[key].notnull()
+    data = data.loc[mask].copy()
+
+    return data
 
 
 def calculated_signals(
