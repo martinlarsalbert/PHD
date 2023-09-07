@@ -31,7 +31,7 @@ def guess_covariance_matrixes(ek_covariance_input: dict, data: pd.DataFrame) -> 
     process_variance = ek_covariance_input["process_variance"]
     variance_u = process_variance["u"]
     variance_v = process_variance["v"]
-    variance_r = np.deg2rad(process_variance["r"])
+    variance_r = process_variance["r"]
 
     h = np.mean(np.diff(data.index))
 
@@ -50,7 +50,7 @@ def guess_covariance_matrixes(ek_covariance_input: dict, data: pd.DataFrame) -> 
 
     if "r" in measurement_error_max:
         # Yaw rate is also a measurement!
-        error_max_r = np.deg2rad(measurement_error_max["r"])
+        error_max_r = measurement_error_max["r"]
         sigma_r = error_max_r / 3
         variance_r = sigma_r**2
         diag.append(variance_r)
@@ -104,6 +104,7 @@ def filter_many(
     covariance_matrixes: dict,
     x0: dict,
     filter_model_name: str,
+    accelerometer_position: dict,
 ) -> dict:
     ek_many = {}
     time_steps_many = {}
@@ -118,6 +119,7 @@ def filter_many(
             covariance_matrixes=covariance_matrixes[name],
             x0=x0[name],
             filter_model_name=filter_model_name,
+            accelerometer_position=accelerometer_position,
         )
 
     return ek_many, time_steps_many, df_kalman_many
@@ -129,6 +131,7 @@ def filter(
     covariance_matrixes: dict,
     x0: list,
     filter_model_name: str,
+    accelerometer_position: dict,
 ) -> pd.DataFrame:
     if not filter_model_name in models:
         raise ValueError(f"model: {filter_model_name} does not exist.")
@@ -182,7 +185,9 @@ def filter(
     )
 
     df = ek.df_kalman.copy()
-    calculated_signals(df)  # Update beta, V, true wind speed etc.
+    calculated_signals(
+        df, accelerometer_position=accelerometer_position
+    )  # Update beta, V, true wind speed etc.
 
     return ek, time_steps, df
 
@@ -192,6 +197,7 @@ def smoother_many(
     datas: dict,
     time_steps: dict,
     covariance_matrixes: dict,
+    accelerometer_position: dict,
 ):
     ek_many = {}
     df_smooth_many = {}
@@ -204,6 +210,7 @@ def smoother_many(
             data=data,
             time_steps=time_steps[name],
             covariance_matrixes=covariance_matrixes[name],
+            accelerometer_position=accelerometer_position,
         )
 
     return ek_many, df_smooth_many
@@ -214,6 +221,7 @@ def smoother(
     data: pd.DataFrame,
     time_steps,
     covariance_matrixes: dict,
+    accelerometer_position: dict,
 ):
     ## Update parameters
     ek = ek.copy()
@@ -239,7 +247,9 @@ def smoother(
     if "thrust" in data:
         df["thrust"] = data["thrust"].values
 
-    calculated_signals(df)  # Update beta, V, true wind speed etc.
+    calculated_signals(
+        df, accelerometer_position=accelerometer_position
+    )  # Update beta, V, true wind speed etc.
 
     return ek, df
 

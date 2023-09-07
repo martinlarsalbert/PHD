@@ -52,6 +52,7 @@ def create_pipeline(**kwargs) -> Pipeline:
                     "covariance_matrixes",
                     "x0",
                     "params:filter_model_name",
+                    "params:accelerometer_position",
                 ],
                 outputs=[
                     "ek_filtered",
@@ -74,6 +75,7 @@ def create_pipeline(**kwargs) -> Pipeline:
                     "time_series_rev",  # (data has the raw positions)
                     "time_steps",
                     "covariance_matrixes",
+                    "params:accelerometer_position",
                 ],
                 outputs=["ek_smooth", "time_series_preprocessed.ek_smooth"],
                 name="smoother_node",

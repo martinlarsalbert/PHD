@@ -16,12 +16,18 @@ from vessel_manoeuvring_models.apparent_wind import (
     apparent_wind_speed_to_true,
 )
 from vessel_manoeuvring_models.prime_system import PrimeSystem
+from .reference_frames import lambda_x_0, lambda_y_0, lambda_v1d, lambda_u1d
+from vessel_manoeuvring_models.substitute_dynamic_symbols import run
 
 log = logging.getLogger(__name__)
 
 
 def load(
-    time_series_raw: dict, GPS_position: dict, missions: dict, psi_correction=0
+    time_series_raw: dict,
+    GPS_position: dict,
+    accelerometer_position: dict,
+    missions: dict,
+    psi_correction=0,
 ) -> dict:
     """_summary_
 
@@ -33,6 +39,12 @@ def load(
         GPS position in ship reference frame:
             'x' position from lpp/2 -> fwd
             'y' position from center line -> stbd
+            'z'
+     accelerometer_position : dict
+        accelerometer_position position in ship reference frame:
+            'x' position from lpp/2 -> fwd
+            'y' position from center line -> stbd
+            'z'
 
     psi_correction : float
         correction of the heading [deg] (psi=psi+np.deg2rad(psi_correction))
@@ -57,6 +69,7 @@ def load(
         data, units = _load(
             loader=loader,
             GPS_position=GPS_position,
+            accelerometer_position=accelerometer_position,
             missions=missions_str,
             psi_correction=psi_correction,
         )
@@ -80,7 +93,12 @@ regexp = re.compile(r"\((.*)\)")
 
 
 def _load(
-    loader, GPS_position: dict, missions: str, replace_velocities=True, psi_correction=0
+    loader,
+    GPS_position: dict,
+    accelerometer_position: dict,
+    missions: str,
+    replace_velocities=True,
+    psi_correction=0,
 ):
     data = loader()
     # data.index = pd.to_datetime(data.index, unit="s")  # This was used in the first batch
@@ -112,8 +130,19 @@ def _load(
     psi = np.unwrap(data["yaw"])
     data["psi"] = psi + np.deg2rad(psi_correction)  # Note the correction!
     data["phi"] = data["heelAngle"]
+    data["theta"] = data["pitchAngle"]
     units["psi"] = "rad"
     units["phi"] = "rad"
+    units["theta"] = "rad"
+
+    data["p"] = derivative(data, "phi")
+    data["p1d"] = derivative(data, "p")
+    data["q"] = derivative(data, "theta")
+    data["q1d"] = derivative(data, "q")
+    units["p"] = "rad/s"
+    units["p1d"] = "rad/s^2"
+    units["q"] = "rad/s"
+    units["q1d"] = "rad/s^2"
 
     data = add_xy_from_latitude_and_longitude(data=data)
     units["x_GPS"] = "m"
@@ -149,10 +178,12 @@ def _load(
     units["aws"] = "m/s"
     units["awa"] = "rad"
 
-    calculated_signals(data=data)
+    calculated_signals(data=data, accelerometer_position=accelerometer_position)
     units["beta"] = "rad"
     units["tws"] = "m/s"
     units["twa"] = "rad"
+    units["u1d_AccelX"] = "m/s^2"
+    units["v1d_AccelY"] = "m/s^2"
 
     # data = fix_interpolated_angle(data=data, key="awaBowRAW")
     # data = fix_interpolated_angle(data=data, key="awaSternRAW")
@@ -162,7 +193,9 @@ def _load(
     return data, units
 
 
-def calculated_signals(data: pd.DataFrame) -> pd.DataFrame:
+def calculated_signals(
+    data: pd.DataFrame, accelerometer_position: dict
+) -> pd.DataFrame:
     data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
     data["beta"] = -np.arctan2(data["v"], data["u"])  # Drift angle
     data["cog"] = smallest_signed_angle(data["psi"]) - smallest_signed_angle(
@@ -170,6 +203,18 @@ def calculated_signals(data: pd.DataFrame) -> pd.DataFrame:
     )
 
     calculate_true_wind(data=data)
+
+    x_acc_ = accelerometer_position["x"]
+    y_acc_ = accelerometer_position["y"]
+    z_acc_ = accelerometer_position["z"]
+
+    # data_['theta']+=np.deg2rad(-1.0)
+    data["v1d_AccelY"] = run(
+        lambda_v1d, inputs=data, x_acc=x_acc_, y_acc=y_acc_, z_acc=z_acc_, g=9.81
+    )
+    data["u1d_AccelX"] = run(
+        lambda_u1d, inputs=data, x_acc=x_acc_, y_acc=y_acc_, z_acc=z_acc_, g=9.81
+    )
 
 
 def fix_interpolated_angle(
@@ -290,6 +335,7 @@ def move_GPS_to_origo(data: pd.DataFrame, GPS_position: dict) -> pd.DataFrame:
         GPS position in ship reference frame:
             'x' position from aft -> fwd
             'y' position from center line -> stbd
+            'z' position from water line and into water
 
     Returns
     -------
@@ -297,15 +343,25 @@ def move_GPS_to_origo(data: pd.DataFrame, GPS_position: dict) -> pd.DataFrame:
         _description_
     """
 
-    psi = data["psi"]
-    # p is a vector from origo to GPS, the component of this vector is GPS_position["x"] and GPS_position["y"] in the ship reference frame.
-    # In the global frame the components can be calculated as:
-    pX = GPS_position["x"] * cos(psi) - GPS_position["y"] * sin(psi)
-    pY = GPS_position["x"] * sin(psi) + GPS_position["y"] * cos(psi)
+    data["x0"] = lambda_x_0(
+        phi=data["phi"],
+        theta=data["theta"],
+        psi=data["psi"],
+        x_GPS_I=data["x_GPS"],
+        x_GPS_B=GPS_position["x"],
+        y_GPS_B=GPS_position["y"],
+        z_GPS_B=GPS_position["z"],
+    )
 
-    # The position of the ship origo can now be calculated as GPS position - p:
-    data["x0"] = data["x_GPS"] - pX
-    data["y0"] = data["y_GPS"] - pY
+    data["y0"] = lambda_y_0(
+        phi=data["phi"],
+        theta=data["theta"],
+        psi=data["psi"],
+        y_GPS_I=data["y_GPS"],
+        x_GPS_B=GPS_position["x"],
+        y_GPS_B=GPS_position["y"],
+        z_GPS_B=GPS_position["z"],
+    )
 
     return data
 
@@ -349,6 +405,9 @@ def parse_mission_string(missions: str) -> pd.Series:
     if len(missions) > 0:
         for row in missions.split("\n"):
             parts = row.split(" ", 1)
+            if len(parts) < 2:
+                continue
+
             _times.append(int(parts[0]))
             _missions.append(parts[1])
 

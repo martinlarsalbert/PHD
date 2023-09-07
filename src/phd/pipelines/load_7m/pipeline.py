@@ -21,6 +21,7 @@ def create_pipeline(**kwargs) -> Pipeline:
                 inputs=[
                     "7m.time_series_raw",
                     "params:7m.GPS_position",
+                    "params:7m.accelerometer_position",
                     "7m.missions",
                     "params:7m.psi_correction",
                 ],
