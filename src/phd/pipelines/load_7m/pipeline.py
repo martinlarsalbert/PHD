@@ -4,7 +4,7 @@ generated using Kedro 0.18.7
 """
 
 from kedro.pipeline import Pipeline, node, pipeline
-from .nodes import load, divide_into_tests, scale_ship_data
+from .nodes import load, divide_into_tests, scale_ship_data, remove_GPS_pattern
 
 
 def create_pipeline(**kwargs) -> Pipeline:
@@ -24,10 +24,21 @@ def create_pipeline(**kwargs) -> Pipeline:
                     "params:7m.accelerometer_position",
                     "7m.missions",
                     "params:7m.psi_correction",
+                    "params:7m.cutting",
                 ],
+                # outputs=["7m.time_series_", "7m.time_series_meta_data", "7m.units"],
                 outputs=["7m.time_series", "7m.time_series_meta_data", "7m.units"],
                 name="7m.load",
             ),
+            # node(
+            #    func=remove_GPS_pattern,
+            #    inputs=[
+            #        "7m.time_series_",
+            #        "params:7m.accelerometer_position",
+            #    ],
+            #    outputs="7m.time_series",
+            #    name="7m.remove_GPS_pattern",
+            # ),
             node(
                 func=divide_into_tests,
                 inputs=["7m.time_series", "7m.units"],

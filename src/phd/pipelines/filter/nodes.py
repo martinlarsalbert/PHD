@@ -105,6 +105,7 @@ def filter_many(
     x0: dict,
     filter_model_name: str,
     accelerometer_position: dict,
+    skip: dict,
 ) -> dict:
     ek_many = {}
     time_steps_many = {}
@@ -112,6 +113,10 @@ def filter_many(
 
     for name, loader in datas.items():
         data = loader()
+        if name in skip:
+            log.info(f"Skipping the filtering for: {name}")
+            continue
+
         log.info(f"Filtering: {name}")
         ek_many[name], time_steps_many[name], df_kalman_many[name] = filter(
             data=data,
@@ -198,12 +203,17 @@ def smoother_many(
     time_steps: dict,
     covariance_matrixes: dict,
     accelerometer_position: dict,
+    skip: dict,
 ):
     ek_many = {}
     df_smooth_many = {}
 
     for name, loader in datas.items():
         data = loader()
+        if name in skip:
+            log.info(f"Skipping the smoothing for: {name}")
+            continue
+
         log.info(f"Smoothing: {name}")
         ek_many[name], df_smooth_many[name] = smoother(
             ek=ek[name],

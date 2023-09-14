@@ -17,6 +17,7 @@ from .nodes import (
 def create_pipeline(**kwargs) -> Pipeline:
     # data = "tests"
     data = "time_series"
+    # data = "time_series_"
     return pipeline(
         [
             node(
@@ -53,6 +54,7 @@ def create_pipeline(**kwargs) -> Pipeline:
                     "x0",
                     "params:filter_model_name",
                     "params:accelerometer_position",
+                    "params:skip",
                 ],
                 outputs=[
                     "ek_filtered",
@@ -76,6 +78,7 @@ def create_pipeline(**kwargs) -> Pipeline:
                     "time_steps",
                     "covariance_matrixes",
                     "params:accelerometer_position",
+                    "params:skip",
                 ],
                 outputs=["ek_smooth", "time_series_preprocessed.ek_smooth"],
                 name="smoother_node",

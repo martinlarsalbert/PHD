@@ -59,6 +59,18 @@
   filename_suffix: .yml
 
 ## Time series
+{{ ship }}.time_series_:
+  type: PartitionedDataSet
+  path: data/01_raw/{{ ship }}/time_series_
+  dataset:
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
+
+
 {{ ship }}.time_series:
   type: PartitionedDataSet
   path: data/01_raw/{{ ship }}/time_series

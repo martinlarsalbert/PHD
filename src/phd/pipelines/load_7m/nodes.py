@@ -9,6 +9,9 @@ import geopandas
 from numpy import sin, cos
 from typing import Tuple
 import logging
+
+log = logging.getLogger(__name__)
+
 from vessel_manoeuvring_models.angles import smallest_signed_angle
 from vessel_manoeuvring_models.angles import mean_angle
 from vessel_manoeuvring_models.apparent_wind import (
@@ -19,8 +22,6 @@ from vessel_manoeuvring_models.prime_system import PrimeSystem
 from .reference_frames import lambda_x_0, lambda_y_0, lambda_v1d, lambda_u1d
 from vessel_manoeuvring_models.substitute_dynamic_symbols import run
 
-log = logging.getLogger(__name__)
-
 
 def load(
     time_series_raw: dict,
@@ -28,7 +29,7 @@ def load(
     accelerometer_position: dict,
     missions: dict,
     psi_correction=0,
-    remove_GPS_pattern=True,
+    cutting: dict = {},
 ) -> dict:
     """_summary_
 
@@ -50,8 +51,6 @@ def load(
     psi_correction : float
         correction of the heading [deg] (psi=psi+np.deg2rad(psi_correction))
 
-    remove_GPS_pattern: bool, default True
-        tries to remove a pattern from the GPS signals.
 
     Returns
     -------
@@ -70,13 +69,16 @@ def load(
         else:
             missions_str = ""  # No missions string
 
+        cut = cutting.get(key, None)
+
+        log.info(f"Loading:{key}")
         data, units = _load(
             loader=loader,
             GPS_position=GPS_position,
             accelerometer_position=accelerometer_position,
             missions=missions_str,
             psi_correction=psi_correction,
-            remove_GPS_pattern=remove_GPS_pattern,
+            cut=cut,
         )
         units_all.update(units)
         time_series[key] = data
@@ -102,18 +104,19 @@ def _load(
     GPS_position: dict,
     accelerometer_position: dict,
     missions: str,
-    replace_velocities=True,
     psi_correction=0,
-    remove_GPS_pattern=True,
+    cut: tuple = None,
 ):
     data = loader()
     # data.index = pd.to_datetime(data.index, unit="s")  # This was used in the first batch
     data.index = pd.to_datetime(data.index, unit="us")
-
     add_missions(data=data, missions=missions)
-
     data["date"] = data.index
     data.index = (data.index - data.index[0]).total_seconds()
+
+    if not cut is None:
+        data = data.loc[cut[0] : cut[1]].copy()
+
     data["delta"] = -np.deg2rad(
         data["rudderAngle(deg)"]
     )  # (Change the convention of rudder angle)
@@ -156,53 +159,56 @@ def _load(
     data = move_GPS_to_origo(data=data, GPS_position=GPS_position)
     units["x0"] = "m"
     units["y0"] = "m"
+    derived_channels(data=data, accelerometer_position=accelerometer_position)
 
-    if remove_GPS_pattern:
-        do_remove_GPS_pattern(data=data)
-
-    dxdt = derivative(data, "x0")
-    dydt = derivative(data, "y0")
-    psi = data["psi"]
-
-    if not "u" in data or replace_velocities:
-        data["u"] = dxdt * np.cos(psi) + dydt * np.sin(psi)
-
-    if not "v" in data or replace_velocities:
-        data["v"] = v = -dxdt * np.sin(psi) + dydt * np.cos(psi)
     units["u"] = "m/s"
     units["v"] = "m/s"
-
-    if not "r" in data or replace_velocities:
-        data["r"] = r = derivative(data, "psi")
-    units["r"] = "rad/s"
-
-    data["u1d"] = derivative(data, "u")
-    data["v1d"] = derivative(data, "v")
-    data["r1d"] = derivative(data, "r")
-    units["u1d"] = "m/s2"
-    units["v1d"] = "m/s2"
-    units["r1d"] = "rad/s2"
-
-    estimate_apparent_wind(data=data)
-    units["aws"] = "m/s"
-    units["awa"] = "rad"
-
-    calculated_signals(data=data, accelerometer_position=accelerometer_position)
     units["beta"] = "rad"
     units["tws"] = "m/s"
     units["twa"] = "rad"
     units["u1d_AccelX"] = "m/s^2"
     units["v1d_AccelY"] = "m/s^2"
-
-    # data = fix_interpolated_angle(data=data, key="awaBowRAW")
-    # data = fix_interpolated_angle(data=data, key="awaSternRAW")
-    # data = fix_interpolated_angle(data=data, key="awaBow")
-    # data = fix_interpolated_angle(data=data, key="awaStern")
+    units["u1d"] = "m/s2"
+    units["v1d"] = "m/s2"
+    units["r1d"] = "rad/s2"
+    units["aws"] = "m/s"
+    units["awa"] = "rad"
+    units["r"] = "rad/s"
 
     return data, units
 
 
-def do_remove_GPS_pattern(data: pd.DataFrame) -> pd.DataFrame:
+def derived_channels(data: pd.DataFrame, accelerometer_position) -> pd.DataFrame:
+    dxdt = derivative(data, "x0")
+    dydt = derivative(data, "y0")
+    psi = data["psi"]
+
+    data["u"] = dxdt * np.cos(psi) + dydt * np.sin(psi)
+
+    data["v"] = v = -dxdt * np.sin(psi) + dydt * np.cos(psi)
+
+    data["r"] = r = derivative(data, "psi")
+
+    data["u1d"] = derivative(data, "u")
+    data["v1d"] = derivative(data, "v")
+    data["r1d"] = derivative(data, "r")
+
+    estimate_apparent_wind(data=data)
+    calculated_signals(data=data, accelerometer_position=accelerometer_position)
+
+
+def remove_GPS_pattern(time_series: dict, accelerometer_position) -> pd.DataFrame:
+    new_time_series = {}
+    for key, loader in time_series.items():
+        data = loader()
+        data = _remove_GPS_pattern(data=data)
+        derived_channels(data=data, accelerometer_position=accelerometer_position)
+        new_time_series[key] = data
+
+    return new_time_series
+
+
+def _remove_GPS_pattern(data: pd.DataFrame) -> pd.DataFrame:
     """A pattern repeting every 5 samples has been observed in the GPS signals (latitude, longitude).
     This method removes this pattern from the signal, by taking the average value of 5 samples wide windows.
     The sampling frequency is maintained by interpolation.
@@ -223,7 +229,7 @@ def do_remove_GPS_pattern(data: pd.DataFrame) -> pd.DataFrame:
     for key in keys:
         data[key] = np.interp(x=data.index, xp=df__.index, fp=df__[key])
 
-    mask = data[key].notnull()
+    mask = data[keys].notnull().all(axis=1)
     data = data.loc[mask].copy()
 
     return data
@@ -315,7 +321,8 @@ def run_statistics(data: pd.DataFrame, units: dict) -> pd.Series:
 
     for key, unit in units.items():
         if unit == "rad":
-            statistics[key] = mean_angle(data[key])
+            if key in data:
+                statistics[key] = mean_angle(data[key])
 
     statistics["date"] = data.iloc[0]["date"]
 
