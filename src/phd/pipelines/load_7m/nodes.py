@@ -21,6 +21,7 @@ from vessel_manoeuvring_models.apparent_wind import (
 from vessel_manoeuvring_models.prime_system import PrimeSystem
 from .reference_frames import lambda_x_0, lambda_y_0, lambda_v1d, lambda_u1d
 from vessel_manoeuvring_models.substitute_dynamic_symbols import run
+from datetime import date
 
 
 def load(
@@ -109,7 +110,18 @@ def _load(
 ):
     data = loader()
     # data.index = pd.to_datetime(data.index, unit="s")  # This was used in the first batch
-    data.index = pd.to_datetime(data.index, unit="us")
+
+    mask = (
+        data.index / (pd.Timestamp(date.today()).timestamp() * 10**6) < 1
+    ) & (  # Exclude enormous timestamps
+        data.index > pd.Timestamp("2010").timestamp()
+    )
+    data = data.loc[mask].copy()
+
+    data.index = pd.to_datetime(
+        data.index,
+        unit="us",
+    )
     add_missions(data=data, missions=missions)
     data["date"] = data.index
     data.index = (data.index - data.index[0]).total_seconds()
@@ -133,6 +145,19 @@ def _load(
                 units[new_column] = result.group(1)
 
     data.rename(columns=renames, inplace=True)
+
+    ## Remove NaNs for critical keys:
+    mandatory_keys = [
+        "latitude",
+        "longitude",
+        "delta",
+        "heelAngle",
+        "pitchAngle",
+        "yaw",
+    ]
+    mask = data[mandatory_keys].notnull().all(axis=1)
+    data = data.loc[mask].copy()
+    assert len(data) > 0, "Too many NaNs"
 
     data["thrusterTarget"] = data["thrusterTarget"].fillna(method="ffill")
 
@@ -325,6 +350,8 @@ def run_statistics(data: pd.DataFrame, units: dict) -> pd.Series:
                 statistics[key] = mean_angle(data[key])
 
     statistics["date"] = data.iloc[0]["date"]
+    statistics["global time start"] = data.index[0]
+    statistics["global time end"] = data.index[-1]
 
     mask = data["mission"].notnull()
     statistics["missions"] = "".join(

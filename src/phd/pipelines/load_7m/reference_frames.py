@@ -50,6 +50,7 @@ v_acc = me.dynamicsymbols("v_acc")
 subs = [
     (psi.diff().diff(), "r1d"),
     (psi.diff(), "r"),
+    (psi, "psi"),
     (u.diff(), "u1d"),
     (v.diff(), "v1d"),
     (u, "u"),
@@ -62,6 +63,8 @@ subs = [
     (theta, "theta"),
     (u_acc.diff(), "AccelX"),
     (v_acc.diff(), "AccelY"),
+    (x_0, "x0"),
+    (y_0, "y0"),
 ]
 
 

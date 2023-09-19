@@ -2,25 +2,25 @@ import pandas as pd
 from vessel_manoeuvring_models.models.modular_simulator import ModularVesselSimulator
 import matplotlib.pyplot as plt
 from vessel_manoeuvring_models.substitute_dynamic_symbols import get_function_subs
+import numpy as np
 
 
 def plot_total_force(model: ModularVesselSimulator, data: pd.DataFrame, window=None):
-
     if isinstance(model, ModularVesselSimulator):
-        models = {'Prediction':model}
+        models = {"Prediction": model}
     else:
         models = model
-        
-    model = models[list(models.keys())[0]]    
+
+    model = models[list(models.keys())[0]]
     df_force = model.forces_from_motions(data=data)
-    
+
     if window is None:
         df_force_plot = df_force
     else:
         df_force_plot = (
             df_force.select_dtypes(exclude="object").rolling(window=window).mean()
         )
-    
+
     fig, axes = plt.subplots(nrows=3)
     ax = axes[0]
     ax.set_title("X force")
@@ -39,10 +39,12 @@ def plot_total_force(model: ModularVesselSimulator, data: pd.DataFrame, window=N
     ax.set_title("N Moment")
 
     df_force_plot.plot(y="mz", label="Experiment", ax=ax)
-    
+
     for name, model in models.items():
         df_force_predicted = pd.DataFrame(
-            model.calculate_forces(data[model.states_str], control=data[model.control_keys])
+            model.calculate_forces(
+                data[model.states_str], control=data[model.control_keys]
+            )
         )
         df_force_predicted["fx"] = df_force_predicted["X_D"]
         df_force_predicted["fy"] = df_force_predicted["Y_D"]
@@ -72,13 +74,20 @@ def plot_total_force(model: ModularVesselSimulator, data: pd.DataFrame, window=N
         ax = axes[2]
         ax.set_title("N Moment")
         df_force_predicted_plot.plot(y="mz", label=name, ax=ax)
-    
+
+    for ax in axes:
+        make_y_axis_symmetrical(ax)
 
     return fig
 
 
-def plot_force_components(model, data, window=None):
+def make_y_axis_symmetrical(ax):
+    ylims = ax.get_ylim()
+    ylim = np.max(np.abs(ylims))
+    ax.set_ylim(-ylim, ylim)
 
+
+def plot_force_components(model, data, window=None):
     df_force_predicted = pd.DataFrame(
         model.calculate_forces(data[model.states_str], control=data[model.control_keys])
     )
@@ -117,5 +126,8 @@ def plot_force_components(model, data, window=None):
     for key in keys:
         df_plot.plot(y=key, ax=ax)
         ax.set_xlabel("time [s]")
+
+    for ax in axes:
+        make_y_axis_symmetrical(ax)
 
     return fig

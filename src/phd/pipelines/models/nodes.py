@@ -299,7 +299,10 @@ def regress_wind_tunnel_test(
 
 
 def regress_VCT(
-    vmm_model: ModularVesselSimulator, df_VCT: pd.DataFrame, pipeline: dict
+    vmm_model: ModularVesselSimulator,
+    df_VCT: pd.DataFrame,
+    pipeline: dict,
+    exclude_parameters: dict = {},
 ):
     from .regression_pipeline import fit
 
@@ -350,25 +353,46 @@ def regress_VCT(
 
     ## Regression:
     regression_pipeline = pipeline(df_VCT_prime=df_VCT_prime, model=model)
-    models, new_parameters = fit(regression_pipeline=regression_pipeline)
+    models, new_parameters = fit(
+        regression_pipeline=regression_pipeline, exclude_parameters=exclude_parameters
+    )
     model.parameters.update(new_parameters)
+
     for key, fit in models.items():
         log.info(f"Regression:{key}")
-        log.info(fit.summary().as_text())
+        log.info(fit.summary2().as_text())
 
-    return model
+    return model, models
 
 
-def regress_hull_VCT(vmm_model: ModularVesselSimulator, df_VCT: pd.DataFrame):
+def regress_hull_VCT(
+    vmm_model: ModularVesselSimulator,
+    df_VCT: pd.DataFrame,
+    full_output=False,
+    exclude_parameters: dict = {},
+):
     log.info("Regressing hull VCT")
     from .regression_pipeline import pipeline, fit
 
-    model = regress_VCT(vmm_model=vmm_model, df_VCT=df_VCT, pipeline=pipeline)
+    model, fits = regress_VCT(
+        vmm_model=vmm_model,
+        df_VCT=df_VCT,
+        pipeline=pipeline,
+        exclude_parameters=exclude_parameters,
+    )
 
-    return model
+    if full_output:
+        return model, fits
+    else:
+        return model
 
 
-def regress_hull_rudder_VCT(vmm_model: ModularVesselSimulator, df_VCT: pd.DataFrame):
+def regress_hull_rudder_VCT(
+    vmm_model: ModularVesselSimulator,
+    df_VCT: pd.DataFrame,
+    full_output=False,
+    exclude_parameters: dict = {},
+):
     log.info("Regressing hull and rudder VCT")
     from .regression_pipeline import pipeline_with_rudder, fit
 
@@ -376,11 +400,17 @@ def regress_hull_rudder_VCT(vmm_model: ModularVesselSimulator, df_VCT: pd.DataFr
     df_VCT["fy_hull"] = df_VCT["fy_hull"] + df_VCT["fy_rudders"]
     df_VCT["mz_hull"] = df_VCT["mz_hull"] + df_VCT["mz_rudders"]
 
-    model = regress_VCT(
-        vmm_model=vmm_model, df_VCT=df_VCT, pipeline=pipeline_with_rudder
+    model, fits = regress_VCT(
+        vmm_model=vmm_model,
+        df_VCT=df_VCT,
+        pipeline=pipeline_with_rudder,
+        exclude_parameters=exclude_parameters,
     )
 
-    return model
+    if full_output:
+        return model, fits
+    else:
+        return model
 
 
 def correct_vct_resistance(
@@ -485,7 +515,10 @@ def optimize_kappa(
 
 
 def regress_hull_inverse_dynamics(
-    vmm_model: ModularVesselSimulator, time_series_smooth: dict
+    vmm_model: ModularVesselSimulator,
+    time_series_smooth: dict,
+    exclude_parameters: dict = {},
+    full_output=False,
 ) -> ModularVesselSimulator:
     log.info("Regressing only hull from MDL with inverse dynamics")
 
@@ -558,7 +591,7 @@ def regress_hull_inverse_dynamics(
         )
 
     ## Regression
-    exclude_parameters = {"Xthrust": model.parameters["Xthrust"]}
+    exclude_parameters["Xthrust"] = model.parameters["Xthrust"]
 
     eq_to_matrix_X_H = DiffEqToMatrix(
         hull.equations["X_H"],
@@ -568,15 +601,22 @@ def regress_hull_inverse_dynamics(
     )
 
     eq_to_matrix_Y_H = DiffEqToMatrix(
-        hull.equations["Y_H"], label=Y_H, base_features=[u, v, r]
+        hull.equations["Y_H"],
+        label=Y_H,
+        base_features=[u, v, r],
+        exclude_parameters=exclude_parameters,
     )
 
     eq_to_matrix_N_H = DiffEqToMatrix(
-        hull.equations["N_H"], label=N_H, base_features=[u, v, r]
+        hull.equations["N_H"],
+        label=N_H,
+        base_features=[u, v, r],
+        exclude_parameters=exclude_parameters,
     )
 
     models = {}
     new_parameters = {}
+    fits = {}
     for eq_to_matrix in [eq_to_matrix_X_H, eq_to_matrix_Y_H, eq_to_matrix_N_H]:
         key = eq_to_matrix.acceleration_equation.lhs.name
         log.info(f"Regressing:{key}")
@@ -585,12 +625,18 @@ def regress_hull_inverse_dynamics(
         )
         ols = sm.OLS(y, X)
         models[key] = ols_fit = ols.fit()
+        ols_fit.X = X
+        ols_fit.y = y
+        fits[eq_to_matrix.y_] = ols_fit
         new_parameters.update(ols_fit.params)
         log.info(ols_fit.summary().as_text())
 
     model.parameters.update(new_parameters)
 
-    return model
+    if full_output:
+        return model, fits
+    else:
+        return model
 
 
 def regress_inverse_dynamics(

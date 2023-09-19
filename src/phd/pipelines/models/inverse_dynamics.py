@@ -384,6 +384,8 @@ def inverse_dynamics(
         )
         ols = sm.OLS(y, X)
         ols_fits[key] = ols_fit = ols.fit()
+        ols_fit.X = X
+        ols_fit.y = y
         new_parameters.update(ols_fit.params)
 
     model.parameters.update(new_parameters)

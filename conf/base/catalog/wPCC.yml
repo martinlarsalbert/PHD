@@ -1,0 +1,69 @@
+wPCC.time_series_preprocessed.ek_smooth_CG:  # Expressed in CG (as was used in the first papers)
+  type: PartitionedDataSet
+  path: data/03_primary/time_series_preprocessed/wPCC/ek_smooth_CG
+  dataset:
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
+
+wPCC.tests:
+  type: PartitionedDataSet
+  path: data/02_intermediate/wPCC/tests
+  dataset:
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
+
+wPCC.test_meta_data:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/wPCC/test_meta_data.csv
+  load_args:
+    index_col: 0
+    encoding: 'utf-8'
+    dtype:
+      id: int
+  save_args:
+    index: True
+    encoding: 'utf-8'
+
+wPCC.test_ek_smooth_meta_data:
+  type: pandas.CSVDataSet
+  filepath: data/03_primary/tests_preprocessed/wPCC/test_ek_smooth_meta_data.csv
+  load_args:
+    index_col: 0
+    encoding: 'utf-8'
+    dtype:
+      id: int
+  save_args:
+    index: True
+    encoding: 'utf-8'
+
+
+
+wPCC.tests_ek:
+  type: PartitionedDataSet
+  path: data/03_primary/tests_preprocessed/wPCC/ek
+  dataset:
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
+
+wPCC.tests_ek_smooth:
+  type: PartitionedDataSet
+  path: data/03_primary/tests_preprocessed/wPCC/ek_smooth
+  dataset:
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv

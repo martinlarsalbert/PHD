@@ -196,6 +196,70 @@ def vmm_abkowitz_rudder_wind(
     return model
 
 
+def vmm_full_abkowitz_rudder_wind(
+    main_model: ModularVesselSimulator,
+    wind_data_HMD: pd.DataFrame,
+) -> ModularVesselSimulator:
+    eq_X_H = sp.Eq(
+        X_H,
+        p.X0 + p.Xu * u
+        # + p.Xuu * u**2
+        # + p.Xuuu * u**3
+        + p.Xvv * v**2 + p.Xrr * r**2 + p.Xvr * v * r
+        ## + p.Xthrust * thrust,
+        + p.Xuvv * u * v**2 + p.Xurr * u * r**2 + p.Xuvr * u * v * r,
+    )
+
+    eq_Y_H = sp.Eq(
+        Y_H,
+        p.Yv * v
+        + p.Yr * r
+        + p.Yvvv * v**3
+        + p.Yvvr * v**2 * r
+        + p.Yrrr * r**3
+        + p.Yvrr * v * r**2
+        + p.Yuuv * u**2 * v
+        + p.Yuur * u**2 * r
+        + p.Yuv * u * v
+        + p.Yur * u * r
+        ## + p.Ythrust * thrust
+        + p.Y0 + p.Y0u * u + p.Y0uu * u**2,
+    )
+    eq_N_H = sp.Eq(
+        N_H,
+        p.Nv * v
+        + p.Nr * r
+        + p.Nvvv * v**3
+        + p.Nvvr * v**2 * r
+        + p.Nrrr * r**3
+        + p.Nvrr * v * r**2  # This one is very important to not get the drift...
+        + p.Nuuv * u**2 * v
+        + p.Nuur * u**2 * r
+        + p.Nuv * u * v
+        + p.Nur * u * r
+        ## + p.Nthrust * thrust
+        + p.N0 + p.N0u * u + p.N0uu * u**2,
+    )
+
+    model = main_model.copy()
+    equations_hull = [eq_X_H, eq_Y_H, eq_N_H]
+    hull = PrimeEquationSubSystem(
+        ship=model, equations=equations_hull, create_jacobians=True
+    )
+    model.subsystems["hull"] = hull
+
+    ## Add propeller:
+    add_propeller(model=model)
+
+    ## Add rudder:
+    add_rudder(model=model)
+
+    add_wind_force_system_simple(model=model)
+    model = regress_wind_tunnel_test(model, wind_data_HMD=wind_data_HMD)
+
+    return model
+
+
 def vmm_abkowitz_complex_rudder_wind(
     main_model: ModularVesselSimulator,
     wind_data_HMD: pd.DataFrame,

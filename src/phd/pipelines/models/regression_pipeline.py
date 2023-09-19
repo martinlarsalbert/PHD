@@ -113,10 +113,10 @@ def pipeline_with_rudder(
     return regression_pipeline
 
 
-def fit(regression_pipeline: dict):
+def fit(regression_pipeline: dict, exclude_parameters={}):
     models = {}
-    exclude_parameters = {}
-    new_parameters = {}
+    exclude_parameters = exclude_parameters.copy()
+    new_parameters = exclude_parameters.copy()
     for name, regression in regression_pipeline.items():
         log.info(f"Fitting:{name}")
         eq = regression["eq"]
@@ -143,6 +143,8 @@ def fit(regression_pipeline: dict):
 
         ols = sm.OLS(y, X)
         models[name] = ols_fit = ols.fit()
+        ols_fit.X = X
+        ols_fit.y = y
         new_parameters.update(ols_fit.params)
         exclude_parameters.update(new_parameters)
 

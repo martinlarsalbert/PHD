@@ -66,7 +66,7 @@ def create_pipeline(**kwargs) -> Pipeline:
             ),
             node(
                 func=divide_into_tests_filtered,
-                inputs=["time_series_preprocessed.ek", "units"],
+                inputs=["time_series_preprocessed.ek", "units", "test_meta_data"],
                 outputs=["tests_ek", "test_ek_meta_data"],
                 name="divide_into_tests_filtered_ek",
             ),
@@ -86,7 +86,11 @@ def create_pipeline(**kwargs) -> Pipeline:
             ),
             node(
                 func=divide_into_tests_filtered,
-                inputs=["time_series_preprocessed.ek_smooth", "units"],
+                inputs=[
+                    "time_series_preprocessed.ek_smooth",
+                    "units",
+                    "test_meta_data",
+                ],
                 outputs=["tests_ek_smooth", "test_ek_smooth_meta_data"],
                 name="divide_into_tests_filtered_ek_smooth",
             ),

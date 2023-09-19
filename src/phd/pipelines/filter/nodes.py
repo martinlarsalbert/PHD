@@ -7,7 +7,7 @@ from vessel_manoeuvring_models.models.modular_simulator import ModularVesselSimu
 from vessel_manoeuvring_models.extended_kalman_vmm import ExtendedKalmanModular
 import logging
 import numpy as np
-from phd.pipelines.load_7m.nodes import calculated_signals, divide_into_tests
+from phd.pipelines.load_7m.nodes import calculated_signals, run_statistics
 from vessel_manoeuvring_models.data.lowpass_filter import lowpass_filter
 from numpy import cos as cos
 from numpy import sin as sin
@@ -178,8 +178,14 @@ def filter(
     ek = ExtendedKalmanModular(model=model)
     x0_ = pd.Series(x0)[["x0", "y0", "psi", "u", "v", "r"]].values
     log.info("Running Kalman filter")
+
+    ## remove possible NaNs from inputs and measurements:
+    mask = data[model.control_keys + model.states_str].notnull().all(axis=1)
+    data_ = data.loc[mask]
+    assert len(data_) > 0, "Too many NaN values in inputs and measurements"
+
     time_steps = ek.filter(
-        data=data,
+        data=data_,
         **covariance_matrixes,
         E=E,
         Cd=Cd,
@@ -303,8 +309,33 @@ def estimate_propeller_speed(
     return data
 
 
-def divide_into_tests_filtered(data: pd.DataFrame, units: dict) -> pd.DataFrame:
-    tests, time_series_meta_data = divide_into_tests(data=data, units=units)
+def divide_into_tests_filtered(
+    data: pd.DataFrame, units: dict, test_meta_data: pd.DataFrame
+) -> pd.DataFrame:
+    # tests, time_series_meta_data = divide_into_tests(data=data, units=units)
+    tests = {}
+    _ = []
+    for time_series_name, loader in data.items():
+        df = loader()
+
+        mask = test_meta_data["time_series"] == time_series_name
+        meta_datas = test_meta_data.loc[mask]
+
+        for id, meta_data in meta_datas.iterrows():
+            test = df.loc[
+                meta_data["global time start"] : meta_data["global time end"]
+            ].copy()
+
+            statistics = run_statistics(data=test, units=units)
+            meta_data.update(statistics)
+            _.append(meta_data)
+
+            test["global time"] = test.index
+            test.index -= test.index[0]
+            tests[str(id)] = test
+
+    time_series_meta_data = pd.DataFrame(_)
+
     return tests, time_series_meta_data
 
 
@@ -314,7 +345,9 @@ def derivative(df, key):
     return d
 
 
-def lowpass(df: pd.DataFrame, cutoff: float = 1.0, order=1) -> pd.DataFrame:
+def lowpass(
+    df: pd.DataFrame, cutoff: float = 1.0, order=1, skip_samples=100
+) -> pd.DataFrame:
     """Lowpass filter and calculate velocities and accelerations with numeric differentiation
 
     Parameters
@@ -342,6 +375,9 @@ def lowpass(df: pd.DataFrame, cutoff: float = 1.0, order=1) -> pd.DataFrame:
         df_lowpass[key] = lowpass_filter(
             data=df_lowpass[key], fs=fs, cutoff=cutoff, order=order
         )
+        df_lowpass.iloc[skip_samples:-skip_samples][key] = df.iloc[
+            skip_samples:-skip_samples
+        ][key]
 
     df_lowpass["x01d_gradient"] = x1d_ = derivative(df_lowpass, "x0")
     df_lowpass["y01d_gradient"] = y1d_ = derivative(df_lowpass, "y0")
@@ -354,9 +390,13 @@ def lowpass(df: pd.DataFrame, cutoff: float = 1.0, order=1) -> pd.DataFrame:
 
     velocity_keys = ["u", "v", "r"]
     for key in velocity_keys:
+        index = df_lowpass.iloc[skip_samples:-skip_samples].index
         df_lowpass[key] = lowpass_filter(
             data=df_lowpass[key], fs=fs, cutoff=cutoff, order=order
         )
+        df_lowpass.iloc[skip_samples:-skip_samples][key] = df.iloc[
+            skip_samples:-skip_samples
+        ][key]
 
     df_lowpass["u1d"] = r_ = derivative(df_lowpass, "u")
     df_lowpass["v1d"] = r_ = derivative(df_lowpass, "v")
