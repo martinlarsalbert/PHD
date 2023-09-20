@@ -9,6 +9,9 @@ from .nodes import (
     initial_state_many,
     filter_many,
     smoother_many,
+    get_tests_ek,
+    get_tests_ek_smooth,
+    join_tests,
 )
 
 
@@ -40,27 +43,47 @@ def create_pipeline(**kwargs) -> Pipeline:
                     "params:accelerometer_position",
                     "params:skip",
                 ],
-                outputs=[
-                    "ek_filtered",
-                    "time_steps",
-                    "tests_ek",
-                ],
+                # outputs=[
+                #    "ek_filtered",
+                #    "time_steps",
+                #    "tests_ek",
+                # ],
+                outputs="ek_filtered",
                 name="filter_node",
                 tags=["ek", "filter"],
+            ),
+            node(
+                func=get_tests_ek,
+                inputs=["ek_filtered"],
+                outputs="tests_ek",
+                name="get_tests_ek",
             ),
             node(
                 func=smoother_many,
                 inputs=[
                     "ek_filtered",
-                    "tests",  # (data has the raw positions)
-                    "time_steps",
-                    "covariance_matrixes",
+                    # "tests",  # (data has the raw positions)
+                    # "time_steps",
+                    # "covariance_matrixes",
                     "params:accelerometer_position",
                     "params:skip",
                 ],
-                outputs=["ek_smooth", "tests_ek_smooth"],
+                # outputs=["ek_smooth", "tests_ek_smooth"],
+                outputs="ek_smooth",
                 name="smoother_node",
                 tags=["ek", "filter"],
+            ),
+            node(
+                func=get_tests_ek_smooth,
+                inputs=["ek_smooth"],
+                outputs="tests_ek_smooth",
+                name="get_tests_ek_smooth",
+            ),
+            node(
+                func=join_tests,
+                inputs=["tests_ek_smooth", "params:skip"],
+                outputs="tests_ek_smooth_joined",
+                name="join_tests",
             ),
         ]
     )

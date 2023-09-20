@@ -516,7 +516,7 @@ def optimize_kappa(
 
 def regress_hull_inverse_dynamics(
     vmm_model: ModularVesselSimulator,
-    time_series_smooth: dict,
+    data: pd.DataFrame,
     exclude_parameters: dict = {},
     full_output=False,
 ) -> ModularVesselSimulator:
@@ -535,7 +535,6 @@ def regress_hull_inverse_dynamics(
     eq_f_Y_H = sp.Eq(f_Y_H, sp.solve(model.Y_eq, f_Y_H)[0])
     eq_f_N_H = sp.Eq(f_N_H, sp.solve(model.N_eq, f_N_H)[0])
 
-    data = time_series_smooth["wpcc.updated.joined.ek_smooth"]()
     data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
     data["rev"] = data[["Prop/SB/Rpm", "Prop/PS/Rpm"]].mean(axis=1)
 
@@ -545,7 +544,8 @@ def regress_hull_inverse_dynamics(
     if not "tws" in data:
         data["tws"] = 0
 
-    data.drop(columns=["thrust"], inplace=True)
+    if "thrust" in data:
+        data.drop(columns=["thrust"], inplace=True)
 
     data["beta"] = -np.arctan2(data["v"], data["u"])
 
@@ -640,13 +640,12 @@ def regress_hull_inverse_dynamics(
 
 
 def regress_inverse_dynamics(
-    vmm_model: ModularVesselSimulator, time_series_smooth: dict
+    vmm_model: ModularVesselSimulator, data: pd.DataFrame
 ) -> ModularVesselSimulator:
     log.info("Regressing hull, propellers, and rudders from MDL with inverse dynamics")
 
     model = vmm_model.copy()
 
-    data = time_series_smooth["wpcc.updated.joined.ek_smooth"]()
     data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
     data["beta"] = -np.arctan2(data["v"], data["u"])
 

@@ -5,6 +5,13 @@ from vessel_manoeuvring_models.substitute_dynamic_symbols import get_function_su
 import numpy as np
 
 
+def predict(model: ModularVesselSimulator, data: pd.DataFrame) -> pd.DataFrame:
+    df_force_predicted = pd.DataFrame(
+        model.calculate_forces(data[model.states_str], control=data[model.control_keys])
+    )
+    return df_force_predicted
+
+
 def plot_total_force(model: ModularVesselSimulator, data: pd.DataFrame, window=None):
     if isinstance(model, ModularVesselSimulator):
         models = {"Prediction": model}

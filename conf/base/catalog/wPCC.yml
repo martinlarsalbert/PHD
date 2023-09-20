@@ -67,3 +67,28 @@ wPCC.tests_ek_smooth:
     save_args:
       index: True
   filename_suffix: .csv
+
+wPCC.ek_filtered:
+  type: PartitionedDataSet
+  path: data/03_primary/ek_filtered/wPCC
+  dataset:
+    type: ek_dataset.ExtendedKalmanDataSet
+  filename_suffix: .pkl
+
+wPCC.ek_smooth:
+  type: PartitionedDataSet
+  path: data/03_primary/ek_smooth/wPCC
+  dataset:
+    type: ek_dataset.ExtendedKalmanDataSet
+  filename_suffix: .pkl
+
+wPCC.tests_ek_smooth_joined:
+  type: pandas.CSVDataSet
+  filepath: data/05_model_input/tests_ek_smooth_joined.csv
+  load_args:
+    index_col: 0
+    encoding: 'utf-8'
+  save_args:
+    index: True
+    encoding: 'utf-8'
+

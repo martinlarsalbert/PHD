@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from numpy import cos as cos
 from numpy import sin as sin
 import numpy as np
+from phd.helpers import identity_decorator
 
 # from src.data.lowpass_filter import lowpass_filter
 
@@ -66,23 +67,47 @@ def load(
 ):
     datas = {}
     for name, loader in raw_data.items():
-        datas[name] = _load(
-            raw_data=loader(),
+        datas[name] = load_lazy(
+            loader=loader,
+            replace_velocities=replace_velocities,
+            thrust_channels=thrust_channels,
+            rev_channels=rev_channels,
+        )  # This is lazy saving
+        # datas[name] = _load(
+        #    loader=loader,
+        #    replace_velocities=replace_velocities,
+        #    thrust_channels=thrust_channels,
+        #    rev_channels=rev_channels,
+        # )  # This is lazy saving
+
+    return datas
+
+
+def load_lazy(
+    loader,
+    replace_velocities=False,
+    thrust_channels: list = [],
+    rev_channels: list = [],
+):
+    def the_loader():
+        return _load(
+            loader=loader,
             replace_velocities=replace_velocities,
             thrust_channels=thrust_channels,
             rev_channels=rev_channels,
         )
 
-    return datas
+    return the_loader
 
 
+@identity_decorator
 def _load(
-    raw_data: pd.DataFrame,
+    loader,
     replace_velocities=False,
     thrust_channels: list = [],
     rev_channels: list = [],
 ):
-    data = raw_data.copy()
+    data = loader()
 
     ## Zeroing:
     data.index -= data.index[0]

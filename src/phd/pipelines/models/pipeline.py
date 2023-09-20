@@ -166,7 +166,7 @@ def create_pipeline(**kwargs) -> Pipeline:
                 func=regress_hull_inverse_dynamics,
                 inputs=[
                     f"wPCC.{vmm}",
-                    "wPCC.time_series_preprocessed.ek_smooth",
+                    "wPCC.tests_ek_smooth_joined",
                 ],
                 outputs=f"wPCC.models.{vmm}.MDL_hull_inverse_dynamics",
                 name=f"{vmm}.regress_hull_inverse_dynamics_node",
@@ -182,7 +182,7 @@ def create_pipeline(**kwargs) -> Pipeline:
                 func=regress_inverse_dynamics,
                 inputs=[
                     f"wPCC.{vmm}",
-                    "wPCC.time_series_preprocessed.ek_smooth",
+                    "wPCC.tests_ek_smooth_joined",
                 ],
                 outputs=f"wPCC.models.{vmm}.MDL_inverse_dynamics",
                 name=f"{vmm}.regress_inverse_dynamics_node",

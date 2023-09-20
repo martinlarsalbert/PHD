@@ -15,6 +15,7 @@ from vessel_manoeuvring_models.data.lowpass_filter import lowpass_filter
 from numpy import cos as cos
 from numpy import sin as sin
 from vessel_manoeuvring_models.angles import smallest_signed_angle
+from phd.helpers import identity_decorator
 
 log = logging.getLogger(__name__)
 
@@ -114,16 +115,16 @@ def filter_many(
     ek_many = {}
     time_steps_many = {}
     df_kalman_many = {}
-
+    functions = {}
     for name, loader in datas.items():
-        data = loader()
         if name in skip:
             log.info(f"Skipping the filtering for: {name}")
             continue
 
         log.info(f"Filtering: {name}")
-        ek_many[name], time_steps_many[name], df_kalman_many[name] = filter(
-            data=data,
+        # ek_many[name], time_steps_many[name], df_kalman_many[name] = filter(
+        functions[name] = filter_lazy(
+            loader=loader,
             models=models,
             covariance_matrixes=covariance_matrixes[name],
             x0=x0[name],
@@ -131,7 +132,8 @@ def filter_many(
             accelerometer_position=accelerometer_position,
         )
 
-    return ek_many, time_steps_many, df_kalman_many
+    # return ek_many, time_steps_many, df_kalman_many
+    return functions
 
 
 def calculated_signals(
@@ -144,14 +146,37 @@ def calculated_signals(
     )
 
 
+def filter_lazy(
+    loader,
+    models: dict,
+    covariance_matrixes: dict,
+    x0: list,
+    filter_model_name: str,
+    accelerometer_position: dict,
+):
+    def wrapper():
+        return filter(
+            loader=loader,
+            models=models,
+            covariance_matrixes=covariance_matrixes,
+            x0=x0,
+            filter_model_name=filter_model_name,
+            accelerometer_position=accelerometer_position,
+        )
+
+    return wrapper
+
+
 def filter(
-    data: pd.DataFrame,
+    loader,
     models: dict,
     covariance_matrixes: dict,
     x0: list,
     filter_model_name: str,
     accelerometer_position: dict,
 ) -> pd.DataFrame:
+    data = loader()
+
     if not filter_model_name in models:
         raise ValueError(f"model: {filter_model_name} does not exist.")
 
@@ -209,79 +234,123 @@ def filter(
         do_checks=False,
     )
 
-    df = ek.df_kalman.copy()
-    calculated_signals(
-        df, accelerometer_position=accelerometer_position
-    )  # Update beta, V, true wind speed etc.
+    # df = ek.df_kalman.copy()
+    # calculated_signals(
+    #    df, accelerometer_position=accelerometer_position
+    # )  # Update beta, V, true wind speed etc.
 
-    return ek, time_steps, df
+    # return ek, time_steps, df
+    return ek
 
 
 def smoother_many(
-    ek: dict,
-    datas: dict,
-    time_steps: dict,
-    covariance_matrixes: dict,
+    ek_loaders: dict,
+    # datas: dict,
+    # time_steps: dict,
+    # covariance_matrixes: dict,
     accelerometer_position: dict,
     skip: dict,
 ):
     ek_many = {}
     df_smooth_many = {}
 
-    for name, loader in datas.items():
-        data = loader()
+    for name, loader in ek_loaders.items():
         if name in skip:
             log.info(f"Skipping the smoothing for: {name}")
             continue
 
         log.info(f"Smoothing: {name}")
-        ek_many[name], df_smooth_many[name] = smoother(
-            ek=ek[name],
-            data=data,
-            time_steps=time_steps[name],
-            covariance_matrixes=covariance_matrixes[name],
+        ek_many[name] = smoother_lazy(
+            loader=loader,
+            # data=data,
+            # time_steps=ek.time_steps,
+            # covariance_matrixes=covariance_matrixes[name],
             accelerometer_position=accelerometer_position,
         )
 
-    return ek_many, df_smooth_many
+    return ek_many
+
+
+def smoother_lazy(
+    loader,
+    # covariance_matrixes: dict,
+    accelerometer_position: dict,
+):
+    def wrapper():
+        return smoother(
+            loader=loader,
+            # covariance_matrixes=covariance_matrixes,
+            accelerometer_position=accelerometer_position,
+        )
+
+    return wrapper
 
 
 def smoother(
-    ek: ExtendedKalmanModular,
-    data: pd.DataFrame,
-    time_steps,
-    covariance_matrixes: dict,
+    loader,
+    # covariance_matrixes: dict,
     accelerometer_position: dict,
 ):
+    ek = loader()
     ## Update parameters
-    ek = ek.copy()
 
-    E = np.array(
-        [
-            [0, 0, 0],
-            [0, 0, 0],
-            [0, 0, 0],
-            [1, 0, 0],
-            [0, 1, 0],
-            [0, 0, 1],
-        ],
-    )
+    # E = np.array(
+    #    [
+    #        [0, 0, 0],
+    #        [0, 0, 0],
+    #        [0, 0, 0],
+    #        [1, 0, 0],
+    #        [0, 1, 0],
+    #        [0, 0, 1],
+    #    ],
+    # )
+    #
+    # ek.Qd = np.array(covariance_matrixes["Qd"])
+    # ek.E = E
 
-    ek.Qd = np.array(covariance_matrixes["Qd"])
-    ek.E = E
+    ek.smoother(time_steps=ek.time_steps)
+    # ek.data = data
 
-    ek.smoother(time_steps=time_steps)
-    ek.data = data
+    # df = ek.df_smooth.copy()
+    # if "thrust" in data:
+    #    df["thrust"] = data["thrust"].values
 
-    df = ek.df_smooth.copy()
-    if "thrust" in data:
-        df["thrust"] = data["thrust"].values
+    # calculated_signals(
+    #    df, accelerometer_position=accelerometer_position
+    # )  # Update beta, V, true wind speed etc.
 
-    calculated_signals(
-        df, accelerometer_position=accelerometer_position
-    )  # Update beta, V, true wind speed etc.
+    return ek
 
-    return ek, df
+
+def get_tests_ek(ek_filtered_loaders: dict):
+    functions = {}
+    for key, loader in ek_filtered_loaders.items():
+        functions[key] = get_tests_ek_lazy(loader=loader, kalman=True)
+
+    return functions
+
+
+def get_tests_ek_smooth(ek_filtered_loaders: dict):
+    functions = {}
+    for key, loader in ek_filtered_loaders.items():
+        functions[key] = get_tests_ek_lazy(loader=loader, kalman=False)
+
+    return functions
+
+
+def get_tests_ek_lazy(loader, kalman=True):
+    def wrapper():
+        return get_tests_ek_(loader, kalman=kalman)
+
+    return wrapper
+
+
+def get_tests_ek_(loader, kalman=True):
+    ek_filtered = loader()
+    if kalman:
+        return ek_filtered.df_kalman
+    else:
+        return ek_filtered.df_smooth
 
 
 def derivative(df, key):
@@ -339,3 +408,27 @@ def lowpass(df: pd.DataFrame, cutoff: float = 1.0, order=1) -> pd.DataFrame:
     df_lowpass["r1d"] = r_ = derivative(df_lowpass, "r")
 
     return df_lowpass
+
+
+def join_tests(tests_ek_smooth: dict, exclude=[]) -> pd.DataFrame:
+    _ = []
+    log.info(
+        f"Creating a joined dataset, that can be used in inverse dynamics regression"
+    )
+    for key, loader in tests_ek_smooth.items():
+        if key in exclude:
+            log.info(f"Excluding {key} from the joined dataset")
+            continue
+
+        log.info(f"Adding: {key}")
+
+        df_ = loader()
+        if len(_) > 0:
+            dt = df_.index[1] - df_.index[0]
+            previous = _[-1]
+            df_.index += dt + previous.index[-1]
+
+        _.append(df_)
+
+    df_joined = pd.concat(_, axis=0)
+    return df_joined

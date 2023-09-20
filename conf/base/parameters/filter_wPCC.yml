@@ -4,33 +4,49 @@
 # Documentation for this file format can be found in "Parameters"
 # Link: https://docs.kedro.org/en/0.18.7/kedro_project_setup/configuration.html#parameters
 wPCC:
+#  ek_covariance_input:
+#    process_variance:
+#      u : 0.01
+#      v : 0.01
+#      r : 0.01  # [deg]
+#    measurement_error_max:
+#      positions: 0.1
+#      psi: 1  # [deg]
+#  ek_covariance_input:
+#    process_variance:
+#      u : 0.005
+#      v : 0.3
+#      r : 0.01  # [deg]
+#    measurement_error_max:
+#      positions: 0.05
+#      psi: 0.5  # [deg]
   ek_covariance_input:
     process_variance:
-      u : 0.002
-      v : 0.002
-      r : 0.01  # [deg]
+      u : 0.005
+      v : 0.01
+      r : 0.005  # [deg]
     measurement_error_max:
-      positions: 0.1
-      psi: 1  # [deg]
+      positions: 0.05
+      psi: 0.5  # [deg]
   #filter_model_name: vmm_7m_vct_wind.VCT_MDL_resistance
   filter_model_name: vmm_martins_simple_thrust.MDL_inverse_dynamics
   skip:
-#    - "22639"
-#    - "22638"
-#    - "22637"
-#    - "22636"
-#    - "22634"
+ #   - "22639"
+    - "22638"
+    - "22637"
+    - "22636"
+    - "22634"
 #    - "22635"
-#    - "22633"
-#    - "22632"
-#    - "22631"
-#    - "22605"
-#    - "22606"
+    - "22633"
+    - "22632"
+    - "22631"
+    - "22605"
+    - "22606"
 #    - "22611"
-#    - "22610"
-#    - "22609"
-#    - "22608"
-#    - "22607"
+    - "22610"
+    - "22609"
+    - "22608"
+    - "22607"
     - "22836" # Sailing 
     - "22835" # Sailing
     - "22834" # Sailing
@@ -76,28 +92,28 @@ wPCC:
     - "22815" # Sailing
     - "22818" # Sailing
 #    - "22774"
-#    - "22776"
+    - "22776"
 #    - "22612"
 #    - "22613"
 #    - "22614"
 #    - "22615"
 #    - "22616"
-#    - "22775"
-#    - "22762"
-#    - "22765"
-#    - "22763"
-#    - "22764"
-#    - "22766"
+    - "22775"
+    - "22762"
+    - "22765"
+    - "22763"
+  #  - "22764"
+    - "22766"
 #    - "22770"
-#    - "22768"
+    - "22768"
 #    - "22769"
-#    - "22777"
-#    - "22778"
-#    - "22779"
-#    - "22767"
+    - "22777"  # Not working?
+    - "22778"
+    - "22779"
+    - "22767"
 #    - "22771"
 #    - "22773"
-#    - "22780"
-#    - "22781"
-#    - "22782"
+    - "22780"
+    - "22781"
+    - "22782"
 #    - "22772"
