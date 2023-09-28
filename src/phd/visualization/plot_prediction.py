@@ -13,7 +13,7 @@ def predict(model: ModularVesselSimulator, data: pd.DataFrame) -> pd.DataFrame:
 
 
 def plot_total_force(model: ModularVesselSimulator, data: pd.DataFrame, window=None):
-    if isinstance(model, ModularVesselSimulator):
+    if not isinstance(model, dict):
         models = {"Prediction": model}
     else:
         models = model

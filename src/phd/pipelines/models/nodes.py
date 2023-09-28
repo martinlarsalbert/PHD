@@ -545,12 +545,16 @@ def regress_hull_inverse_dynamics(
         data["tws"] = 0
 
     if "thrust" in data:
-        data.drop(columns=["thrust"], inplace=True)
+        data = data[
+            model.states_str + model.control_keys + ["u1d", "v1d", "r1d", "U"]
+        ].copy()
+        # data.drop(columns=["thrust"], inplace=True)
 
     data["beta"] = -np.arctan2(data["v"], data["u"])
 
     # Precalculate the rudders, propellers and wind_force:
     calculation = {}
+    model.parameters.update(exclude_parameters)
     for system_name, system in model.subsystems.items():
         if system_name == "hull":
             continue
@@ -568,10 +572,12 @@ def regress_hull_inverse_dynamics(
     hull = model.subsystems["hull"]
 
     hull.U0 = U0_
-
+    
+    calculation_columns = list(set(model.sub_system_keys) & set(df_calculation.columns))
+        
     data_prime = model.prime_system.prime(
         data_u0[
-            model.states_str + ["u1d", "v1d", "r1d"] + list(df_calculation.columns)
+            model.states_str + ["u1d", "v1d", "r1d"] + calculation_columns
         ],
         U=data["U"],
     )
@@ -591,7 +597,10 @@ def regress_hull_inverse_dynamics(
         )
 
     ## Regression
-    exclude_parameters["Xthrust"] = model.parameters["Xthrust"]
+    if not "Xthrust" in exclude_parameters:
+        exclude_parameters["Xthrust"] = model.parameters["Xthrust"]
+    else:
+        model.parameters.update(exclude_parameters)
 
     eq_to_matrix_X_H = DiffEqToMatrix(
         hull.equations["X_H"],
@@ -640,10 +649,12 @@ def regress_hull_inverse_dynamics(
 
 
 def regress_inverse_dynamics(
-    vmm_model: ModularVesselSimulator, data: pd.DataFrame
+    vmm_model: ModularVesselSimulator,
+    data: pd.DataFrame,
+    exclude_parameters={},
 ) -> ModularVesselSimulator:
     log.info("Regressing hull, propellers, and rudders from MDL with inverse dynamics")
-
+    exclude_parameters = exclude_parameters.copy()
     model = vmm_model.copy()
 
     data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
@@ -671,7 +682,8 @@ def regress_inverse_dynamics(
     )
 
     ## Regression
-    exclude_parameters = {"Xthrust": model.parameters["Xthrust"]}
+    if not "Xthrust" in exclude_parameters:
+        exclude_parameters["Xthrust"] = model.parameters["Xthrust"]
 
     eq_X_D = model.expand_subsystemequations(model.X_D_eq)
     eq_to_matrix_X_D = DiffEqToMatrix(
