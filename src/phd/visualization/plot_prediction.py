@@ -7,8 +7,12 @@ import numpy as np
 
 def predict(model: ModularVesselSimulator, data: pd.DataFrame) -> pd.DataFrame:
     df_force_predicted = pd.DataFrame(
-        model.calculate_forces(data[model.states_str], control=data[model.control_keys])
+        model.calculate_forces(data[model.states_str], control=data[model.control_keys]), index=data.index
     )
+    
+    columns = list(set(data.columns) - set(df_force_predicted))
+    df_force_predicted = pd.concat((data[columns], df_force_predicted), axis=1)
+    
     return df_force_predicted
 
 

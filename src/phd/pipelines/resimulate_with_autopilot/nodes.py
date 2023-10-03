@@ -60,7 +60,10 @@ def resimulate(
         rev = data["rev"]
 
     rudder_rate = 2.32 * np.sqrt(model.ship_parameters["scale_factor"])
-    angle = 10 if data["delta"].idxmin() > data["delta"].idxmax() else -10
+    angle_abs = np.round(np.rad2deg(data["delta"].abs().max()),0)
+    i = (data["delta"].abs() > np.deg2rad(2)).idxmax()
+    sign = np.sign(data['delta'].loc[i])    
+    angle = angle_abs if sign==1 else -angle_abs
 
     psi0 = data.iloc[0]["psi"].copy()
     # twa = mean_angle(data["twa"]) - psi0
@@ -75,6 +78,7 @@ def resimulate(
         rev=rev,
         rudder_rate=rudder_rate,
         angle=angle,
+        heading_deviation=angle,
         twa=twa,
         tws=tws,
         neutral_rudder_angle=neutral_rudder_angle,

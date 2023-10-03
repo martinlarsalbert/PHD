@@ -28,6 +28,7 @@ from .subsystems import (
     add_propeller_simple,
     add_rudder,
     add_rudder_MAK,
+    add_rudder_MAK_no_prop,
     add_rudder_simple,
     add_dummy_wind_force_system,
     add_wind_force_system_simple,
@@ -428,7 +429,7 @@ def vmm_simple_rudder_no_prop(
     eq_X_H = sp.Eq(
         X_H,
         p.X0 + p.Xu * u
-        # + p.Xuu * u**2
+        + p.Xuu * u**2
         # + p.Xuuu * u**3
         + p.Xvv * v**2 + p.Xrr * r**2 + p.Xvr * v * r
         ## + p.Xthrust * thrust,
@@ -437,30 +438,33 @@ def vmm_simple_rudder_no_prop(
 
     eq_Y_H = sp.Eq(
         Y_H,
-        p.Yv * v + p.Yr * r + p.Yvr * v * r + p.Yvvv * v**3
-        # + p.Yvvr * v**2 * r
-        # + p.Yrrr * r**3
-        # + p.Yvrr * v * r**2
+        p.Yv * v + p.Yr * r 
+        #+ p.Yvr * v * r 
+        + p.Yvvv * v**3
+        + p.Yvvr * v**2 * r
+        + p.Yrrr * r**3
+        + p.Yvrr * v * r**2
         # + p.Yuuv * u**2 * v
         # + p.Yuur * u**2 * r
         # + p.Yuv * u * v
         # + p.Yur * u * r
         ## + p.Ythrust * thrust
-        # + p.Y0
+        + p.Y0  # Very important!
         # + p.Y0u * u + p.Y0uu * u**2,
     )
     eq_N_H = sp.Eq(
         N_H,
-        p.Nv * v + p.Nr * r + p.Nvvv * v**3 + p.Nvr * v * r
-        # + p.Nvvr * v**2 * r
+        p.Nv * v + p.Nr * r + p.Nvvv * v**3 
+        #+ p.Nvr * v * r
+        + p.Nvvr * v**2 * r
         + p.Nrrr * r**3
-        # + p.Nvrr * v * r**2  # This one is very important to not get the drift...
+        + p.Nvrr * v * r**2  # This one is very important to not get the drift...
         # + p.Nuuv * u**2 * v
         # + p.Nuur * u**2 * r
         # + p.Nuv * u * v
         # + p.Nur * u * r
         ## + p.Nthrust * thrust
-        # + p.N0
+        + p.N0  # Very important !
         # + p.N0u * u + p.N0uu * u**2,
     )
 
@@ -478,6 +482,20 @@ def vmm_simple_rudder_no_prop(
     add_rudder_simple(model=model)
 
     add_dummy_wind_force_system(model=model)
+    
+    ## Add rudder hull interaction subsystem:
+    model.subsystems["rudder_hull_interaction"] = RudderHullInteractionSystem(
+        ship=model
+    )    
+    
+    if not "a_H" in model.parameters:
+        model.parameters["a_H"] = 0
+        
+    X_eq = sp.Eq(model.X_eq.lhs, model.X_eq.rhs + X_RHI)
+    Y_eq = sp.Eq(model.Y_eq.lhs, model.Y_eq.rhs + Y_RHI)
+    N_eq = sp.Eq(model.N_eq.lhs, model.N_eq.rhs + N_RHI)
+    model.setup_equations(X_eq=X_eq, Y_eq=Y_eq, N_eq=N_eq)
+    
 
     model.control_keys = ["delta", "thrust"]
 
@@ -490,9 +508,47 @@ def vmm_semiempirical_rudder_no_prop(
     model = vmm_simple_rudder_no_prop(main_model=main_model)
 
     ## Overwrite rudder:
+    add_rudder_MAK_no_prop(model=model)
+    model.parameters["r_0"] = model.ship_parameters["D"] / 2
+    model.parameters["x"] = 0.10  # Guessing...
+
+    ## Add rudder hull interaction subsystem:
+    if "rudder_hull_interaction" in model.subsystems:
+        model.subsystems.pop("rudder_hull_interaction")
+    
+    model.subsystems["rudder_hull_interaction"] = RudderHullInteractionSystem(
+        ship=model
+    )    
+    
+    if not "a_H" in model.parameters:
+        model.parameters["a_H"] = 0
+
+    ## Overwrite propeller:
+    # add_propeller(model=model)
+    # model.control_keys = ["delta", "rev"]
+
+    return model
+
+def vmm_semiempirical_rudder(
+    main_model: ModularVesselSimulator,
+) -> ModularVesselSimulator:
+    model = vmm_simple_rudder_no_prop(main_model=main_model)
+
+    ## Overwrite rudder:
     add_rudder_MAK(model=model)
     model.parameters["r_0"] = model.ship_parameters["D"] / 2
     model.parameters["x"] = 0.10  # Guessing...
+
+    ## Add rudder hull interaction subsystem:
+    if "rudder_hull_interaction" in model.subsystems:
+        model.subsystems.pop("rudder_hull_interaction")
+    
+    model.subsystems["rudder_hull_interaction"] = RudderHullInteractionSystem(
+        ship=model
+    )    
+    
+    if not "a_H" in model.parameters:
+        model.parameters["a_H"] = 0
 
     ## Overwrite propeller:
     # add_propeller(model=model)

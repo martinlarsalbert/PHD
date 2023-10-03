@@ -558,11 +558,14 @@ def regress_hull_inverse_dynamics(
     for system_name, system in model.subsystems.items():
         if system_name == "hull":
             continue
-        system.calculate_forces(
-            states_dict=data[model.states_str],
-            control=data[model.control_keys],
-            calculation=calculation,
-        )
+        try:
+            system.calculate_forces(
+                states_dict=data[model.states_str],
+                control=data[model.control_keys],
+                calculation=calculation,
+            )
+        except KeyError as e:
+            raise KeyError(f"Failed in subsystem:{system_name}")
 
     df_calculation = pd.DataFrame(calculation, index=data.index)
     data = pd.concat((data, df_calculation), axis=1)
