@@ -260,7 +260,7 @@ def vmm_full_abkowitz_rudder_wind(
     add_propeller(model=model)
 
     ## Add rudder:
-    #add_rudder(model=model)
+    # add_rudder(model=model)
     add_rudder_MAK(model=model)
 
     add_wind_force_system_simple(model=model)
@@ -270,7 +270,7 @@ def vmm_full_abkowitz_rudder_wind(
     model.subsystems["rudder_hull_interaction"] = RudderHullInteractionSystem(
         ship=model
     )
-    
+
     X_eq = sp.Eq(model.X_eq.lhs, model.X_eq.rhs + X_RHI)
     Y_eq = sp.Eq(model.Y_eq.lhs, model.Y_eq.rhs + Y_RHI)
     N_eq = sp.Eq(model.N_eq.lhs, model.N_eq.rhs + N_RHI)
@@ -424,12 +424,11 @@ def vmm_linear_semiempirical_rudder_no_prop(
 
 
 def vmm_simple_rudder_no_prop(
-    main_model: ModularVesselSimulator,
+    main_model: ModularVesselSimulator, create_jacobians=True
 ) -> ModularVesselSimulator:
     eq_X_H = sp.Eq(
         X_H,
-        p.X0 + p.Xu * u
-        + p.Xuu * u**2
+        p.X0 + p.Xu * u + p.Xuu * u**2
         # + p.Xuuu * u**3
         + p.Xvv * v**2 + p.Xrr * r**2 + p.Xvr * v * r
         ## + p.Xthrust * thrust,
@@ -438,12 +437,9 @@ def vmm_simple_rudder_no_prop(
 
     eq_Y_H = sp.Eq(
         Y_H,
-        p.Yv * v + p.Yr * r 
-        #+ p.Yvr * v * r 
-        + p.Yvvv * v**3
-        + p.Yvvr * v**2 * r
-        + p.Yrrr * r**3
-        + p.Yvrr * v * r**2
+        p.Yv * v + p.Yr * r
+        # + p.Yvr * v * r
+        + p.Yvvv * v**3 + p.Yvvr * v**2 * r + p.Yrrr * r**3 + p.Yvrr * v * r**2
         # + p.Yuuv * u**2 * v
         # + p.Yuur * u**2 * r
         # + p.Yuv * u * v
@@ -454,8 +450,8 @@ def vmm_simple_rudder_no_prop(
     )
     eq_N_H = sp.Eq(
         N_H,
-        p.Nv * v + p.Nr * r + p.Nvvv * v**3 
-        #+ p.Nvr * v * r
+        p.Nv * v + p.Nr * r + p.Nvvv * v**3
+        # + p.Nvr * v * r
         + p.Nvvr * v**2 * r
         + p.Nrrr * r**3
         + p.Nvrr * v * r**2  # This one is very important to not get the drift...
@@ -471,7 +467,7 @@ def vmm_simple_rudder_no_prop(
     model = main_model.copy()
     equations_hull = [eq_X_H, eq_Y_H, eq_N_H]
     hull = PrimeEquationSubSystem(
-        ship=model, equations=equations_hull, create_jacobians=True
+        ship=model, equations=equations_hull, create_jacobians=create_jacobians
     )
     model.subsystems["hull"] = hull
 
@@ -482,20 +478,19 @@ def vmm_simple_rudder_no_prop(
     add_rudder_simple(model=model)
 
     add_dummy_wind_force_system(model=model)
-    
+
     ## Add rudder hull interaction subsystem:
     model.subsystems["rudder_hull_interaction"] = RudderHullInteractionSystem(
-        ship=model
-    )    
-    
+        ship=model, create_jacobians=create_jacobians
+    )
+
     if not "a_H" in model.parameters:
         model.parameters["a_H"] = 0
-        
+
     X_eq = sp.Eq(model.X_eq.lhs, model.X_eq.rhs + X_RHI)
     Y_eq = sp.Eq(model.Y_eq.lhs, model.Y_eq.rhs + Y_RHI)
     N_eq = sp.Eq(model.N_eq.lhs, model.N_eq.rhs + N_RHI)
     model.setup_equations(X_eq=X_eq, Y_eq=Y_eq, N_eq=N_eq)
-    
 
     model.control_keys = ["delta", "thrust"]
 
@@ -503,23 +498,25 @@ def vmm_simple_rudder_no_prop(
 
 
 def vmm_semiempirical_rudder_no_prop(
-    main_model: ModularVesselSimulator,
+    main_model: ModularVesselSimulator, create_jacobians=True
 ) -> ModularVesselSimulator:
-    model = vmm_simple_rudder_no_prop(main_model=main_model)
+    model = vmm_simple_rudder_no_prop(
+        main_model=main_model, create_jacobians=create_jacobians
+    )
 
     ## Overwrite rudder:
-    add_rudder_MAK_no_prop(model=model)
+    add_rudder_MAK_no_prop(model=model, create_jacobians=create_jacobians)
     model.parameters["r_0"] = model.ship_parameters["D"] / 2
     model.parameters["x"] = 0.10  # Guessing...
 
     ## Add rudder hull interaction subsystem:
     if "rudder_hull_interaction" in model.subsystems:
         model.subsystems.pop("rudder_hull_interaction")
-    
+
     model.subsystems["rudder_hull_interaction"] = RudderHullInteractionSystem(
-        ship=model
-    )    
-    
+        ship=model, create_jacobians=create_jacobians
+    )
+
     if not "a_H" in model.parameters:
         model.parameters["a_H"] = 0
 
@@ -529,24 +526,27 @@ def vmm_semiempirical_rudder_no_prop(
 
     return model
 
+
 def vmm_semiempirical_rudder(
-    main_model: ModularVesselSimulator,
+    main_model: ModularVesselSimulator, create_jacobians=True
 ) -> ModularVesselSimulator:
-    model = vmm_simple_rudder_no_prop(main_model=main_model)
+    model = vmm_simple_rudder_no_prop(
+        main_model=main_model, create_jacobians=create_jacobians
+    )
 
     ## Overwrite rudder:
-    add_rudder_MAK(model=model)
+    add_rudder_MAK(model=model, create_jacobians=create_jacobians)
     model.parameters["r_0"] = model.ship_parameters["D"] / 2
     model.parameters["x"] = 0.10  # Guessing...
 
     ## Add rudder hull interaction subsystem:
     if "rudder_hull_interaction" in model.subsystems:
         model.subsystems.pop("rudder_hull_interaction")
-    
+
     model.subsystems["rudder_hull_interaction"] = RudderHullInteractionSystem(
-        ship=model
-    )    
-    
+        ship=model, create_jacobians=create_jacobians
+    )
+
     if not "a_H" in model.parameters:
         model.parameters["a_H"] = 0
 

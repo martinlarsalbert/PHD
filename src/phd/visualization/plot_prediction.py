@@ -7,12 +7,15 @@ import numpy as np
 
 def predict(model: ModularVesselSimulator, data: pd.DataFrame) -> pd.DataFrame:
     df_force_predicted = pd.DataFrame(
-        model.calculate_forces(data[model.states_str], control=data[model.control_keys]), index=data.index
+        model.calculate_forces(
+            data[model.states_str], control=data[model.control_keys]
+        ),
+        index=data.index,
     )
-    
+
     columns = list(set(data.columns) - set(df_force_predicted))
     df_force_predicted = pd.concat((data[columns], df_force_predicted), axis=1)
-    
+
     return df_force_predicted
 
 
@@ -108,7 +111,7 @@ def plot_force_components(model, data, window=None):
     else:
         df_plot = df_force_predicted.rolling(window=window).mean()
 
-    keys = list(get_function_subs(model.X_D_eq).values())
+    keys = [arg.name for arg in model.X_D_eq.rhs.args]
     fig, axes = plt.subplots(nrows=3)
 
     ax = axes[0]
@@ -120,7 +123,7 @@ def plot_force_components(model, data, window=None):
     ax.set_xticklabels([])
     ax.set_xlabel("")
 
-    keys = list(get_function_subs(model.Y_D_eq).values())
+    keys = [arg.name for arg in model.Y_D_eq.rhs.args]
     ax = axes[1]
     ax.set_title("Y forces")
 
@@ -130,7 +133,7 @@ def plot_force_components(model, data, window=None):
     ax.set_xticklabels([])
     ax.set_xlabel("")
 
-    keys = list(get_function_subs(model.N_D_eq).values())
+    keys = [arg.name for arg in model.N_D_eq.rhs.args]
     ax = axes[2]
     ax.set_title("N moments")
 
