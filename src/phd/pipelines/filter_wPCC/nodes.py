@@ -423,6 +423,7 @@ def join_tests(tests_ek_smooth: dict, exclude=[]) -> pd.DataFrame:
         log.info(f"Adding: {key}")
 
         df_ = loader()
+        df_["id"] = key
         if len(_) > 0:
             dt = df_.index[1] - df_.index[0]
             previous = _[-1]

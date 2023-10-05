@@ -575,13 +575,11 @@ def regress_hull_inverse_dynamics(
     hull = model.subsystems["hull"]
 
     hull.U0 = U0_
-    
+
     calculation_columns = list(set(model.sub_system_keys) & set(df_calculation.columns))
-        
+
     data_prime = model.prime_system.prime(
-        data_u0[
-            model.states_str + ["u1d", "v1d", "r1d"] + calculation_columns
-        ],
+        data_u0[model.states_str + ["u1d", "v1d", "r1d"] + calculation_columns],
         U=data["U"],
     )
 
@@ -639,7 +637,7 @@ def regress_hull_inverse_dynamics(
         models[key] = ols_fit = ols.fit()
         ols_fit.X = X
         ols_fit.y = y
-        fits[eq_to_matrix.y_] = ols_fit
+        fits[key] = ols_fit
         new_parameters.update(ols_fit.params)
         log.info(ols_fit.summary().as_text())
 
@@ -655,6 +653,7 @@ def regress_inverse_dynamics(
     vmm_model: ModularVesselSimulator,
     data: pd.DataFrame,
     exclude_parameters={},
+    full_output=False,
 ) -> ModularVesselSimulator:
     log.info("Regressing hull, propellers, and rudders from MDL with inverse dynamics")
     exclude_parameters = exclude_parameters.copy()
@@ -708,6 +707,7 @@ def regress_inverse_dynamics(
 
     models = {}
     new_parameters = {}
+    fits = {}
     for eq_to_matrix in [eq_to_matrix_X_D, eq_to_matrix_Y_D, eq_to_matrix_N_D]:
         key = eq_to_matrix.acceleration_equation.lhs.name
         log.info(f"Regressing:{key}")
@@ -715,13 +715,16 @@ def regress_inverse_dynamics(
             data=data_prime, y=data_prime[key]
         )
         ols = sm.OLS(y, X)
-        models[key] = ols_fit = ols.fit()
+        fits[key] = ols_fit = ols.fit()
         new_parameters.update(ols_fit.params)
         log.info(ols_fit.summary().as_text())
 
     model.parameters.update(new_parameters)
 
-    return model
+    if full_output:
+        return model, fits
+    else:
+        return model
 
 
 def scale_model(

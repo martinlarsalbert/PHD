@@ -19,6 +19,8 @@ def track_plots(
     time_window=[0, np.inf],
     include_wind=True,
 ) -> plt.axes:
+    styles_ = styles.copy()
+
     ax = plot.track_plots(
         dataframes=dataframes,
         lpp=lpp,
@@ -29,7 +31,7 @@ def track_plots(
         y_dataset=y_dataset,
         psi_dataset=psi_dataset,
         plot_boats=plot_boats,
-        styles=styles,
+        styles=styles_,
         flip=flip,
         time_window=time_window,
     )

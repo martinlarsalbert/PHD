@@ -37,4 +37,11 @@ def fit_kappa(model: ModularVesselSimulator, data: pd.DataFrame):
 
     kwargs = {"model": model, "data": df_force}
 
-    return least_squares(fun=predict_mz_kappa, x0=[0.5], bounds=(0, 1), kwargs=kwargs)
+    if "kappa" in model.parameters:
+        kappa_0 = model.parameters["kappa"]
+    else:
+        kappa_0 = 0.5
+
+    x0 = [kappa_0]
+
+    return least_squares(fun=predict_mz_kappa, x0=x0, bounds=(0, 1), kwargs=kwargs)
