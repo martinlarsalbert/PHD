@@ -328,9 +328,10 @@ def regress_VCT(
     df_VCT["tws"] = 0
 
     ## Prime system
-    U0_ = df_VCT["V"].min()
+    # U0_ = df_VCT["V"].min()
+    U0_ = model.U0
     df_VCT_u0 = df_VCT.copy()
-    df_VCT_u0["u"] -= U0_
+    df_VCT_u0["u"] -= U0_ * np.sqrt(model.ship_parameters["scale_factor"])
 
     keys = (
         model.states_str
@@ -345,11 +346,12 @@ def regress_VCT(
     )
     df_VCT_prime = prime_system_ship.prime(df_VCT_u0[keys], U=df_VCT["U"])
 
-    for name, subsystem in model.subsystems.items():
-        if isinstance(subsystem, PrimeEquationSubSystem):
-            subsystem.U0 = U0_ / np.sqrt(
-                model.ship_parameters["scale_factor"]
-            )  # Important!
+    # for name, subsystem in model.subsystems.items():
+    #    if isinstance(subsystem, PrimeEquationSubSystem):
+    #        # subsystem.U0 = U0_ / np.sqrt(
+    #        #    model.ship_parameters["scale_factor"]
+    #        # )  # Important!
+    #        subsystem.U0 = U0_  # Important!
 
     ## Regression:
     regression_pipeline = pipeline(df_VCT_prime=df_VCT_prime, model=model)
@@ -574,7 +576,7 @@ def regress_hull_inverse_dynamics(
     data_u0["u"] -= U0_
     hull = model.subsystems["hull"]
 
-    hull.U0 = U0_
+    # hull.U0 = U0_
 
     calculation_columns = list(set(model.sub_system_keys) & set(df_calculation.columns))
 
@@ -668,11 +670,12 @@ def regress_inverse_dynamics(
     data["N_D"] = data["mz"]
 
     data_u0 = data.copy()
-    U0_ = float(data["u"].min())
-    data_u0["u"] -= U0_
-    model.subsystems["hull"].U0 = U0_
-    model.subsystems["propellers"].U0 = U0_
-    model.subsystems["rudders"].U0 = U0_
+    # U0_ = float(data["u"].min())
+
+    data_u0["u"] -= model.U0
+    # model.subsystems["hull"].U0 = U0_
+    # model.subsystems["propellers"].U0 = U0_
+    # model.subsystems["rudders"].U0 = U0_
 
     data_prime = model.prime_system.prime(
         data_u0[
@@ -687,22 +690,64 @@ def regress_inverse_dynamics(
     if not "Xthrust" in exclude_parameters:
         exclude_parameters["Xthrust"] = model.parameters["Xthrust"]
 
+    if not "Xthrustport" in exclude_parameters:
+        exclude_parameters["Xthrustport"] = model.parameters["Xthrustport"]
+
+    if not "Xthruststbd" in exclude_parameters:
+        exclude_parameters["Xthruststbd"] = model.parameters["Xthruststbd"]
+
     eq_X_D = model.expand_subsystemequations(model.X_D_eq)
     eq_to_matrix_X_D = DiffEqToMatrix(
         eq_X_D,
         label=X_D_,
-        base_features=[u, v, r, delta, thrust],
+        base_features=[
+            u,
+            v,
+            r,
+            delta,
+            thrust,
+            thrust_port,
+            thrust_stbd,
+            y_p_port,
+            y_p_stbd,
+        ],
         exclude_parameters=exclude_parameters,
     )
 
     eq_Y_D = model.expand_subsystemequations(model.Y_D_eq)
     eq_to_matrix_Y_D = DiffEqToMatrix(
-        eq_Y_D, label=Y_D_, base_features=[u, v, r, delta, thrust]
+        eq_Y_D,
+        label=Y_D_,
+        base_features=[
+            u,
+            v,
+            r,
+            delta,
+            thrust,
+            thrust_port,
+            thrust_stbd,
+            y_p_port,
+            y_p_stbd,
+        ],
+        exclude_parameters=exclude_parameters,
     )
 
     eq_N_D = model.expand_subsystemequations(model.N_D_eq)
     eq_to_matrix_N_D = DiffEqToMatrix(
-        eq_N_D, label=N_D_, base_features=[u, v, r, delta, thrust]
+        eq_N_D,
+        label=N_D_,
+        base_features=[
+            u,
+            v,
+            r,
+            delta,
+            thrust,
+            thrust_port,
+            thrust_stbd,
+            y_p_port,
+            y_p_stbd,
+        ],
+        exclude_parameters=exclude_parameters,
     )
 
     models = {}
@@ -712,7 +757,9 @@ def regress_inverse_dynamics(
         key = eq_to_matrix.acceleration_equation.lhs.name
         log.info(f"Regressing:{key}")
         X, y = eq_to_matrix.calculate_features_and_label(
-            data=data_prime, y=data_prime[key]
+            data=data_prime,
+            y=data_prime[key],
+            parameters=model.ship_parameters,
         )
         ols = sm.OLS(y, X)
         fits[key] = ols_fit = ols.fit()
@@ -720,6 +767,7 @@ def regress_inverse_dynamics(
         log.info(ols_fit.summary().as_text())
 
     model.parameters.update(new_parameters)
+    model.parameters.update(exclude_parameters)
 
     if full_output:
         return model, fits

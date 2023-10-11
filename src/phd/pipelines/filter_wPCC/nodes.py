@@ -136,16 +136,6 @@ def filter_many(
     return functions
 
 
-def calculated_signals(
-    data: pd.DataFrame, accelerometer_position: dict
-) -> pd.DataFrame:
-    data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
-    data["beta"] = -np.arctan2(data["v"], data["u"])  # Drift angle
-    data["cog"] = smallest_signed_angle(data["psi"]) - smallest_signed_angle(
-        data["beta"]
-    )
-
-
 def filter_lazy(
     loader,
     models: dict,
@@ -351,6 +341,8 @@ def get_tests_ek_(loader, kalman=True):
         return ek_filtered.df_kalman
     else:
         return ek_filtered.df_smooth
+
+    calculated_signals(df)
 
 
 def derivative(df, key):
