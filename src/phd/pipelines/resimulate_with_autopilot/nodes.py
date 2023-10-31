@@ -37,6 +37,9 @@ def resimulate_all(
 def resimulate(
     data: pd.DataFrame,
     model: ModularVesselSimulator,
+    angle: float = None,
+    neutral_rudder_angle: float = None,
+    **kwargs,
 ) -> pd.DataFrame:
     data = data.copy()
     data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
@@ -60,10 +63,12 @@ def resimulate(
         rev = data["rev"]
 
     rudder_rate = 2.32 * np.sqrt(model.ship_parameters["scale_factor"])
-    angle_abs = np.round(np.rad2deg(data["delta"].abs().max()), 0)
-    i = (data["delta"].abs() > np.deg2rad(2)).idxmax()
-    sign = np.sign(data["delta"].loc[i])
-    angle = angle_abs if sign == 1 else -angle_abs
+    if angle is None:
+        log.info("finding the angle")
+        angle_abs = np.round(np.rad2deg(data["delta"].abs().max()), 0)
+        i = (data["delta"].abs() > np.deg2rad(2)).idxmax()
+        sign = np.sign(data["delta"].loc[i])
+        angle = angle_abs if sign == 1 else -angle_abs
 
     psi0 = data.iloc[0]["psi"].copy()
     # twa = mean_angle(data["twa"]) - psi0
@@ -71,7 +76,10 @@ def resimulate(
 
     # tws = data["tws"].mean() - psi0
     tws = data["tws"]
-    neutral_rudder_angle = np.rad2deg(data["delta"].max() + data["delta"].min()) / 2
+    if neutral_rudder_angle is None:
+        neutral_rudder_angle = np.rad2deg(data["delta"].max() + data["delta"].min()) / 2
+        log.info("Finding the neutral rudder angle")
+
     result = zigzag(
         model=model,
         u0=u0,
@@ -82,6 +90,7 @@ def resimulate(
         twa=twa,
         tws=tws,
         neutral_rudder_angle=neutral_rudder_angle,
+        **kwargs,
     )
     return result
 

@@ -142,7 +142,10 @@ def fit(regression_pipeline: dict, exclude_parameters={}):
             continue
 
         ols = sm.OLS(y, X)
-        models[name] = ols_fit = ols.fit()
+        try:
+            models[name] = ols_fit = ols.fit()
+        except Exception:
+            raise ValueError(f"Failed in regression:{name}")
         ols_fit.X = X
         ols_fit.y = y
         new_parameters.update(ols_fit.params)

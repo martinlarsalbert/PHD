@@ -12,34 +12,41 @@ def plot_arrow(x, y, magnitude, angle, ax, **kwargs):
     dy = magnitude * np.cos(angle)
 
     if not "width" in kwargs:
-        kwargs["width"] = 0.02
+        kwargs["width"] = 0.02 * force_scale
 
-    ax.arrow(x=x, y=y, dx=dx, dy=dy, **kwargs)
+    ax.arrow(
+        x=x * force_scale,
+        y=y * force_scale,
+        dx=dx,
+        dy=dy,
+        length_includes_head=True,
+        **kwargs,
+    )
 
 
 def plot_force(x, y, force, angle, ax, **kwargs):
-    plot_arrow(x=x, y=y, magnitude=force / force_scale, angle=angle, ax=ax, **kwargs)
+    plot_arrow(x=x, y=y, magnitude=force, angle=angle, ax=ax, **kwargs)
 
 
 def plot_force_xy(x, y, force_x, force_y, ax, **kwargs):
     force = np.sqrt(force_x**2 + force_y**2)
     angle = np.arctan2(force_y, force_x)
-    plot_arrow(x=x, y=y, magnitude=force / force_scale, angle=angle, ax=ax, **kwargs)
+    plot_arrow(x=x, y=y, magnitude=force, angle=angle, ax=ax, **kwargs)
 
 
-def overview(state: pd.Series, ship_data):
+def overview(state: pd.Series, ship_data, ax=None):
     def plot_rudder(x_R, y_R, ax):
         c = ship_data["c"]
         l = 2 * np.array([0, -c])
         tranform = np.array([np.sin(state["delta"]), np.cos(state["delta"])])
         x = y_R + l * np.sin(state["delta"])
         y = x_R + l * np.cos(state["delta"])
-        ax.plot(x, y, color="k", lw=3)
+        ax.plot(force_scale * x, force_scale * y, color="k", lw=3)
 
     def plot_fan(x_fan, y_fan, force, angle, ax, **kwargs):
         x = y_fan
         y = x_fan
-        magnitude = force / force_scale
+        magnitude = force
 
         if not "color" in kwargs:
             kwargs["color"] = "g"
@@ -56,7 +63,7 @@ def overview(state: pd.Series, ship_data):
     def plot_velocity(ax):
         x = 0
         y = 0
-        magnitude = state["V"]
+        magnitude = force_scale * state["V"]
         angle = -state["beta"]
 
         plot_arrow(
@@ -72,7 +79,7 @@ def overview(state: pd.Series, ship_data):
     def plot_propeller(x_p, y_p, thrust, ax, **kwargs):
         x = y_p
         y = x_p
-        magnitude = state["thrust"] / force_scale
+        magnitude = thrust
         angle = 0
 
         if not "label" in kwargs:
@@ -87,14 +94,15 @@ def overview(state: pd.Series, ship_data):
             **kwargs,
         )
 
-    fig, ax = plt.subplots()
+    if ax is None:
+        fig, ax = plt.subplots()
     plot_ship(
         x=0,
         y=0,
         psi=0,
         ax=ax,
-        lpp=ship_data["L"],
-        beam=ship_data["B"],
+        lpp=force_scale * ship_data["L"],
+        beam=force_scale * ship_data["B"],
         color="lightblue",
         alpha=1,
         zorder=-100,
@@ -146,4 +154,7 @@ def overview(state: pd.Series, ship_data):
 
     ax.legend()
     ax.axis("equal")
+    ax.set_xlabel(f"$Y$ $[N]$")
+    ax.set_ylabel(f"$X$ $[N]$")
+
     return ax

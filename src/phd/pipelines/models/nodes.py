@@ -572,11 +572,11 @@ def regress_hull_inverse_dynamics(
     df_calculation = pd.DataFrame(calculation, index=data.index)
     data = pd.concat((data, df_calculation), axis=1)
     data_u0 = data.copy()
-    U0_ = float(data["u"].min())
-    data_u0["u"] -= U0_
+    # U0_ = float(data["u"].min())
+    # data_u0["u"] -= U0_
     hull = model.subsystems["hull"]
-
     # hull.U0 = U0_
+    data_u0["u"] -= model.U0
 
     calculation_columns = list(set(model.sub_system_keys) & set(df_calculation.columns))
 
