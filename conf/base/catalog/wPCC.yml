@@ -92,3 +92,14 @@ wPCC.tests_ek_smooth_joined:
     index: True
     encoding: 'utf-8'
 
+wPCC.resistance_MDL:
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/resistance_MDL.csv
+  load_args:
+    index_col: 0
+    encoding: 'utf-8'
+  save_args:
+    index: True
+    encoding: 'utf-8'
+
+

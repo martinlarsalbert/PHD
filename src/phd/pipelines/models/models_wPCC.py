@@ -20,14 +20,9 @@ p = df_parameters["symbol"]
 from vessel_manoeuvring_models.models.subsystem import PrimeEquationSubSystem
 from vessel_manoeuvring_models.substitute_dynamic_symbols import run
 from .subsystems import (
-    add_propeller,
     add_propeller_simple,
-    add_rudder,
-    add_rudder_MAK,
-    add_rudder_MAK_no_prop,
     add_rudder_simple,
     add_dummy_wind_force_system,
-    add_wind_force_system_simple,
 )
 from vessel_manoeuvring_models.models.semiempirical_rudder import (
     RudderHullInteractionSystem,
@@ -40,7 +35,6 @@ from vessel_manoeuvring_models.models.semiempirical_covered_system import (
 from vessel_manoeuvring_models.models.abkowitz_rudder_system import AbkowitzRudderSystem
 from .subsystems import add_wind_force_system as add_wind
 from vessel_manoeuvring_models.prime_system import PrimeSystem
-from .nodes import regress_wind_tunnel_test
 
 import logging
 

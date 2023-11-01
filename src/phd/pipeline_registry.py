@@ -4,7 +4,15 @@ from typing import Dict
 from kedro.framework.project import find_pipelines
 from kedro.pipeline import Pipeline
 from kedro.pipeline.modular_pipeline import pipeline
-from .pipelines import load_7m, filter, filter_wPCC
+from .pipelines import (
+    # load_7m,
+    # filter,
+    filter_wPCC,
+    load_wPCC,
+    regression_VCT,
+    models,
+    resistance_MDL,
+)
 
 
 def register_pipelines() -> Dict[str, Pipeline]:
@@ -13,11 +21,26 @@ def register_pipelines() -> Dict[str, Pipeline]:
     Returns:
         A mapping from pipeline names to ``Pipeline`` objects.
     """
-    pipelines = find_pipelines()
-    pipelines["load_7m"] = load_7m.create_pipeline()
-    pipelines["filter"] = pipeline(pipe=filter.create_pipeline(), namespace="7m")
+    # pipelines = find_pipelines()
+    pipelines = {}
+    # pipelines["load_7m"] = load_7m.create_pipeline()
+    pipelines["models"] = pipeline(models.create_pipeline(), namespace="wPCC")
+
+    pipelines["regression_VCT"] = pipeline(
+        regression_VCT.create_pipeline(), namespace="wPCC"
+    )
+
+    pipelines["load_wPCC"] = pipeline(
+        pipe=load_wPCC.create_pipeline(), namespace="wPCC"
+    )
+
+    # pipelines["filter"] = pipeline(pipe=filter.create_pipeline(), namespace="7m")
     pipelines["filter_wPCC"] = pipeline(
         pipe=filter_wPCC.create_pipeline(), namespace="wPCC"
+    )
+
+    pipelines["resistance_MDL"] = pipeline(
+        resistance_MDL.create_pipeline(), namespace="wPCC"
     )
 
     pipelines["__default__"] = sum(pipelines.values())

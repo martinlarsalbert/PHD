@@ -1,0 +1,12 @@
+wPCC.parameters:
+  default:
+    delta_lim: 1000000000000000 # Vert large value in CFD (no play between hull and rudder for large angles)
+    C_L_tune: 1.0
+    C_D_tune: 1.0
+    C_D0_tune: 1.0
+    a_H: 0.07  # hull rudder interaction
+    kappa: 0.62  # (Balancing the Y_D and N_D at drift angle)
+    l_R: -3.63544
+    gamma_0_port: 0.04014257279586958
+    gamma_0_stbd: -0.04014257279586958
+

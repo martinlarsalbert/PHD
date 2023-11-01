@@ -8,7 +8,8 @@ m: 441.0267843660858
 I_z: 742.0462794081202  # Around lpp/2 (not CG)
 volume: 0.4410267843660858
 scale_factor: 41.2
-x_r: -2.5072  # Rudder x-position from lpp/2
+#x_r: -2.5072  # Rudder x-position from lpp/2
+x_r: -2.45  # Reduce the rudder lever a bit (to get correct yawing moment)
 TWIN: 1
 x_p: -2.42219908951329  # Propeller x-position from lpp/2
 y_p_port: -0.2176 # Port rudder y-position from CL

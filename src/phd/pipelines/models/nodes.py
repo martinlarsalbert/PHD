@@ -36,9 +36,32 @@ from .subsystems import (
 from .subsystems import add_wind_force_system as add_wind
 from vessel_manoeuvring_models.prime_system import PrimeSystem
 
+from .models_wPCC import ModelSemiempiricalCovered
+
 import logging
 
 log = logging.getLogger(__name__)
+
+
+def base_models(ship_data: dict, parameters: dict) -> dict:
+    models = {}
+
+    name = "semiempirical_covered"
+    log.info(f'Creating: "{name}"')
+    model = ModelSemiempiricalCovered(ship_data=ship_data, create_jacobians=True)
+    delattr(
+        model.subsystems["rudder_port"], "lambdas"
+    )  # These do not work with pickle (for some reason)
+    delattr(model.subsystems["rudder_stbd"], "lambdas")
+
+    models[name] = model
+
+    # Updating the parameters:
+    for name, model in models.items():
+        parameters_ = parameters.get(name, parameters["default"])
+        model.parameters.update(parameters_)
+
+    return models
 
 
 def main_model() -> ModularVesselSimulator:
@@ -304,7 +327,7 @@ def regress_VCT(
     pipeline: dict,
     exclude_parameters: dict = {},
 ):
-    from .regression_pipeline import fit
+    from phd.pipelines.regression_VCT.regression_pipeline import fit
 
     model = vmm_model.copy()
 
@@ -374,7 +397,7 @@ def regress_hull_VCT(
     exclude_parameters: dict = {},
 ):
     log.info("Regressing hull VCT")
-    from .regression_pipeline import pipeline, fit
+    from phd.pipelines.regression_VCT.regression_pipeline import pipeline, fit
 
     model, fits = regress_VCT(
         vmm_model=vmm_model,
@@ -396,7 +419,10 @@ def regress_hull_rudder_VCT(
     exclude_parameters: dict = {},
 ):
     log.info("Regressing hull and rudder VCT")
-    from .regression_pipeline import pipeline_with_rudder, fit
+    from phd.pipelines.regression_VCT.regression_pipeline import (
+        pipeline_with_rudder,
+        fit,
+    )
 
     # Note! Including the rudder forcces in the hull forces in this regression:
     df_VCT["fy_hull"] = df_VCT["fy_hull"] + df_VCT["fy_rudders"]
