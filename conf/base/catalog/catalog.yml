@@ -3,20 +3,16 @@
 # Documentation for this file format can be found in "The Data Catalog"
 # Link: https://kedro.readthedocs.io/en/stable/data/data_catalog.html
 
-{% set vmms = ["vmm_7m_vct","vmm_martins_simple","vmm_martins_simple_thrust","vmm_7m_vct_wind","vmm_simple","vmm_simple_wind"] %}
-{% set regressions = ["vct","VCT_MDL_resistance","VCT_MDL_resistance_optimized_kappa","MDL_hull_inverse_dynamics","MDL_inverse_dynamics"] %}
-{% set data_sources = ["MDL","Lake"] %}
-{% set ships = ["wPCC","7m"] %}
-
-## Regressions:
-{% for ship in ships %}
-
+#{% set vmms = ["vmm_7m_vct","vmm_martins_simple","vmm_martins_simple_thrust","vmm_7m_vct_wind","vmm_simple","vmm_simple_wind"] %}
+#{% set regressions = ["vct","VCT_MDL_resistance","VCT_MDL_resistance_optimized_kappa","MDL_hull_inverse_dynamics","MDL_inverse_dynamics"] %}
+#{% set data_sources = ["MDL","Lake"] %}
+#{% set ships = ["{namespace}","7m"] %}
 
 ### VCT data ###
 
-{{ ship }}.df_VCT_all:
+"{namespace}.df_VCT_all":
   type: PartitionedDataSet
-  path: data/01_raw/{{ ship }}/df_VCT_all
+  path: data/01_raw/{namespace}/df_VCT_all
   dataset: 
     type: pandas.CSVDataSet
     load_args:
@@ -25,62 +21,62 @@
       index: True
   filename_suffix: .csv
 
-{{ ship }}.df_VCT_raw:
+"{namespace}.df_VCT_raw":
   type: pandas.CSVDataSet
-  filepath: data/02_intermediate/{{ ship }}/df_VCT_raw.csv
+  filepath: data/02_intermediate/{namespace}/df_VCT_raw.csv
   load_args:
     index_col: 0
   save_args:
     index: True
 
-{{ ship }}.df_VCT:
+"{namespace}.df_VCT":
   type: pandas.CSVDataSet
-  filepath: data/02_intermediate/{{ ship }}/df_VCT.csv
+  filepath: data/02_intermediate/{namespace}/df_VCT.csv
   load_args:
     index_col: 0
   save_args:
     index: True
 
-{{ ship }}.shipdict_base:
+"{namespace}.shipdict_base":
   type: vct_pipelines.ship_dict_dataset.ShipDictDataSet
-  filepath: data/01_raw/{{ ship }}/{{ship}}.ship
+  filepath: data/01_raw/{namespace}/{{ship}}.ship
 
-{{ ship }}.ship_data:  # (From Lic.)
+"{namespace}.ship_data":  # (From Lic.)
   type: yaml.YAMLDataSet
-  filepath: data/01_raw/{{ ship }}/ship_data.yml
+  filepath: data/01_raw/{namespace}/ship_data.yml
 
 ### Wind data ###
-{{ ship }}.wind_data:
+"{namespace}.wind_data":
   type: pandas.CSVDataSet
-  filepath: data/01_raw/{{ ship }}/wind_data.csv
+  filepath: data/01_raw/{namespace}/wind_data.csv
   load_args:
     index_col: 0
   save_args:
     index: True
 
 # shipdict with regressed parameters (hydrodynamic derivatives updated)
-#{{ ship }}.ship_dict_from_regression:
+#{namespace}.ship_dict_from_regression:
 #  type: IncrementalDataSet
 #  path: data/05_model_input/ship_dict_from_regression/{{ship}}
 #  dataset: vct_pipelines.ship_dict_dataset.ShipDictDataSet
 #  filename_suffix: .ship
 #
-#{{ ship }}.derivatives:
+#{namespace}.derivatives:
 #  type: IncrementalDataSet
 #  path: data/05_model_input/derivatives/{{ship}}
 #  dataset: yaml.YAMLDataSet
 #  filename_suffix: .yml
 #
-#{{ ship }}.derivatives_std:
+#{namespace}.derivatives_std:
 #  type: IncrementalDataSet
 #  path: data/05_model_input/derivatives_std/{{ship}}
 #  dataset: yaml.YAMLDataSet
 #  filename_suffix: .yml
 
 ## Time series
-{{ ship }}.time_series_:
+"{namespace}.time_series_":
   type: PartitionedDataSet
-  path: data/01_raw/{{ ship }}/time_series_
+  path: data/01_raw/{namespace}/time_series_
   dataset:
     type: pandas.CSVDataSet
     load_args:
@@ -90,9 +86,9 @@
   filename_suffix: .csv
 
 
-{{ ship }}.time_series:
+"{namespace}.time_series":
   type: PartitionedDataSet
-  path: data/01_raw/{{ ship }}/time_series
+  path: data/01_raw/{namespace}/time_series
   dataset:
     type: pandas.CSVDataSet
     load_args:
@@ -101,9 +97,9 @@
       index: True
   filename_suffix: .csv
 
-{{ ship }}.time_series_rev:
+"{namespace}.time_series_rev":
   type: PartitionedDataSet
-  path: data/02_intermediate/{{ ship }}/time_series_rev
+  path: data/02_intermediate/{namespace}/time_series_rev
   dataset:
     type: pandas.CSVDataSet
     load_args:
@@ -113,13 +109,13 @@
   filename_suffix: .csv
 
 
-{{ ship }}.units:
+"{namespace}.units":
   type: yaml.YAMLDataSet
-  filepath: data/01_raw/{{ ship }}/units.yml
+  filepath: data/01_raw/{namespace}/units.yml
   
-{{ ship }}.time_series_meta_data:
+"{namespace}.time_series_meta_data":
   type: pandas.CSVDataSet
-  filepath: data/01_raw/{{ ship }}/time_series_meta_data.csv
+  filepath: data/01_raw/{namespace}/time_series_meta_data.csv
   load_args:
     index_col: 0
     encoding: 'utf-8'
@@ -127,9 +123,9 @@
     index: True
     encoding: 'utf-8'
 
-{{ ship }}.time_series_preprocessed.ek:
+"{namespace}.time_series_preprocessed.ek":
   type: PartitionedDataSet
-  path: data/03_primary/time_series_preprocessed/{{ ship }}/ek
+  path: data/03_primary/time_series_preprocessed/{namespace}/ek
   dataset:
     type: pandas.CSVDataSet
     load_args:
@@ -138,9 +134,9 @@
       index: True
   filename_suffix: .csv
 
-{{ ship }}.time_series_preprocessed.ek_smooth:
+"{namespace}.time_series_preprocessed.ek_smooth":
   type: PartitionedDataSet
-  path: data/03_primary/time_series_preprocessed/{{ ship }}/ek_smooth
+  path: data/03_primary/time_series_preprocessed/{namespace}/ek_smooth
   dataset:
     type: pandas.CSVDataSet
     load_args:
@@ -149,9 +145,9 @@
       index: True
   filename_suffix: .csv
 
-{{ ship }}.simulation_no_wind:
+"{namespace}.simulation_no_wind":
   type: PartitionedDataSet
-  path: data/07_model_output/{{ ship }}/simulation/no_wind
+  path: data/07_model_output/{namespace}/simulation/no_wind
   dataset:
     type: pandas.CSVDataSet
     load_args:
@@ -160,9 +156,9 @@
       index: True
   filename_suffix: .csv
 
-{{ ship }}.simulation_wind:
+"{namespace}.simulation_wind":
   type: PartitionedDataSet
-  path: data/07_model_output/{{ ship }}/simulation/wind
+  path: data/07_model_output/{namespace}/simulation/wind
   dataset:
     type: pandas.CSVDataSet
     load_args:
@@ -171,9 +167,9 @@
       index: True
   filename_suffix: .csv
 
-{{ ship }}.modular.simulation_no_wind:
+"{namespace}.modular.simulation_no_wind":
   type: PartitionedDataSet
-  path: data/07_model_output/{{ ship }}/simulation/modular/no_wind
+  path: data/07_model_output/{namespace}/simulation/modular/no_wind
   dataset:
     type: pandas.CSVDataSet
     load_args:
@@ -182,9 +178,9 @@
       index: True
   filename_suffix: .csv
 
-{{ ship }}.modular.simulation_wind:
+"{namespace}.modular.simulation_wind":
   type: PartitionedDataSet
-  path: data/07_model_output/{{ ship }}/simulation/modular/wind
+  path: data/07_model_output/{namespace}/simulation/modular/wind
   dataset:
     type: pandas.CSVDataSet
     load_args:
@@ -193,9 +189,9 @@
       index: True
   filename_suffix: .csv
 
-{{ ship }}.simulation_MDL_vmm_abkowitz_diminished:
+"{namespace}.simulation_MDL_vmm_abkowitz_diminished":
   type: PartitionedDataSet
-  path: data/07_model_output/{{ ship }}/simulation/MDL_vmm_abkowitz_diminished
+  path: data/07_model_output/{namespace}/simulation/MDL_vmm_abkowitz_diminished
   dataset:
     type: pandas.CSVDataSet
     load_args:
@@ -208,7 +204,7 @@
 
 ## Models
 ### Model templates (half finished models, where propeller are missing etc.):
-{{ ship }}.base_models:
+"{namespace}.base_models":
   type: PartitionedDataSet
   path: data/05_model_input/base_models
   dataset:
@@ -222,45 +218,45 @@
 #  filepath: data/06_models/main_model.pkl
 #  backend: dill
 #
-#{{ ship }}.main_model:
+#{namespace}.main_model:
 #  type: pickle.PickleDataSet
-#  filepath: data/06_models/{{ ship }}.main_model.pkl
+#  filepath: data/06_models/{namespace}.main_model.pkl
 #  backend: dill
 #
 #  {% for vmm in vmms %}
-#{{ ship }}.{{ vmm }}:
+#{namespace}.{{ vmm }}:
 #  type: pickle.PickleDataSet
-#  filepath: data/06_models/{{ ship }}.{{ vmm }}.pkl
+#  filepath: data/06_models/{namespace}.{{ vmm }}.pkl
 #  backend: dill
 #  {% endfor %}
 #
 ### Complete models:
-{{ ship }}.models_VCT:
+"{namespace}.models_VCT":
   type: PartitionedDataSet
-  path: data/06_models/{{ ship }}/models_VCT
+  path: data/06_models/{namespace}/models_VCT
   dataset:
     type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
   filename_suffix: .pkl
 
-{{ ship }}.models_VCT_MDL:
+"{namespace}.models_VCT_MDL":
   type: PartitionedDataSet
-  path: data/06_models/{{ ship }}/models_VCT_MDL
+  path: data/06_models/{namespace}/models_VCT_MDL
   dataset:
     type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
   filename_suffix: .pkl
 
-{{ ship }}.models:
+"{namespace}.models":
   type: PartitionedDataSet
-  path: data/06_models/{{ ship }}
+  path: data/06_models/{namespace}
   dataset:
     type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
   filename_suffix: .pkl
 
 #  {% for vmm in vmms %}
 #    {% for model in regressions %}
-#{{ ship }}.models.{{ vmm }}.{{ model }}:
+#{namespace}.models.{{ vmm }}.{{ model }}:
 #  type: pickle.PickleDataSet
-#  filepath: data/06_models/{{ ship }}/{{ vmm }}.{{ model }}.pkl
+#  filepath: data/06_models/{namespace}/{{ vmm }}.{{ model }}.pkl
 #  backend: dill
 #    {% endfor %}
 #  {% endfor %}
@@ -271,9 +267,9 @@
 #
 #      {% for model in regressions %}
 #
-#{{ ship }}.{{ data_source }}.{{ vmm }}.{{ model }}.resimulate:
+#{namespace}.{{ data_source }}.{{ vmm }}.{{ model }}.resimulate:
 #  type: PartitionedDataSet
-#  path: data/07_model_output/{{ ship }}/resimulation/{{ data_source }}/{{ vmm }}/{{ model }}
+#  path: data/07_model_output/{namespace}/resimulation/{{ data_source }}/{{ vmm }}/{{ model }}
 #  dataset:
 #    type: pandas.CSVDataSet
 #    load_args:
@@ -292,9 +288,9 @@
 #
 #      {% for model in regressions %}
 #
-#{{ ship }}.{{ data_source }}.{{ vmm }}.{{ model }}.resimulation_with_autopilot:
+#{namespace}.{{ data_source }}.{{ vmm }}.{{ model }}.resimulation_with_autopilot:
 #  type: PartitionedDataSet
-#  path: data/07_model_output/{{ ship }}/resimulation_with_autopilot/{{ data_source }}/{{ vmm }}/{{ model }}
+#  path: data/07_model_output/{namespace}/resimulation_with_autopilot/{{ data_source }}/{{ vmm }}/{{ model }}
 #  dataset:
 #    type: pandas.CSVDataSet
 #    load_args:
@@ -308,14 +304,12 @@
 #  {% endfor %}
 
 ## Predict
-{{ ship }}.force_prediction_scores:
+"{namespace}.force_prediction_scores":
   type: pandas.CSVDataSet
-  filepath: data/08_reporting/{{ ship }}.force_prediction_scores.csv
+  filepath: data/08_reporting/{namespace}.force_prediction_scores.csv
   load_args:
     index_col: 0
     encoding: 'utf-8'
   save_args:
     index: True
     encoding: 'utf-8'
-
-{% endfor %}

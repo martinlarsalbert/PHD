@@ -34,7 +34,6 @@
       psi: 0.5  # [deg]
       r: 0.01  # [rad/s]  # Yaw rate r is also a measurement from GyroZ
   filter_model_name: vmm_simple.VCT_MDL_resistance
-  filter_model_name: vmm_simple.VCT_MDL_resistance
   skip:
     - 02_inclination_test
     #- 01_motoring_7m_all_data  # Just for now...
