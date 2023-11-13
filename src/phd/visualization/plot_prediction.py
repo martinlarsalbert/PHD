@@ -145,3 +145,80 @@ def plot_force_components(model, data, window=None):
         make_y_axis_symmetrical(ax)
 
     return fig
+
+
+def get_delta_corners(data, limit_factor=0.99):
+    mask = (
+        (data["delta"] > limit_factor * data["delta"].max())
+        | (data["delta"] < limit_factor * data["delta"].min())
+    ).values
+    mask_start = ~mask[0:-1] & mask[1:]
+    mask_start = np.concatenate(([False], mask_start))
+    starts = data.loc[mask_start]
+
+    mask_end = ~mask[1:] & mask[0:-1]
+    mask_end = np.concatenate(([False], mask_end))
+    ends = data.loc[mask_end]
+    corners = pd.concat((starts, ends), axis=0).sort_index()
+    return starts, ends, corners
+
+
+def plot_compare_model_forces(
+    model: ModularVesselSimulator,
+    data: pd.DataFrame,
+    keys=["N_D", "N_H", "N_R"],
+    styles={},
+):
+    if len(styles) == 0:
+        styles = {
+            "Experiment": {
+                "style": "-",
+                "color": "green",
+                "zorder": -10,
+                "lw": 1.0,
+                "label": "Experiment",
+            },
+            "Model": {"style": "b-", "lw": 0.5, "label": "Model"},
+        }
+
+    fig, axes = plt.subplots(nrows=len(keys) + 1, height_ratios=[0.50, 1, 1, 1])
+    fig.set_size_inches(13, 13)
+    forces_from_motions = model.forces_from_motions(data=data)
+    forces_predicted = predict(model=model, data=data)
+
+    ax = axes[0]
+
+    starts, ends, corners = get_delta_corners(data=data)
+
+    data.plot(y="beta", color="red", ax=ax)
+    data.plot(y="delta", color="g", ax=ax)
+    ax.set_xlim(data.index[0], data.index[-1])
+    ax.legend(loc="upper left")
+    ax.set_xticks(corners.index)
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    # ax.grid(False)
+
+    ax2 = ax.twinx()
+    data.plot(y="r", color="b", ax=ax2)
+    ax2.legend(loc="lower left")
+    ax2.grid(False)
+    ax2.set_yticklabels([])
+
+    for key, ax in zip(keys, axes[1:]):
+        if key in forces_from_motions:
+            forces_from_motions.plot(y=key, **styles["Experiment"], ax=ax)
+
+        forces_predicted.plot(y=key, **styles["Model"], ax=ax)
+
+        ax.set_ylabel(rf"${key}$ $[Nm]$")
+        ax.get_legend().set_visible(False)
+        ax.get_legend().set_visible(False)
+        ax.set_xlim(data.index[0], data.index[-1])
+        ax.set_xticks(corners.index)
+        ax.set_xticklabels([])
+
+    axes[1].legend()
+    axes[-1].set_xlabel("Time [s]")
+    axes[-1].set_xticklabels(np.round(axes[-1].get_xticks(), 1))
+    plt.tight_layout()

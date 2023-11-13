@@ -23,7 +23,9 @@ def pipeline(df_VCT_prime: pd.DataFrame, model: ModularVesselSimulator) -> dict:
                     (r, 0),
                 ]
             ),
-            "data": tests.get_group("resistance"),
+            "data": tests.get_group("resistance")
+            if "resistance" in tests.groups
+            else tests.get_group("self propulsion"),
         },
         "Drift angle fx": {
             "eq": hull.equations["X_H"].subs(

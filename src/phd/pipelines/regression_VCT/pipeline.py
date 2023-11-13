@@ -4,7 +4,13 @@ generated using Kedro 0.18.7
 """
 
 from kedro.pipeline import Pipeline, node, pipeline
-from .nodes import load_VCT, add_extra_circle_drift, regress_hull_VCT, adopting_to_MDL
+from .nodes import (
+    load_VCT,
+    add_extra_circle_drift,
+    regress_hull_VCT,
+    adopting_to_MDL,
+    manual_regression,
+)
 
 
 def create_pipeline(**kwargs) -> Pipeline:

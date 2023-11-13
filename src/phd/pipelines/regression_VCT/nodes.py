@@ -12,6 +12,7 @@ from vessel_manoeuvring_models.models.diff_eq_to_matrix import DiffEqToMatrix
 import statsmodels.api as sm
 from vessel_manoeuvring_models.substitute_dynamic_symbols import run, lambdify
 from phd.visualization.plot_prediction import predict
+from vct.read_shipflow import mirror_x_z
 
 import logging
 
@@ -31,19 +32,19 @@ def load_VCT(df_VCT: dict) -> pd.DataFrame:
     pd.DataFrame
         concatinated selection of VCT data for this ship
     """
-    ## MDL:
-    df_VCT_MDL = df_VCT["V2_3_R2_MDL.df_VCT"]()
-    df_VCT_MDL["fx_rudders"] = (
-        df_VCT_MDL["fx_rudder_port"] + df_VCT_MDL["fx_rudder_stb"]
-    )
-    df_VCT_MDL["fy_rudders"] = (
-        df_VCT_MDL["fy_rudder_port"] + df_VCT_MDL["fy_rudder_stb"]
-    )
-    df_VCT_MDL["mz_rudders"] = (
-        df_VCT_MDL["mz_rudder_port"] + df_VCT_MDL["mz_rudder_stb"]
-    )
-
-    ## Additional:
+    ### MDL:
+    # df_VCT_MDL = df_VCT["V2_3_R2_MDL.df_VCT"]()
+    # df_VCT_MDL["fx_rudders"] = (
+    #    df_VCT_MDL["fx_rudder_port"] + df_VCT_MDL["fx_rudder_stb"]
+    # )
+    # df_VCT_MDL["fy_rudders"] = (
+    #    df_VCT_MDL["fy_rudder_port"] + df_VCT_MDL["fy_rudder_stb"]
+    # )
+    # df_VCT_MDL["mz_rudders"] = (
+    #    df_VCT_MDL["mz_rudder_port"] + df_VCT_MDL["mz_rudder_stb"]
+    # )
+    #
+    ### Additional:
     df_VCT_MDL_additional = df_VCT["V2_3_R2_MDL_additional.df_VCT"]()
     df_VCT_MDL_additional["fx_rudders"] = (
         df_VCT_MDL_additional["fx_rudder_port"] + df_VCT_MDL_additional["fx_rudder_stb"]
@@ -55,7 +56,22 @@ def load_VCT(df_VCT: dict) -> pd.DataFrame:
         df_VCT_MDL_additional["mz_rudder_port"] + df_VCT_MDL_additional["mz_rudder_stb"]
     )
 
-    df_VCT = pd.concat((df_VCT_MDL, df_VCT_MDL_additional), axis=0)
+    ## M5139-02-A_MS:
+    df_VCT_MDL_M5139 = df_VCT["M5139-02-A_MS.df_VCT"]()
+    renames = {
+        "fx_Rudder_PS": "fx_rudder_port",
+        "fy_Rudder_PS": "fy_rudder_port",
+        "mz_Rudder_PS": "mz_rudder_port",
+        "fx_Rudder_SB": "fx_rudder_stb",
+        "fy_Rudder_SB": "fy_rudder_stb",
+        "mz_Rudder_SB": "mz_rudder_stb",
+    }
+    df_VCT_MDL_M5139.rename(columns=renames, inplace=True)
+    df_mirror = mirror_x_z(df_VCT_MDL_M5139.copy())
+
+    # df_VCT = pd.concat((df_VCT_MDL, df_VCT_MDL_additional, df_VCT_MDL_M5139), axis=0)
+    df_VCT = pd.concat((df_VCT_MDL_additional, df_VCT_MDL_M5139, df_mirror), axis=0)
+    # df_VCT = df_VCT_MDL_M5139
 
     df_VCT["X_D"] = df_VCT["fx"]
     df_VCT["Y_D"] = df_VCT["fy"]
@@ -178,10 +194,29 @@ def _regress_hull_VCT(
         exclude_parameters=exclude_parameters,
     )
 
+    model = manual_regression(model=model)
+
     if full_output:
         return model, fits
     else:
         return model
+
+
+def manual_regression(model: ModularVesselSimulator) -> ModularVesselSimulator:
+    """Manual regression based on visual inspection."""
+
+    model.parameters["delta_lim"] = np.deg2rad(90)
+
+    covered = model.ship_parameters["D"] / model.ship_parameters["b_R"] * 0.5
+    model.ship_parameters["A_R_C"] = model.ship_parameters["A_R"] * covered
+    model.ship_parameters["A_R_U"] = model.ship_parameters["A_R"] * (1 - covered)
+
+    model.ship_parameters["w_f"] = 0.25
+
+    model.parameters["kappa"] = 1.0
+    model.parameters["l_R"] = -1.30 * model.ship_parameters["L"] / 2
+
+    return model
 
 
 def regress_VCT(
@@ -258,7 +293,17 @@ def adopting_to_MDL(models_VCT: dict, resistance_MDL: pd.DataFrame) -> dict:
         add_MDL_resistance(model=model, resistance=resistance_MDL)
 
         model.parameters["delta_alpha_s"] = 0  # Delayed stall
-        model.parameters["delta_lim"] = np.deg2rad(35)
+
+        factor = 0.80
+        model.parameters["X0"] *= factor
+        model.parameters["Xu"] *= factor
+
+        # model.parameters["kappa"] = 0.85
+        model.parameters["l_R"] = 1.5 * model.parameters["l_R"]
+        # model.parameters['Yvdot']*=0.5
+
+        model.parameters["Yvdot"] *= 0.55
+        model.parameters["Nrdot"] *= 0.7
 
         models[name] = model
 

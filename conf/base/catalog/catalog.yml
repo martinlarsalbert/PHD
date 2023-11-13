@@ -56,19 +56,19 @@
 
 # shipdict with regressed parameters (hydrodynamic derivatives updated)
 #{namespace}.ship_dict_from_regression:
-#  type: IncrementalDataSet
+#  type: IncrementalDataset
 #  path: data/05_model_input/ship_dict_from_regression/{{ship}}
 #  dataset: vct_pipelines.ship_dict_dataset.ShipDictDataSet
 #  filename_suffix: .ship
 #
 #{namespace}.derivatives:
-#  type: IncrementalDataSet
+#  type: IncrementalDataset
 #  path: data/05_model_input/derivatives/{{ship}}
 #  dataset: yaml.YAMLDataSet
 #  filename_suffix: .yml
 #
 #{namespace}.derivatives_std:
-#  type: IncrementalDataSet
+#  type: IncrementalDataset
 #  path: data/05_model_input/derivatives_std/{{ship}}
 #  dataset: yaml.YAMLDataSet
 #  filename_suffix: .yml
@@ -208,24 +208,24 @@
   type: PartitionedDataSet
   path: data/05_model_input/base_models
   dataset:
-    #type: pickle.PickleDataSet
+    #type: pickle.PickleDataset
     #backend: dill
     type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
   filename_suffix: .pkl
 
 #main_model:
-#  type: pickle.PickleDataSet
+#  type: pickle.PickleDataset
 #  filepath: data/06_models/main_model.pkl
 #  backend: dill
 #
 #{namespace}.main_model:
-#  type: pickle.PickleDataSet
+#  type: pickle.PickleDataset
 #  filepath: data/06_models/{namespace}.main_model.pkl
 #  backend: dill
 #
 #  {% for vmm in vmms %}
 #{namespace}.{{ vmm }}:
-#  type: pickle.PickleDataSet
+#  type: pickle.PickleDataset
 #  filepath: data/06_models/{namespace}.{{ vmm }}.pkl
 #  backend: dill
 #  {% endfor %}
@@ -255,7 +255,7 @@
 #  {% for vmm in vmms %}
 #    {% for model in regressions %}
 #{namespace}.models.{{ vmm }}.{{ model }}:
-#  type: pickle.PickleDataSet
+#  type: pickle.PickleDataset
 #  filepath: data/06_models/{namespace}/{{ vmm }}.{{ model }}.pkl
 #  backend: dill
 #    {% endfor %}

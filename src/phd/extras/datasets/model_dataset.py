@@ -38,3 +38,7 @@ class ModularVesselSimulatorDataSet(AbstractDataSet):
     def _describe(self) -> Dict[str, Any]:
         """Returns a dict that describes the attributes of the dataset"""
         return dict(filepath=self._filepath)
+
+
+class ModularVesselSimulators(ModularVesselSimulatorDataSet):
+    pass
