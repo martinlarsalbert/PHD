@@ -213,6 +213,15 @@
     type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
   filename_suffix: .pkl
 
+"{namespace}.base_models_simple":
+  type: PartitionedDataSet
+  path: data/05_model_input/base_models_simple
+  dataset:
+    #type: pickle.PickleDataset
+    #backend: dill
+    type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
+  filename_suffix: .pkl
+
 #main_model:
 #  type: pickle.PickleDataset
 #  filepath: data/06_models/main_model.pkl
@@ -255,6 +264,20 @@
 "{namespace}.models_VCT_MDL_optimize":
   type: PartitionedDataSet
   path: data/06_models/{namespace}/models_VCT_MDL_optimize
+  dataset:
+    type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
+  filename_suffix: .pkl
+
+"{namespace}.models_ID_hull":
+  type: PartitionedDataSet
+  path: data/06_models/{namespace}/models_ID_hull
+  dataset:
+    type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
+  filename_suffix: .pkl
+
+"{namespace}.models_ID_hull_rudder":
+  type: PartitionedDataSet
+  path: data/06_models/{namespace}/models_ID_hull_rudder
   dataset:
     type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
   filename_suffix: .pkl

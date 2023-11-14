@@ -169,6 +169,12 @@ def plot_compare_model_forces(
     keys=["N_D", "N_H", "N_R"],
     styles={},
 ):
+    if isinstance(model, dict):
+        models=model
+    else:
+        models={"Model":model}
+        
+    
     if len(styles) == 0:
         styles = {
             "Experiment": {
@@ -178,14 +184,17 @@ def plot_compare_model_forces(
                 "lw": 1.0,
                 "label": "Experiment",
             },
-            "Model": {"style": "b-", "lw": 0.5, "label": "Model"},
         }
+        for name,model in models.items():
+            styles[name] = {"style": "b-", "lw": 0.5, "label": name}
+        
 
     fig, axes = plt.subplots(nrows=len(keys) + 1, height_ratios=[0.50, 1, 1, 1])
     fig.set_size_inches(13, 13)
+    model = models[list(models.keys())[0]]
     forces_from_motions = model.forces_from_motions(data=data)
-    forces_predicted = predict(model=model, data=data)
-
+    force_predictions = {name:predict(model=model, data=data) for name, model in models.items()}
+    
     ax = axes[0]
 
     starts, ends, corners = get_delta_corners(data=data)
@@ -209,7 +218,8 @@ def plot_compare_model_forces(
         if key in forces_from_motions:
             forces_from_motions.plot(y=key, **styles["Experiment"], ax=ax)
 
-        forces_predicted.plot(y=key, **styles["Model"], ax=ax)
+        for name, forces_predicted in force_predictions.items():
+            forces_predicted.plot(y=key, **styles[name], ax=ax)
 
         ax.set_ylabel(rf"${key}$ $[Nm]$")
         ax.get_legend().set_visible(False)

@@ -15,12 +15,11 @@ from .nodes import (
     regress_hull_rudder_VCT,
     correct_vct_resistance,
     optimize_kappa,
-    regress_hull_inverse_dynamics,
-    regress_inverse_dynamics,
     scale_model,
     # regress_wind_tunnel_test,
     add_wind_force_system,
     base_models,
+    base_models_simple,
 )
 
 # from .subsystems import add_wind_force_system
@@ -33,6 +32,12 @@ def create_pipeline(**kwargs) -> Pipeline:
             inputs=["ship_data", "params:parameters"],
             outputs="base_models",
             name="base_models_node",
+        ),
+        node(
+            func=base_models_simple,
+            inputs=["ship_data", "params:parameters"],
+            outputs="base_models_simple",
+            name="base_models_simple",
         ),
     ]
     return pipeline(nodes)

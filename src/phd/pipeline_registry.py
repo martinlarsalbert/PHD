@@ -10,6 +10,7 @@ from .pipelines import (
     filter_wPCC,
     load_wPCC,
     regression_VCT,
+    regression_ID,
     models,
     resistance_MDL,
     added_mass_from_inverse_dynamics,
@@ -33,6 +34,10 @@ def register_pipelines() -> Dict[str, Pipeline]:
 
     pipelines["added_mass_from_inverse_dynamics"] = pipeline(
         added_mass_from_inverse_dynamics.create_pipeline(), namespace="wPCC"
+    )
+
+    pipelines["regression_ID"] = pipeline(
+        regression_ID.create_pipeline(), namespace="wPCC"
     )
 
     # pipelines["load_wPCC"] = pipeline(
