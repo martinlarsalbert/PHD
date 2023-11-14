@@ -10,6 +10,7 @@ from .nodes import (
     regress_hull_VCT,
     adopting_to_MDL,
     manual_regression,
+    shape_optimization,
 )
 
 
@@ -39,6 +40,12 @@ def create_pipeline(**kwargs) -> Pipeline:
                 inputs=["models_VCT", "resistance_MDL"],
                 outputs="models_VCT_MDL",
                 name="adopting_to_MDL",
+            ),
+            node(
+                func=shape_optimization,
+                inputs=["models_VCT", "resistance_MDL", "tests_ek_smooth_joined"],
+                outputs="models_VCT_MDL_optimize",
+                name="shape_optimization",
             ),
         ]
     )

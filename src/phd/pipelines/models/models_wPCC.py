@@ -326,6 +326,7 @@ class ModelSemiempiricalCovered(ModelTowedSemiempiricalCovered):
             "nu": 1.18849e-06,
             "e_0": 0.9,
             "kappa": 0.85,
+            "kappa_gamma": 0,
             "l_R": self.ship_parameters["x_r"],
             "delta_lim": np.deg2rad(35),
             "delta_alpha_s": np.deg2rad(0),  # Later stall when propeller race

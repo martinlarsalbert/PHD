@@ -13,6 +13,7 @@ import statsmodels.api as sm
 from vessel_manoeuvring_models.substitute_dynamic_symbols import run, lambdify
 from phd.visualization.plot_prediction import predict
 from vct.read_shipflow import mirror_x_z
+from phd.pipelines.models import optimize_l_R_shape
 
 import logging
 
@@ -206,15 +207,22 @@ def manual_regression(model: ModularVesselSimulator) -> ModularVesselSimulator:
     """Manual regression based on visual inspection."""
 
     model.parameters["delta_lim"] = np.deg2rad(90)
-
-    covered = model.ship_parameters["D"] / model.ship_parameters["b_R"] * 0.5
+    covered = model.ship_parameters["D"] / model.ship_parameters["b_R"] * 0.65
     model.ship_parameters["A_R_C"] = model.ship_parameters["A_R"] * covered
     model.ship_parameters["A_R_U"] = model.ship_parameters["A_R"] * (1 - covered)
 
-    model.ship_parameters["w_f"] = 0.25
+    model.parameters["kappa_outer"] = 0.94
+    model.parameters["kappa_inner"] = 0.94
+    model.parameters["kappa_gamma"] = 0.0
 
-    model.parameters["kappa"] = 1.0
-    model.parameters["l_R"] = -1.30 * model.ship_parameters["L"] / 2
+    model.parameters["l_R"] = 1.27 * model.ship_parameters["x_r"]
+    c_ = (model.ship_parameters["c_t"] + model.ship_parameters["c_r"]) / 2
+    model.ship_parameters["c_t"] = 1.30 * 0.1529126213592233
+    model.ship_parameters["c_r"] = c_ * 2 - model.ship_parameters["c_t"]
+
+    gamma_0_ = 0.044
+    model.parameters["gamma_0_port"] = -gamma_0_
+    model.parameters["gamma_0_stbd"] = gamma_0_
 
     return model
 
@@ -308,6 +316,45 @@ def adopting_to_MDL(models_VCT: dict, resistance_MDL: pd.DataFrame) -> dict:
         models[name] = model
 
     return models
+
+
+def shape_optimization(
+    models_VCT: dict, resistance_MDL: pd.DataFrame, tests_ek_smooth_joined: pd.DataFrame
+) -> dict:
+    models = {}
+    for name, loader in models_VCT.items():
+        model = loader()
+        model = optimize(model=model, tests_ek_smooth_joined=tests_ek_smooth_joined)
+        add_MDL_resistance(model=model, resistance=resistance_MDL)
+
+        models[name] = model
+
+    return models
+
+
+def optimize(
+    model: ModularVesselSimulator, tests_ek_smooth_joined
+) -> ModularVesselSimulator:
+    ids = [
+        22773,
+        22772,
+        22770,
+        22764,
+    ]
+
+    mask = tests_ek_smooth_joined["id"].isin(ids)
+    data = tests_ek_smooth_joined.loc[mask].copy()
+
+    data["thrust_port"] = data["Prop/PS/Thrust"]
+    data["thrust_stbd"] = data["Prop/SB/Thrust"]
+
+    optimization = optimize_l_R_shape.fit(model=model, data=data)
+
+    model.parameters["l_R"] = optimization.x[0]
+    model.parameters["kappa_outer"] = optimization.x[1]
+    model.parameters["kappa_inner"] = optimization.x[1]
+
+    return model
 
 
 def add_MDL_resistance(

@@ -14,10 +14,10 @@ def create_pipeline(**kwargs):
                 func=load,
                 inputs=[
                     "wPCC.time_series",
-                    "params:wPCC.thrust_channels",
-                    "params:wPCC.rev_channels",
+                    "params:thrust_channels",
+                    "params:rev_channels",
                 ],
-                outputs="wPCC.tests",
+                outputs="tests",
                 name="load_node",
                 tags=["filter"],
             ),
