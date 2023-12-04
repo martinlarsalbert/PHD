@@ -14,6 +14,7 @@ TWIN: 1
 x_p: -2.42219908951329  # Propeller x-position from lpp/2
 y_p_port: -0.2176 # Port propeller y-position from CL
 y_p_stbd: 0.2176  # Starboard propeller y-position from CL
+z_p: 0.12730849514563097 # Propeller z-position from WL and into the water
 y_R_port: -0.2176 # Port rudder y-position from CL
 y_R_stbd: 0.2176 # Starboard rudder y-position from CL
 D: 0.12135922330097086

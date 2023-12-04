@@ -10,6 +10,6 @@ wPCC.parameters:
     kappa_inner: 0.94
     kappa_gamma: 0
     l_R: -3.63544
-    gamma_0_port: -0.044
-    gamma_0_stbd: 0.044
+    gamma_0_port: 0.042446
+    gamma_0_stbd: -0.042446
 

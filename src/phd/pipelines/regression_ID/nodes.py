@@ -31,6 +31,40 @@ from vessel_manoeuvring_models.models.diff_eq_to_matrix import DiffEqToMatrix
 
 log = logging.getLogger(__name__)
 
+exclude_parameters_global = {
+    "a_H"  : 0.07,  # hull rudder interaction,
+    "Yrrr" : 0,
+    "Nvvv" : 0,
+    "Nvvr" : 0,
+    "Nvrr" : 0,
+    "Yvvr" : 0,
+    "Yvrr" : 0,
+    "Y0"   : 0,
+    "N0"   : 0,
+}
+
+def gather_data(tests_ek_smooth_joined:pd.DataFrame)->pd.DataFrame:
+    
+    ids = [
+        22773,
+        22772,
+        22770,
+        22764,
+    ]
+
+    mask = tests_ek_smooth_joined["id"].isin(ids)
+    data = tests_ek_smooth_joined.loc[mask].copy()
+    
+    data['V'] = data['U'] = np.sqrt(data['u']**2 + data['v']**2)
+    data['beta'] = -np.arctan2(data['v'],data['u'])
+    data['rev'] = data[['Prop/PS/Rpm','Prop/SB/Rpm']].mean(axis=1)
+    data['twa']=0
+    data['tws']=0
+    
+    data['thrust_port'] = data['Prop/PS/Thrust']
+    data['thrust_stbd'] = data['Prop/SB/Thrust']
+    
+    return data
 
 def regress_hull_inverse_dynamics(
     base_models: dict,
@@ -38,29 +72,17 @@ def regress_hull_inverse_dynamics(
 ) -> dict:
     models = {}
 
-    tests_ek_smooth_joined['V'] = tests_ek_smooth_joined['U'] = np.sqrt(tests_ek_smooth_joined['u']**2 + tests_ek_smooth_joined['v']**2)
-    tests_ek_smooth_joined['beta'] = -np.arctan2(tests_ek_smooth_joined['v'],tests_ek_smooth_joined['u'])
-    tests_ek_smooth_joined['rev'] = tests_ek_smooth_joined[['Prop/PS/Rpm','Prop/SB/Rpm']].mean(axis=1)
-    tests_ek_smooth_joined['twa']=0
-    tests_ek_smooth_joined['tws']=0
-    
-    tests_ek_smooth_joined['thrust_port'] = tests_ek_smooth_joined['Prop/PS/Thrust']
-    tests_ek_smooth_joined['thrust_stbd'] = tests_ek_smooth_joined['Prop/SB/Thrust']
+    data = gather_data(tests_ek_smooth_joined=tests_ek_smooth_joined)
     
     for name, loader in base_models.items():
         base_model = loader()
-        exclude_parameters = {}
-        #exclude_parameters["X0"] = base_model.parameters["X0"]
-        #exclude_parameters["Xu"] = base_model.parameters["Xu"]
-        exclude_parameters["a_H"] = 0
-        # exclude_parameters['Yr'] = 0
-        exclude_parameters["Yrrr"] = 0
-        exclude_parameters["Nvvv"] = 0
+        exclude_parameters = exclude_parameters_global.copy()
+        
         base_model.parameters['Xthrust'] = 1 - base_model.ship_parameters['tdf']
 
         models[name], fits = _regress_hull_inverse_dynamics(
             vmm_model=base_model,
-            data=tests_ek_smooth_joined,
+            data=data,
             exclude_parameters=exclude_parameters,
             full_output=True,
         )
@@ -206,6 +228,8 @@ def _regress_hull_inverse_dynamics(
     else:
         return model
 
+
+
 def regress_inverse_dynamics(
     base_models: dict,
     tests_ek_smooth_joined: pd.DataFrame,
@@ -213,27 +237,16 @@ def regress_inverse_dynamics(
 ) -> dict:
     models = {}
 
-    tests_ek_smooth_joined['V'] = tests_ek_smooth_joined['U'] = np.sqrt(tests_ek_smooth_joined['u']**2 + tests_ek_smooth_joined['v']**2)
-    tests_ek_smooth_joined['beta'] = -np.arctan2(tests_ek_smooth_joined['v'],tests_ek_smooth_joined['u'])
-    tests_ek_smooth_joined['rev'] = tests_ek_smooth_joined[['Prop/PS/Rpm','Prop/SB/Rpm']].mean(axis=1)
-    tests_ek_smooth_joined['twa']=0
-    tests_ek_smooth_joined['tws']=0
-    
-    tests_ek_smooth_joined['thrust_port'] = tests_ek_smooth_joined['Prop/PS/Thrust']
-    tests_ek_smooth_joined['thrust_stbd'] = tests_ek_smooth_joined['Prop/SB/Thrust']
+    data = gather_data(tests_ek_smooth_joined=tests_ek_smooth_joined)
     
     steal_model = steal_models['semiempirical_covered']()
     
     for name, loader in base_models.items():
         base_model = loader()
-        exclude_parameters = {}
+        exclude_parameters = exclude_parameters_global.copy()
         #exclude_parameters["X0"] = steal_model.parameters["X0"]
         #exclude_parameters["Xu"] = steal_model.parameters["Xu"]
         
-        exclude_parameters["a_H"] = 0
-        # exclude_parameters['Yr'] = 0
-        exclude_parameters["Yrrr"] = 0
-        exclude_parameters["Nvvv"] = 0
         base_model.parameters['Xthrust'] = 1 - base_model.ship_parameters['tdf']
         steals = ['Nrdot','Nvdot','Yrdot','Yvdot']
         for steal in steals:
@@ -242,7 +255,7 @@ def regress_inverse_dynamics(
         
         models[name], fits = _regress_inverse_dynamics(
             vmm_model=base_model,
-            data=tests_ek_smooth_joined,
+            data=data,
             exclude_parameters=exclude_parameters,
             full_output=True,
         )

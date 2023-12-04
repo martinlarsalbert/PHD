@@ -24,7 +24,7 @@ from .subsystems import (
     add_rudder_simple,
     add_dummy_wind_force_system,
 )
-from vessel_manoeuvring_models.models.semiempirical_rudder import (
+from vessel_manoeuvring_models.models.rudder_hull_interaction import (
     RudderHullInteractionSystem,
     RudderHullInteractionDummySystem,
 )
@@ -143,14 +143,17 @@ class ModelTowed(MainModel):
         if not "gamma_0" in self.parameters:
             self.parameters["gamma_0"] = 0
 
-        if not "'C_L_tune'" in self.parameters:
+        if not "C_L_tune" in self.parameters:
             self.parameters["C_L_tune"] = 1
 
-        if not "'C_D_tune'" in self.parameters:
+        if not "C_D_tune" in self.parameters:
             self.parameters["C_D_tune"] = 1
 
-        if not "'C_D0_tune'" in self.parameters:
+        if not "C_D0_tune" in self.parameters:
             self.parameters["C_D0_tune"] = 1
+            
+        if not "x_H" in self.parameters:
+            self.parameters["x_H"] = -1/2
 
     def add_added_mass(self):
         mask = df_parameters["state"] == "dot"

@@ -10,9 +10,20 @@
 
 ### VCT data ###
 
+"{namespace}.df_VCT_all_raw":
+  type: PartitionedDataSet
+  path: data/01_raw/{namespace}/df_VCT_all_raw
+  dataset: 
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
+
 "{namespace}.df_VCT_all":
   type: PartitionedDataSet
-  path: data/01_raw/{namespace}/df_VCT_all
+  path: data/02_intermediate/{namespace}/df_VCT_all
   dataset: 
     type: pandas.CSVDataSet
     load_args:

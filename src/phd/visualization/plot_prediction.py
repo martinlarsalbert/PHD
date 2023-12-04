@@ -167,16 +167,7 @@ def plot_compare_model_forces(
     model: ModularVesselSimulator,
     data: pd.DataFrame,
     keys=["N_D", "N_H", "N_R"],
-    styles={},
-):
-    if isinstance(model, dict):
-        models=model
-    else:
-        models={"Model":model}
-        
-    
-    if len(styles) == 0:
-        styles = {
+    styles= {
             "Experiment": {
                 "style": "-",
                 "color": "green",
@@ -184,7 +175,15 @@ def plot_compare_model_forces(
                 "lw": 1.0,
                 "label": "Experiment",
             },
-        }
+    }
+):
+    if isinstance(model, dict):
+        models=model
+    else:
+        models={"Model":model}
+        
+    
+    if len(styles) == 1:
         for name,model in models.items():
             styles[name] = {"style": "b-", "lw": 0.5, "label": name}
         
@@ -232,3 +231,38 @@ def plot_compare_model_forces(
     axes[-1].set_xlabel("Time [s]")
     axes[-1].set_xticklabels(np.round(axes[-1].get_xticks(), 1))
     plt.tight_layout()
+
+def group_parameters(df:pd.DataFrame, joins=['Nv','Nr','Nvr']):
+    
+    groups = {}
+    for join in joins:
+        join_set = set(join)
+        columns = []
+        for key in df.columns:
+            if set(key)==join_set:
+               columns.append(key) 
+    
+        if len(columns) > 0:
+            groups[join] = columns
+        
+    return groups
+
+def plot_parameter_contributions(model, data:pd.DataFrame, ax=None, prefix='N', unit='moment'):
+
+    if ax is None:
+        fig,ax=plt.subplots()
+    
+    hull = model.subsystems['hull']
+    df_parameters_contributions = hull.calculate_parameter_contributions(eq=hull.equations[f'{prefix}_H'], data=data, unit=unit)
+    
+    groupers = ["v","r","vr"]
+    joins = [f"{prefix}{group}" for group in groupers]
+    groups = group_parameters(df=df_parameters_contributions, joins=joins)
+
+    df_parameters_contributions_clean = pd.DataFrame(index=df_parameters_contributions.index)
+    for name, group in groups.items():
+        label = group[0] + "".join([f"+{item}" for item in group[1:]])
+        df_parameters_contributions_clean[label] = df_parameters_contributions[group].sum(axis=1)
+        
+    
+    return df_parameters_contributions_clean.plot(ax=ax)
