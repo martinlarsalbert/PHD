@@ -3,3 +3,18 @@
 #
 # Documentation for this file format can be found in "Parameters"
 # Link: https://docs.kedro.org/en/0.18.7/kedro_project_setup/configuration.html#parameters
+
+wPCC.VCT_exclude_parameters:
+    Yvdeltadelta: 0
+    Yvvdelta: 0
+    Yrdeltadelta: 0
+    Yrrdelta: 0
+    Yvrdelta: 0
+    Nrrdelta: 0
+    Nvrdelta: 0
+    Nvdeltadelta: 0
+    Nrdeltadelta: 0
+    Nvvdelta: 0
+    Xthrustport : 0.883  # (1-tdf)
+    Xthruststbd : 0.883  # (1-tdf)
+    

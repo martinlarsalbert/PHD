@@ -32,6 +32,8 @@ wPCC.test_meta_data:
     index: True
     encoding: 'utf-8'
 
+## Kalman filter
+
 wPCC.test_ek_smooth_meta_data:
   type: pandas.CSVDataSet
   filepath: data/03_primary/tests_preprocessed/wPCC/test_ek_smooth_meta_data.csv
@@ -91,6 +93,23 @@ wPCC.tests_ek_smooth_joined:
   save_args:
     index: True
     encoding: 'utf-8'
+
+wPCC.covariance_matrixes:
+  type: PartitionedDataSet
+  path: data/03_primary/covariance_matrixes/wPCC
+  dataset:
+    type: yaml.YAMLDataSet
+  filename_suffix: .yml
+
+wPCC.x0:
+  type: PartitionedDataSet
+  path: data/03_primary/x0/wPCC
+  dataset:
+    type: yaml.YAMLDataSet
+  filename_suffix: .yml
+
+
+## Other
 
 wPCC.resistance_MDL:
   type: pandas.CSVDataSet

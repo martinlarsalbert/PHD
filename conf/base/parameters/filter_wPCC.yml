@@ -1,119 +1,190 @@
-# This is a boilerplate parameters config generated for pipeline 'filter_wPCC'
-# using Kedro 0.18.7.
-#
-# Documentation for this file format can be found in "Parameters"
-# Link: https://docs.kedro.org/en/0.18.7/kedro_project_setup/configuration.html#parameters
 wPCC:
-#  ek_covariance_input:
-#    process_variance:
-#      u : 0.01
-#      v : 0.01
-#      r : 0.01  # [deg]
-#    measurement_error_max:
-#      positions: 0.1
-#      psi: 1  # [deg]
-#  ek_covariance_input:
-#    process_variance:
-#      u : 0.005
-#      v : 0.3
-#      r : 0.01  # [deg]
-#    measurement_error_max:
-#      positions: 0.05
-#      psi: 0.5  # [deg]
-  ek_covariance_input:
-    process_variance:
-      u : 0.005
-      v : 0.01
-      r : 0.005  # [deg]
-    measurement_error_max:
-      positions: 0.05
-      psi: 0.5  # [deg]
-  #filter_model_name: vmm_7m_vct_wind.VCT_MDL_resistance
-  filter_model_name: vmm_martins_simple_thrust.MDL_inverse_dynamics
-  skip:
- #   - "22639"
-    - "22638"
-    - "22637"
-    - "22636"
-    - "22634"
-#    - "22635"
-    - "22633"
-    - "22632"
-    - "22631"
-    - "22605"
-    - "22606"
-#    - "22611"
-    - "22610"
-    - "22609"
-    - "22608"
-    - "22607"
-    - "22836" # Sailing 
-    - "22835" # Sailing
-    - "22834" # Sailing
-    - "22833" # Sailing
-    - "22832" # Sailing
-    - "22831" # Sailing
-    - "22830" # Sailing
-    - "22826" # Sailing
-    - "22828" # Sailing
-    - "22825" # Sailing
-    - "22837" # Sailing
-    - "22823" # Sailing
-    - "22824" # Sailing
-    - "22827" # Sailing
-    - "22829" # Sailing
-    - "22838" # Sailing
-    - "22851" # Sailing
-    - "22845" # Sailing
-    - "22859" # Sailing
-    - "22858" # Sailing
-    - "22857" # Sailing
-    - "22856" # Sailing
-    - "22855" # Sailing
-    - "22854" # Sailing
-    - "22839" # Sailing
-    - "22853" # Sailing
-    - "22822" # Sailing
-    - "22850" # Sailing
-    - "22849" # Sailing
-    - "22848" # Sailing
-    - "22847" # Sailing
-    - "22846" # Sailing
-    - "22852" # Sailing
-    - "22821" # Sailing
-    - "22813" # Sailing
-    - "22819" # Sailing
-    - "22820" # Sailing
-    - "22860" # Sailing
-    - "22814" # Sailing
-    - "22861" # Sailing
-    - "22816" # Sailing
-    - "22817" # Sailing
-    - "22815" # Sailing
-    - "22818" # Sailing
-#    - "22774"
-    - "22776"
-#    - "22612"
-#    - "22613"
-#    - "22614"
-#    - "22615"
-#    - "22616"
-    - "22775"
-    - "22762"
-    - "22765"
-    - "22763"
-  #  - "22764"
-    - "22766"
-#    - "22770"
-    - "22768"
-#    - "22769"
-    - "22777"  # Not working?
-    - "22778"
-    - "22779"
-    - "22767"
-#    - "22771"
-#    - "22773"
-    - "22780"
-    - "22781"
-    - "22782"
-#    - "22772"
+    ek_covariance_input:
+        process_variance:
+            u : 0.5
+            v : 0.5
+            r : 0.5  # [deg]
+        measurement_error_max:
+            positions: 0.05
+            psi: 0.5  # [deg]
+    #filter_model_name: semiempirical_covered
+    filter_model_name: Abkowitz
+    skip:
+    - 22862                                                                                                                                                                                              nodes.py:124
+    - 22863
+#   - 22639
+    - 22638
+    - 22637
+    - 22636
+    - 22634
+#    - 22635
+    - 22633
+    - 22632
+    - 22631
+    - 22605
+    - 22606
+#    - 22611
+    - 22610
+    - 22609
+    - 22608
+    - 22607
+    - 22836 # Sailing 
+    - 22835 # Sailing
+    - 22834 # Sailing
+    - 22833 # Sailing
+    - 22832 # Sailing
+    - 22831 # Sailing
+    - 22830 # Sailing
+    - 22826 # Sailing
+    - 22828 # Sailing
+    - 22825 # Sailing
+    - 22837 # Sailing
+    - 22823 # Sailing
+    - 22824 # Sailing
+    - 22827 # Sailing
+    - 22829 # Sailing
+    - 22838 # Sailing
+    - 22851 # Sailing
+    - 22845 # Sailing
+    - 22859 # Sailing
+    - 22858 # Sailing
+    - 22857 # Sailing
+    - 22856 # Sailing
+    - 22855 # Sailing
+    - 22854 # Sailing
+    - 22839 # Sailing
+    - 22853 # Sailing
+    - 22822 # Sailing
+    - 22850 # Sailing
+    - 22849 # Sailing
+    - 22848 # Sailing
+    - 22847 # Sailing
+    - 22846 # Sailing
+    - 22852 # Sailing
+    - 22821 # Sailing
+    - 22813 # Sailing
+    - 22819 # Sailing
+    - 22820 # Sailing
+    - 22860 # Sailing
+    - 22814 # Sailing
+    - 22861 # Sailing
+    - 22816 # Sailing
+    - 22817 # Sailing
+    - 22815 # Sailing
+    - 22818 # Sailing
+#    - 22774
+    - 22776
+#    - 22612
+#    - 22613
+#    - 22614
+#    - 22615
+#    - 22616
+    - 22775
+    - 22762
+    - 22765
+    - 22763
+  #  - 22764
+    - 22766
+#    - 22770
+    - 22768
+#    - 22769
+    - 22777  # Not working?
+    - 22778
+    - 22779
+    - 22767
+#    - 22771
+#    - 22773
+    - 22780
+    - 22781
+    - 22782
+#    - 22772
+
+#        - 22862                                                                                                                                                                                              nodes.py:124
+#        - 22863
+#        - 22639
+#        - 22638
+#        - 22637
+#        - 22636
+#        - 22634
+#        - 22635
+#        - 22633
+#        - 22632
+#        - 22631
+#        - 22605
+#        - 22606
+#        - 22611
+#        - 22610
+#        - 22609
+#        - 22608
+#        - 22607
+#        - 22836 # Sailing 
+#        - 22835 # Sailing
+#        - 22834 # Sailing
+#        - 22833 # Sailing
+#        - 22832 # Sailing
+#        - 22831 # Sailing
+#        - 22830 # Sailing
+#        - 22826 # Sailing
+#        - 22828 # Sailing
+#        - 22825 # Sailing
+#        - 22837 # Sailing
+#        - 22823 # Sailing
+#        - 22824 # Sailing
+#        - 22827 # Sailing
+#        - 22829 # Sailing
+#        - 22838 # Sailing
+#        - 22851 # Sailing
+#        - 22845 # Sailing
+#        - 22859 # Sailing
+#        - 22858 # Sailing
+#        - 22857 # Sailing
+#        - 22856 # Sailing
+#        - 22855 # Sailing
+#        - 22854 # Sailing
+#        - 22839 # Sailing
+#        - 22853 # Sailing
+#        - 22822 # Sailing
+#        - 22850 # Sailing
+#        - 22849 # Sailing
+#        - 22848 # Sailing
+#        - 22847 # Sailing
+#        - 22846 # Sailing
+#        - 22852 # Sailing
+#        - 22821 # Sailing
+#        - 22813 # Sailing
+#        - 22819 # Sailing
+#        - 22820 # Sailing
+#        - 22860 # Sailing
+#        - 22814 # Sailing
+#        - 22861 # Sailing
+#        - 22816 # Sailing
+#        - 22817 # Sailing
+#        - 22815 # Sailing
+#        - 22818 # Sailing
+#        - 22774
+#        - 22776
+#        - 22612
+#        - 22613
+#        - 22614
+#        - 22615
+#        - 22616
+#        - 22775
+#        - 22762
+#        - 22765
+#        - 22763
+#        - 22764
+#        - 22766
+#        - 22770
+#        - 22768
+#        - 22769
+#        - 22777  # Not working?
+#        - 22778
+#        - 22779
+#        - 22767
+#        - 22771
+#        - 22773
+#        - 22780
+#        - 22781
+#        - 22782
+#    #   - 22772
+
