@@ -118,6 +118,11 @@ def filter_many(
     functions = {}
     
     skip = [str(name) for name in skip]
+
+    if not filter_model_name in models:
+        raise ValueError(f"model: {filter_model_name} does not exist.")
+
+    model = models[filter_model_name]()
     for name, loader in datas.items():
         if name in skip:
             log.info(f"Skipping the filtering for: {name}")
@@ -127,7 +132,7 @@ def filter_many(
         # ek_many[name], time_steps_many[name], df_kalman_many[name] = filter(
         functions[name] = filter_lazy(
             loader=loader,
-            models=models,
+            model=model,
             covariance_matrixes=covariance_matrixes[name],
             x0=x0[name],
             filter_model_name=filter_model_name,
@@ -140,7 +145,7 @@ def filter_many(
 
 def filter_lazy(
     loader,
-    models: dict,
+    model: ModularVesselSimulator,
     covariance_matrixes: dict,
     x0: list,
     filter_model_name: str,
@@ -149,7 +154,7 @@ def filter_lazy(
     def wrapper():
         return filter(
             loader=loader,
-            models=models,
+            model=model,
             covariance_matrixes=covariance_matrixes(),
             x0=x0(),
             filter_model_name=filter_model_name,
@@ -161,7 +166,7 @@ def filter_lazy(
 
 def filter(
     loader,
-    models: dict,
+    model: ModularVesselSimulator,
     covariance_matrixes: dict,
     x0: list,
     filter_model_name: str,
@@ -171,12 +176,9 @@ def filter(
     
     data['thrust_port'] = data['Prop/PS/Thrust']
     data['thrust_stbd'] = data['Prop/SB/Thrust']
-
-    if not filter_model_name in models:
-        raise ValueError(f"model: {filter_model_name} does not exist.")
-
+    
     log.info(f"Kalman filter with predictor:{filter_model_name}")
-    model = models[filter_model_name]()
+    
     assert isinstance(model, ModularVesselSimulator)
 
     for name, subsystem in model.subsystems.items():

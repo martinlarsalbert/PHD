@@ -40,9 +40,9 @@ def register_pipelines() -> Dict[str, Pipeline]:
         regression_ID.create_pipeline(), namespace="wPCC"
     )
 
-    # pipelines["load_wPCC"] = pipeline(
-    #    pipe=load_wPCC.create_pipeline(), namespace="wPCC"
-    # )
+    pipelines["load_wPCC"] = pipeline(
+        pipe=load_wPCC.create_pipeline(), namespace="wPCC"
+    )
 
     # pipelines["filter"] = pipeline(pipe=filter.create_pipeline(), namespace="7m")
 

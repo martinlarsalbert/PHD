@@ -13,7 +13,7 @@ def create_pipeline(**kwargs):
             node(
                 func=load,
                 inputs=[
-                    "wPCC.time_series",
+                    "time_series",
                     "params:thrust_channels",
                     "params:rev_channels",
                 ],
