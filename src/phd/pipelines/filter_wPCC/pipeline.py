@@ -36,7 +36,9 @@ def create_pipeline(**kwargs) -> Pipeline:
                 func=filter_many,
                 inputs=[
                     "tests",
-                    "models",
+                    "models_rudder_VCT",
+                    #"models_VCT",
+                    #"models",
                     "covariance_matrixes",
                     "x0",
                     "params:filter_model_name",

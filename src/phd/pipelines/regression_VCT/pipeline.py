@@ -9,6 +9,7 @@ from .nodes import (
     select,
     add_extra_circle_drift,
     regress_hull_VCT,
+    regress_hull_rudder_VCT,
     adopting_to_MDL,
     manual_regression,
     shape_optimization,
@@ -41,6 +42,14 @@ def create_pipeline(**kwargs) -> Pipeline:
                 inputs=["base_models", "df_VCT"],
                 outputs="models_VCT",
                 name="regress_hull_VCT",
+                tags=["generate_model"]
+            ),
+            node(
+                func=regress_hull_rudder_VCT,
+                inputs=["base_models_simple", "df_VCT", "params:VCT_exclude_parameters"],
+                outputs="models_rudder_VCT",
+                name="regress_hull_rudder_VCT",
+                tags=["generate_model"]
             ),
             node(
                 func=adopting_to_MDL,

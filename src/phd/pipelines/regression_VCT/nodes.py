@@ -288,6 +288,56 @@ def _regress_hull_VCT(
     else:
         return model
 
+def regress_hull_rudder_VCT(
+    base_models: dict,
+    df_VCT: pd.DataFrame,
+    exclude_parameters: dict = {},
+):
+    log.info("Regressing hull VCT")
+
+    df_VCT = df_VCT.copy()
+    
+    models = {}
+
+    for name, loader in base_models.items():
+        base_model = loader()
+
+        log.info(f"regressing VCT hull and rudder forces for:{name}")
+        model, fits = _regress_hull_rudder_VCT(
+            model=base_model,
+            df_VCT=df_VCT,
+            full_output=True,
+            exclude_parameters=exclude_parameters,
+        )
+
+        models[name] = model
+        # Also return fits?
+
+    return models
+
+
+def _regress_hull_rudder_VCT(
+    model: ModularVesselSimulator,
+    df_VCT: pd.DataFrame,
+    full_output=False,
+    exclude_parameters: dict = {},
+):
+    log.info("Regressing hull and rudder VCT")
+    from .regression_pipeline import pipeline_with_rudder, fit
+
+    model, fits = regress_VCT(
+        model=model,
+        df_VCT=df_VCT,
+        pipeline=pipeline_with_rudder,
+        exclude_parameters=exclude_parameters,
+    )
+
+    model = manual_regression(model=model)
+
+    if full_output:
+        return model, fits
+    else:
+        return model
 
 def manual_regression(model: ModularVesselSimulator) -> ModularVesselSimulator:
     """Manual regression based on visual inspection."""
@@ -380,7 +430,7 @@ def regress_VCT(
     ## Regression:
     regression_pipeline = pipeline(df_VCT_prime=df_VCT_prime, model=model)
     models, new_parameters = fit(
-        regression_pipeline=regression_pipeline, exclude_parameters=exclude_parameters
+        regression_pipeline=regression_pipeline, model=model, exclude_parameters=exclude_parameters
     )
     model.parameters.update(new_parameters)
 

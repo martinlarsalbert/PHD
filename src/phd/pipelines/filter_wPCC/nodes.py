@@ -116,6 +116,8 @@ def filter_many(
     time_steps_many = {}
     df_kalman_many = {}
     functions = {}
+    
+    skip = [str(name) for name in skip]
     for name, loader in datas.items():
         if name in skip:
             log.info(f"Skipping the filtering for: {name}")
@@ -148,8 +150,8 @@ def filter_lazy(
         return filter(
             loader=loader,
             models=models,
-            covariance_matrixes=covariance_matrixes,
-            x0=x0,
+            covariance_matrixes=covariance_matrixes(),
+            x0=x0(),
             filter_model_name=filter_model_name,
             accelerometer_position=accelerometer_position,
         )
@@ -166,6 +168,9 @@ def filter(
     accelerometer_position: dict,
 ) -> pd.DataFrame:
     data = loader()
+    
+    data['thrust_port'] = data['Prop/PS/Thrust']
+    data['thrust_stbd'] = data['Prop/SB/Thrust']
 
     if not filter_model_name in models:
         raise ValueError(f"model: {filter_model_name} does not exist.")
@@ -243,7 +248,7 @@ def smoother_many(
 ):
     ek_many = {}
     df_smooth_many = {}
-
+    skip = [str(name) for name in skip]
     for name, loader in ek_loaders.items():
         if name in skip:
             log.info(f"Skipping the smoothing for: {name}")

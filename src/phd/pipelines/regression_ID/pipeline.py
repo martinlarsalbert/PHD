@@ -9,7 +9,7 @@ from .nodes import regress_hull_inverse_dynamics, regress_inverse_dynamics
 
 def create_pipeline(**kwargs) -> Pipeline:
     
-    tags = ['ID_regression']
+    tags = ['kedro']
     
     return pipeline(
         [

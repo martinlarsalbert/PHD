@@ -32,12 +32,14 @@ def create_pipeline(**kwargs) -> Pipeline:
             inputs=["ship_data", "params:parameters"],
             outputs="base_models",
             name="base_models_node",
+            tags=["generate_model"]
         ),
         node(
             func=base_models_simple,
             inputs=["ship_data", "params:parameters"],
             outputs="base_models_simple",
             name="base_models_simple",
+            tags=["generate_model"]
         ),
     ]
     return pipeline(nodes)
