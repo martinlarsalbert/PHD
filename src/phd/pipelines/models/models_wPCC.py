@@ -124,7 +124,7 @@ class ModelTowed(MainModel):
         self.add_rudders(in_propeller_race=False)
 
         ## Add dummy wind system:
-        add_dummy_wind_force_system(model=self)
+        add_dummy_wind_force_system(model=self, create_jacobians=self.create_jacobians)
 
         self.control_keys = ["delta", "thrust_port", "thrust_stbd"]
 
@@ -139,6 +139,9 @@ class ModelTowed(MainModel):
 
         if not "Xthruststbd" in self.parameters:
             self.parameters["Xthruststbd"] = 1 - self.ship_parameters["tdf"]
+            
+        if not "Xthrust" in self.parameters:
+            self.parameters["Xthrust"] = 1 - self.ship_parameters["tdf"]
 
         if not "gamma_0" in self.parameters:
             self.parameters["gamma_0"] = 0
@@ -170,7 +173,7 @@ class ModelTowed(MainModel):
         )
 
     def add_propellers(self):
-        add_propeller_simple(model=self)  # Not used if thrust=0
+        add_propeller_simple(model=self, create_jacobians=self.create_jacobians)  # Not used if thrust=0
 
     def add_rudders(self, in_propeller_race: bool):
         rudder_port = semiempirical_rudder_MAK.SemiempiricalRudderSystemMAK(
@@ -234,7 +237,7 @@ class ModelTowedSemiempiricalCovered(ModelTowed):
         self.add_rudders(in_propeller_race=True)
 
         ## Add dummy wind system:
-        add_dummy_wind_force_system(model=self)
+        add_dummy_wind_force_system(model=self, create_jacobians=self.create_jacobians)
 
         self.control_keys = ["delta", "thrust_port", "thrust_stbd"]
 
@@ -371,7 +374,7 @@ class ModelWithPropellerRace(ModelTowed):
         self.add_rudders(in_propeller_race=True)
 
         ## Add dummy wind system:
-        add_dummy_wind_force_system(model=self)
+        add_dummy_wind_force_system(model=self, create_jacobians=self.create_jacobians)
 
         self.control_keys = ["delta", "thrust_port", "thrust_stbd"]
 
@@ -388,7 +391,7 @@ class ModelWithSimpleRudder(ModelTowed):
         self.add_rudders(in_propeller_race=True)
 
         ## Add dummy wind system:
-        add_dummy_wind_force_system(model=self)
+        add_dummy_wind_force_system(model=self, create_jacobians=self.create_jacobians)
 
         self.control_keys = ["delta", "thrust_port", "thrust_stbd", "thrust"]
 

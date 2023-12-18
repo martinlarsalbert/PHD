@@ -436,7 +436,10 @@ def regress_VCT(
 
     for key, fit in models.items():
         log.info(f"Regression:{key}")
-        log.info(fit.summary2().as_text())
+        try:
+            log.info(fit.summary2().as_text())
+        except Exception as e:
+            raise ValueError(key)
 
     return model, models
 

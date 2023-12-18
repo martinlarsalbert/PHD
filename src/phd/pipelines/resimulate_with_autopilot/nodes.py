@@ -6,7 +6,7 @@ generated using Kedro 0.18.7
 import pandas as pd
 import numpy as np
 from vessel_manoeuvring_models.models.modular_simulator import ModularVesselSimulator
-from vessel_manoeuvring_models.models.IMO_simulations import zigzag
+import vessel_manoeuvring_models.models.IMO_simulations
 from vessel_manoeuvring_models.substitute_dynamic_symbols import run
 from vessel_manoeuvring_models.angles import mean_angle
 from scipy.optimize import least_squares
@@ -80,7 +80,7 @@ def resimulate(
         neutral_rudder_angle = np.rad2deg(data["delta"].max() + data["delta"].min()) / 2
         log.info("Finding the neutral rudder angle")
 
-    result = zigzag(
+    result = vessel_manoeuvring_models.models.IMO_simulations.zigzag(
         model=model,
         u0=u0,
         rev=rev,
@@ -94,6 +94,66 @@ def resimulate(
     )
     return result
 
+def turning_circle(
+    data: pd.DataFrame,
+    model: ModularVesselSimulator,
+    angle: float = None,
+    neutral_rudder_angle: float = None,
+    r_limit = 0.1,
+    **kwargs,
+) -> pd.DataFrame:
+    data = data.copy()
+    data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
+    if not "rev" in data:
+        data["rev"] = data[["Prop/SB/Rpm", "Prop/PS/Rpm"]].mean(axis=1)
+
+    if not "twa" in data:
+        data["twa"] = 0
+
+    if not "tws" in data:
+        data["tws"] = 0
+
+    u0 = data.iloc[0]["u"]
+    # rev=float(data['rev'].mean())
+
+    result_optimization = find_initial_equilibrium_rev(data=data, model=model)
+    if result_optimization.success:
+        rev = result_optimization.x[0]
+    else:
+        log.error("Could not find rev (find_initial_equilibrium_rev)")
+        rev = data["rev"]
+
+    rudder_rate = 2.32 * np.sqrt(model.ship_parameters["scale_factor"])
+    if angle is None:
+        log.info("finding the angle")
+        angle_abs = np.round(np.rad2deg(data["delta"].abs().max()), 0)
+        i = (data["delta"].abs() > np.deg2rad(2)).idxmax()
+        sign = np.sign(data["delta"].loc[i])
+        angle = angle_abs if sign == 1 else -angle_abs
+
+    psi0 = data.iloc[0]["psi"].copy()
+    # twa = mean_angle(data["twa"]) - psi0
+    twa = data["twa"] - psi0  # Note twa is rotated!
+
+    # tws = data["tws"].mean() - psi0
+    tws = data["tws"]
+    if neutral_rudder_angle is None:
+        neutral_rudder_angle = np.rad2deg(data["delta"].max() + data["delta"].min()) / 2
+        log.info("Finding the neutral rudder angle")
+
+    result = vessel_manoeuvring_models.models.IMO_simulations.turning_circle(
+        model=model,
+        u0=u0,
+        rev=rev,
+        rudder_rate=rudder_rate,
+        angle=angle,
+        twa=twa,
+        tws=tws,
+        neutral_rudder_angle=neutral_rudder_angle,
+        r_limit = r_limit,
+        **kwargs,
+    )
+    return result
 
 def calculate_fx(data: pd.DataFrame, rev: float, model: ModularVesselSimulator):
     control = data[model.control_keys].copy()
@@ -102,7 +162,7 @@ def calculate_fx(data: pd.DataFrame, rev: float, model: ModularVesselSimulator):
     df_force_predicted = pd.DataFrame(
         model.calculate_forces(states_dict=states, control=control)
     )
-    df_force_predicted["fx"] = run(model.lambda_X_D, inputs=df_force_predicted)
+    df_force_predicted["fx"] = model.lambda_X_D(**df_force_predicted)
     return df_force_predicted
 
 

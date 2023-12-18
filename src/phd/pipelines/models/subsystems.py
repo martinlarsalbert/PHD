@@ -285,9 +285,9 @@ def add_rudder_MAK_no_prop(model: ModularVesselSimulator, create_jacobians=True)
             model.parameters[key] = value
 
 
-def add_wind_force_system(model: ModularVesselSimulator):
+def add_wind_force_system(model: ModularVesselSimulator, create_jacobians=True):
     ## Add a real wind force system:
-    wind_force = WindForceSystem(ship=model, create_jacobians=True)
+    wind_force = WindForceSystem(ship=model, create_jacobians=create_jacobians)
     model.subsystems["wind_force"] = wind_force
     if not "twa" in model.control_keys:
         model.control_keys.append("twa")  # NOTE!
@@ -298,9 +298,9 @@ def add_wind_force_system(model: ModularVesselSimulator):
     return model
 
 
-def add_wind_force_system_simple(model: ModularVesselSimulator):
+def add_wind_force_system_simple(model: ModularVesselSimulator,create_jacobians=True):
     ## Add a real wind force system:
-    wind_force = WindForceSystemSimple(ship=model, create_jacobians=True)
+    wind_force = WindForceSystemSimple(ship=model, create_jacobians=create_jacobians)
     model.subsystems["wind_force"] = wind_force
     if not "twa" in model.control_keys:
         model.control_keys.append("twa")  # NOTE!
@@ -315,7 +315,7 @@ def add_wind_force_system_simple(model: ModularVesselSimulator):
     return model
 
 
-def add_dummy_wind_force_system(model: ModularVesselSimulator):
+def add_dummy_wind_force_system(model: ModularVesselSimulator, create_jacobians=True):
     ## Add dummy wind system:
-    wind_force = DummyWindForceSystem(ship=model, create_jacobians=True)
+    wind_force = DummyWindForceSystem(ship=model, create_jacobians=create_jacobians)
     model.subsystems["wind_force"] = wind_force
