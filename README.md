@@ -1,9 +1,29 @@
 # PhD
 This repository contains research and experiments within Martin Alexandersson's research.
+The research has been defined as a [Kedro pipeline](https://kedro.readthedocs.io) to enhance reproducibility.
+
+To reproduce the entire research is a s simple as:
+```
+kedro run
+```
+## Setup
+The dependencies to this project have been defined in [environment.yml](environment.yml). The easiest way to setup a new project is to use [Miniconda](https://docs.conda.io/projects/miniconda/en/latest/miniconda-install.html).
+
+```
+conda create -n phd --file environment.yml
+```
+
+## Analyze
+The kedro pipelines processes the raw indata ([01_raw](./data/01_raw/)) and produces some new datasets and models that can be further analyzed in the jupyter notebooks ([notebooks](./notebooks/).)
+The notebooks needs to be loaded with the "kedro" prefix so that the datasets are easily available:
+```
+kedro jupyter lab
+```
+
 
 ## Overview
 
-This is your new Kedro project, which was generated using `Kedro 0.18.4`.
+This is your new Kedro project, which was generated using `Kedro 0.18.14`.
 
 Take a look at the [Kedro documentation](https://kedro.readthedocs.io) to get started.
 
