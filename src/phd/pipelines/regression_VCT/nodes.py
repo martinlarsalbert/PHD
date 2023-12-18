@@ -12,7 +12,7 @@ from vessel_manoeuvring_models.models.diff_eq_to_matrix import DiffEqToMatrix
 import statsmodels.api as sm
 from vessel_manoeuvring_models.substitute_dynamic_symbols import run, lambdify
 from phd.visualization.plot_prediction import predict
-from vct.read_shipflow import mirror_x_z
+#from vct.read_shipflow import mirror_x_z
 from phd.pipelines.models import optimize_l_R_shape
 
 import logging
@@ -69,7 +69,7 @@ def load_VCT(df_VCT_all_raw: dict) -> dict:
         "mz_Rudder_SB": "mz_rudder_stb",
     }
     df_VCT_MDL_M5139.rename(columns=renames, inplace=True)
-    df_mirror = mirror_x_z(df_VCT_MDL_M5139.copy())
+    #df_mirror = mirror_x_z(df_VCT_MDL_M5139.copy())
     df_VCT_all_raw["M5139-02-A_MS.df_VCT"] = df_VCT_MDL_M5139
     
     df = df_VCT_all_raw["M5139-02-A_straightening_MS.df_VCT"]()  # (model scale)
