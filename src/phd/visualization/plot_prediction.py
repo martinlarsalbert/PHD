@@ -188,7 +188,9 @@ def plot_compare_model_forces(
             styles[name] = {"style": "b-", "lw": 0.5, "label": name}
         
 
-    fig, axes = plt.subplots(nrows=len(keys) + 1, height_ratios=[0.50, 1, 1, 1])
+    height_ratios=np.ones(len(keys)+1)
+    height_ratios[0]=0.5                          
+    fig, axes = plt.subplots(nrows=len(keys) + 1, height_ratios=height_ratios)
     fig.set_size_inches(13, 13)
     model = models[list(models.keys())[0]]
     forces_from_motions = model.forces_from_motions(data=data)
@@ -230,6 +232,15 @@ def plot_compare_model_forces(
     axes[1].legend()
     axes[-1].set_xlabel("Time [s]")
     axes[-1].set_xticklabels(np.round(axes[-1].get_xticks(), 1))
+    
+    ylims=[]
+    for ax in axes[1:]:
+        ylims.append(ax.get_ylim())
+    ylims = (np.min(np.min(ylims)),np.max(np.max(ylims)))
+    for ax in axes[1:]:
+        ax.set_ylim(ylims)
+    
+    
     plt.tight_layout()
 
 def group_parameters(df:pd.DataFrame, joins=['Nv','Nr','Nvr']):

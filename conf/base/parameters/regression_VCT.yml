@@ -5,6 +5,8 @@
 # Link: https://docs.kedro.org/en/0.18.7/kedro_project_setup/configuration.html#parameters
 
 wPCC.VCT_exclude_parameters:
+    Y0: 0
+    N0: 0
     Yvdeltadelta: 0
     Yvvdelta: 0
     Yrdeltadelta: 0

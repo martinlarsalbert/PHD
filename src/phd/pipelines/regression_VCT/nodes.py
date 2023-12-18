@@ -242,7 +242,7 @@ def regress_hull_VCT(
     df_VCT: pd.DataFrame,
     exclude_parameters: dict = {},
 ):
-    log.info("Regressing hull VCT")
+    log.info("_______________  Regressing hull VCT _______________")
 
     df_VCT = df_VCT.copy()
     
@@ -293,7 +293,7 @@ def regress_hull_rudder_VCT(
     df_VCT: pd.DataFrame,
     exclude_parameters: dict = {},
 ):
-    log.info("Regressing hull VCT")
+    log.info("______________________ Regressing hull+rudder VCT ______________________")
 
     df_VCT = df_VCT.copy()
     

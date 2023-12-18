@@ -132,6 +132,7 @@ def pipeline_with_rudder(
         "Rudder fx": {
             "eq": rudders.equations["X_R"],
             "data": tests.get_group("Rudder angle"),
+            "const":True,
         },
         "Rudder fy": {
             "eq": rudders.equations["Y_R"],
@@ -246,6 +247,7 @@ def fit(regression_pipeline: dict, model:ModularVesselSimulator, exclude_paramet
     for name, regression in regression_pipeline.items():
         log.info(f"Fitting:{name}")
         eq = regression["eq"]
+        const = regression.get("const",False)
         if eq.rhs == 0:
             print(f"skipping:{name}")
             continue
@@ -262,6 +264,9 @@ def fit(regression_pipeline: dict, model:ModularVesselSimulator, exclude_paramet
         assert len(data) > 0
         key = eq_to_matrix.acceleration_equation.lhs.name
         X, y = eq_to_matrix.calculate_features_and_label(data=data, y=data[key], parameters=model.ship_parameters)
+        
+        if const:
+            X['const'] = 1
         
         if len(X.columns) == 0:
             print(f"skipping:{name} with equation: {eq}")

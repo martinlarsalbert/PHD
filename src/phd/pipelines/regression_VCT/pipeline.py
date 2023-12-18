@@ -39,17 +39,17 @@ def create_pipeline(**kwargs) -> Pipeline:
             ),
             node(
                 func=regress_hull_VCT,
-                inputs=["base_models", "df_VCT"],
+                inputs=["base_models", "df_VCT","params:VCT_exclude_parameters"],
                 outputs="models_VCT",
                 name="regress_hull_VCT",
-                tags=["generate_model"]
+                tags=["generate_model", "regression_VCT"]
             ),
             node(
                 func=regress_hull_rudder_VCT,
                 inputs=["base_models_simple", "df_VCT", "params:VCT_exclude_parameters"],
                 outputs="models_rudder_VCT",
                 name="regress_hull_rudder_VCT",
-                tags=["generate_model"]
+                tags=["generate_model", "regression_VCT"]
             ),
             node(
                 func=adopting_to_MDL,
