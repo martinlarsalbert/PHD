@@ -19,7 +19,7 @@ p = df_parameters["symbol"]
 
 from vessel_manoeuvring_models.models.subsystem import PrimeEquationSubSystem
 from vessel_manoeuvring_models.substitute_dynamic_symbols import run
-from wPCC_pipeline.pipelines.vct_data.nodes import vct_scaling
+#from wPCC_pipeline.pipelines.vct_data.nodes import vct_scaling
 from vessel_manoeuvring_models.models.diff_eq_to_matrix import DiffEqToMatrix
 import statsmodels.api as sm
 from vessel_manoeuvring_models.models.modular_simulator import subs_simpler
