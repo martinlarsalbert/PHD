@@ -1,0 +1,24 @@
+"Experiment":
+    "style": "-"
+    "color": "black"
+    "zorder": -10
+    "lw": 1.0
+    "label": "Experiment"
+"VCT": 
+    "style": "-"
+    "color": "green"
+    "zorder": -10
+    "lw": 1.0
+    "label": "VCT"
+"ID hull": 
+    "style": "-"
+    "color": "blue"
+    "zorder": -10
+    "lw": 1.0
+    "label": "ID hull"
+"ID hull rudder":
+    "style": "-"
+    "color": "magenta"
+    "zorder": -10
+    "lw": 1.0
+    "label": "ID hull rudder"
