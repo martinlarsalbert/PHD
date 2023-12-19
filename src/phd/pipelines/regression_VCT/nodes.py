@@ -15,6 +15,9 @@ from phd.visualization.plot_prediction import predict
 #from vct.read_shipflow import mirror_x_z
 from phd.pipelines.models import optimize_l_R_shape
 
+from vessel_manoeuvring_models.parameters import df_parameters
+p = df_parameters["symbol"]
+
 import logging
 
 log = logging.getLogger(__name__)
@@ -481,7 +484,10 @@ def regress_VCT(
     return model, models
 
 
-def adopting_to_MDL(models_VCT: dict, resistance_MDL: pd.DataFrame) -> dict:
+def adopting_to_MDL(models_VCT: dict, resistance_MDL: pd.DataFrame, tests_ek:dict) -> dict:
+    
+    data_MDL_many = gather_data(tests_ek=tests_ek)
+    
     models = {}
     for name, loader in models_VCT.items():
         model = loader()
@@ -489,21 +495,101 @@ def adopting_to_MDL(models_VCT: dict, resistance_MDL: pd.DataFrame) -> dict:
 
         model.parameters["delta_alpha_s"] = 0  # Delayed stall
 
-        factor = 0.80
-        model.parameters["X0"] *= factor
-        model.parameters["Xu"] *= factor
+        #factor = 0.80
+        #model.parameters["X0"] *= factor
+        #model.parameters["Xu"] *= factor
 
         # model.parameters["kappa"] = 0.85
-        model.parameters["l_R"] = 1.5 * model.parameters["l_R"]
+        #model.parameters["l_R"] = 1.5 * model.parameters["l_R"]
         # model.parameters['Yvdot']*=0.5
 
-        model.parameters["Yvdot"] *= 0.55
-        model.parameters["Nrdot"] *= 0.7
+        #model.parameters["Yvdot"] *= 0.55
+        #model.parameters["Nrdot"] *= 0.7
 
+        model = fit_Nrdot(model=model, data_MDL_many=data_MDL_many)
+        model = fit_Yvdot(model=model, data_MDL_many=data_MDL_many)
+        
         models[name] = model
 
     return models
 
+def fit_Nrdot(model:ModularVesselSimulator, data_MDL_many:pd.DataFrame,):
+    log.info("Fitting the Nrdot...")
+    fit = fit_added_mass(model=model, data_MDL_many=data_MDL_many, eq=model.N_eq, move=p.Nrdot*r1d, x='r1d')
+    denominator = run(lambdify(df_parameters.loc['Nrdot','denominator']),inputs=model.ship_parameters)
+    new_value = fit.params['r1d'] / denominator
+    log.info(f"Fitted Nrdot is {np.round(new_value/model.parameters['Nrdot'],2)} times the old one")
+    model.parameters['Nrdot'] = new_value
+    return model
+
+def fit_Yvdot(model:ModularVesselSimulator, data_MDL_many:pd.DataFrame,):
+    log.info("Fitting the Yvdot...")
+    fit = fit_added_mass(model=model, data_MDL_many=data_MDL_many, eq=model.Y_eq, move=p.Yvdot*v1d, x='v1d')
+    denominator = run(lambdify(df_parameters.loc['Yvdot','denominator']),inputs=model.ship_parameters)
+    new_value = fit.params['v1d'] / denominator
+    log.info(f"Fitted Yvdot is {np.round(new_value/model.parameters['Yvdot'],2)} times the old one")
+    model.parameters['Yvdot'] = new_value
+    return model
+
+def fit_added_mass(model:ModularVesselSimulator, data_MDL_many:pd.DataFrame, eq, move, x):
+    
+    prediction = predict(model=model, data=data_MDL_many)
+
+    mask = prediction[x].abs() > prediction[x].abs().quantile(0.4)
+    prediction_ = prediction.loc[mask]
+    
+    
+    eq_added_masses = sp.Eq(sp.solve(eq,move)[0],move)
+    eq_added_masses
+
+    eq_ = eq_added_masses.subs([
+        (v1d,'v1d'),
+        (r1d,'r1d'),
+        (p.Yrdot,'Yrdot'),
+        (p.Nvdot,'Nvdot'),
+        
+    ])
+    lambda_y = lambdify(eq_.lhs, substitute_functions=True)
+
+    y = run(lambda_y, inputs=prediction_, Nvdot=model.parameters['Nvdot'], Yrdot=model.parameters['Yrdot'], **model.ship_parameters)
+    #y = run(lambda_y, inputs=prediction_, Nvdot=0, Yrdot=0, **model.ship_parameters)
+
+    X = prediction_[[x]]
+
+    ols_model = sm.OLS(y,X)
+    fit = ols_model.fit()
+    log.info(fit.summary2())
+    return fit
+        
+    
+def gather_data(tests_ek:dict):
+    
+    ids = [
+    22773,
+    22772,
+    22770,
+    22764,
+    ]
+
+    data_MDL_many = []
+    for id in ids:
+        data_MDL = tests_ek[f'{id}']()
+        data_MDL['V'] = data_MDL['U'] = np.sqrt(data_MDL['u']**2 + data_MDL['v']**2)
+        data_MDL['beta'] = -np.arctan2(data_MDL['v'],data_MDL['u'])
+        data_MDL['rev'] = data_MDL[['Prop/PS/Rpm','Prop/SB/Rpm']].mean(axis=1)
+        data_MDL['twa']=0
+        data_MDL['tws']=0
+        data_MDL['theta']=0
+        data_MDL['q']=0
+        data_MDL['phi'] = data_MDL['roll']
+        data_MDL['p'] = 0
+        data_MDL['q1d'] = 0
+        data_MDL['thrust_port'] = data_MDL['Prop/PS/Thrust']
+        data_MDL['thrust_stbd'] = data_MDL['Prop/SB/Thrust']
+        data_MDL_many.append(data_MDL)
+
+    data_MDL_many = pd.concat(data_MDL_many, axis=0)
+    return data_MDL_many
 
 def shape_optimization(
     models_VCT: dict, resistance_MDL: pd.DataFrame, tests_ek_smooth_joined: pd.DataFrame

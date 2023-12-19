@@ -53,7 +53,7 @@ def create_pipeline(**kwargs) -> Pipeline:
             ),
             node(
                 func=adopting_to_MDL,
-                inputs=["models_VCT", "resistance_MDL"],
+                inputs=["models_VCT", "resistance_MDL", "tests_ek"],
                 outputs="models_VCT_MDL",
                 name="adopting_to_MDL",
             ),
