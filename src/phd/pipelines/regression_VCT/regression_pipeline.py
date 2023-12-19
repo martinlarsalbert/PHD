@@ -14,8 +14,22 @@ def pipeline(df_VCT_prime: pd.DataFrame, model: ModularVesselSimulator) -> dict:
     assert isinstance(hull, PrimeEquationSubSystem)
 
     tests = df_VCT_prime.groupby(by="test type")
-
+    
+    rudder_hull_interaction = model.subsystems['rudder_hull_interaction']
+    
+    data_rudder = tests.get_group("Rudder angle").copy()
+    a_x_H = sp.symbols("a_x_H")
+    
     regression_pipeline = {
+        "rudder hull interaction aH": {
+            "eq": rudder_hull_interaction.equations['Y_RHI'].subs(Y_RHI,Y_D_),
+            "data": data_rudder,
+        },
+        "rudder hull interaction xH": {
+            "eq": rudder_hull_interaction.equations['N_RHI'].subs([(N_RHI,N_D_),(L,1),(a_H*x_H,a_x_H)]),
+            "data": data_rudder,
+        },
+
         "resistance": {
             "eq": hull.equations["X_H"].subs(
                 [
@@ -128,20 +142,24 @@ def pipeline_with_rudder(
 
     tests = df_VCT_prime.groupby(by="test type")
     rudders = model.subsystems['rudders']
+   
+    
+    data_rudder = tests.get_group("Rudder angle").copy()
     regression_pipeline = {
         "Rudder fx": {
-            "eq": rudders.equations["X_R"],
-            "data": tests.get_group("Rudder angle"),
+            "eq": rudders.equations['X_R'],
+            "data": data_rudder,
             "const":True,
         },
         "Rudder fy": {
-            "eq": rudders.equations["Y_R"],
-            "data": tests.get_group("Rudder angle"),
+            "eq": eq_Y.subs([(v,0),(r,0)]),
+            "data": data_rudder,
         },
         "Rudder mz": {
-            "eq": rudders.equations["N_R"],
-            "data": tests.get_group("Rudder angle"),
+            "eq": eq_N.subs([(v,0),(r,0),]),
+            "data": data_rudder,
         },
+        
         "resistance": {
             "eq": eq_X.subs(
                 [
@@ -256,7 +274,7 @@ def fit(regression_pipeline: dict, model:ModularVesselSimulator, exclude_paramet
         eq_to_matrix = DiffEqToMatrix(
             eq,
             label=label,
-            base_features=[u, v, r, thrust, delta, thrust_port, thrust_stbd, y_p_port, y_p_stbd],
+            base_features=[u, v, r, thrust, delta, thrust_port, thrust_stbd, y_p_port, y_p_stbd, Y_R],
             exclude_parameters=exclude_parameters,
         )
 
@@ -281,5 +299,6 @@ def fit(regression_pipeline: dict, model:ModularVesselSimulator, exclude_paramet
         ols_fit.y = y
         new_parameters.update(ols_fit.params)
         exclude_parameters.update(new_parameters)
-
+        #data[str(eq.rhs)] = ols_fit.predict(X)  # So that Y_R can be used again...
+        
     return models, new_parameters

@@ -274,6 +274,37 @@ def _regress_hull_VCT(
     log.info("Regressing hull VCT")
     from .regression_pipeline import pipeline, fit
 
+    log.info("Precalculate the rudders, propellers and wind_force")
+    calculation = {}
+    model.parameters.update(exclude_parameters)
+    for system_name, system in model.subsystems.items():
+        if system_name == "hull":
+            continue
+        try:
+            system.calculate_forces(
+                states_dict=df_VCT[model.states_str],
+                control=df_VCT[model.control_keys],
+                calculation=calculation,
+            )
+        except KeyError as e:
+            raise KeyError(f"Failed in subsystem:{system_name}")
+    
+    df_calculation = pd.DataFrame(calculation)
+    df_calculation_prime = model.prime_system.prime(df_calculation[['Y_R','N_R']],U=df_VCT['V'])
+    prime_system_ship = PrimeSystem(
+        L=model.ship_parameters["L"] * model.ship_parameters["scale_factor"],
+        rho=df_VCT.iloc[0]["rho"],
+    )
+    df_calculation_fullscale = prime_system_ship.unprime(df_calculation_prime, U=df_VCT['V'])
+    
+    for key,value in df_calculation_fullscale.items():
+        if not key in df_VCT:
+            log.info(f"Adding calculated:{key}")
+        else:
+            log.info(f"Replacing with calculated:{key}")
+
+        df_VCT[key] = value
+    
     model, fits = regress_VCT(
         model=model,
         df_VCT=df_VCT,
@@ -281,6 +312,9 @@ def _regress_hull_VCT(
         exclude_parameters=exclude_parameters,
     )
 
+    model.parameters['a_H'] = model.parameters.pop('aH')
+    model.parameters['x_H'] = model.parameters["axH"]/model.parameters['a_H']
+    
     model = manual_regression(model=model)
 
     if full_output:
