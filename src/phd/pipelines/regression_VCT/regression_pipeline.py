@@ -70,6 +70,7 @@ def pipeline(df_VCT_prime: pd.DataFrame, model: ModularVesselSimulator) -> dict:
                 ]
             ),
             "data": tests.get_group("Drift angle"),
+            "const": True,
         },
         "Drift angle fy": {
             "eq": hull.equations["Y_H"].subs(
@@ -94,6 +95,7 @@ def pipeline(df_VCT_prime: pd.DataFrame, model: ModularVesselSimulator) -> dict:
                 ]
             ),
             "data": tests.get_group("Circle"),
+            "const":True,
         },
         "Circle fy": {
             "eq": hull.equations["Y_H"].subs(
@@ -114,6 +116,7 @@ def pipeline(df_VCT_prime: pd.DataFrame, model: ModularVesselSimulator) -> dict:
         "Circle + Drift fx": {
             "eq": hull.equations["X_H"],
             "data": tests.get_group("Circle + Drift"),
+            "const": True
         },
         "Circle + Drift fy": {
             "eq": hull.equations["Y_H"],
@@ -143,7 +146,11 @@ def pipeline_with_rudder(
     tests = df_VCT_prime.groupby(by="test type")
     rudders = model.subsystems['rudders']
    
-    
+    mask = df_VCT_prime['test type'].isin([
+        'Circle + rudder angle',
+        'Rudder and drift angle',
+    ])
+    data_flow_straightening = df_VCT_prime.loc[mask]
     data_rudder = tests.get_group("Rudder angle").copy()
     regression_pipeline = {
         "Rudder fx": {
@@ -197,14 +204,17 @@ def pipeline_with_rudder(
             "eq": eq_X.subs(
                 [
                     (r, 0),
+                    (delta,0)
                 ]
             ),
             "data": tests.get_group("Drift angle"),
+            "const": True,
         },
         "Drift angle fy": {
             "eq": eq_Y.subs(
                 [
                     (r, 0),
+                    (delta,0)
                 ]
             ),
             "data": tests.get_group("Drift angle"),
@@ -213,6 +223,7 @@ def pipeline_with_rudder(
             "eq": eq_N.subs(
                 [
                     (r, 0),
+                    (delta,0)
                 ]
             ),
             "data": tests.get_group("Drift angle"),
@@ -221,14 +232,17 @@ def pipeline_with_rudder(
             "eq": eq_X.subs(
                 [
                     (v, 0),
+                    (delta,0)
                 ]
             ),
             "data": tests.get_group("Circle"),
+            "const": True,
         },
         "Circle fy": {
             "eq": eq_Y.subs(
                 [
                     (v, 0),
+                    (delta,0)
                 ]
             ),
             "data": tests.get_group("Circle"),
@@ -237,22 +251,37 @@ def pipeline_with_rudder(
             "eq": eq_N.subs(
                 [
                     (v, 0),
+                    (delta,0)
                 ]
             ),
             "data": tests.get_group("Circle"),
         },
         "Circle + Drift fx": {
-            "eq": eq_X,
+            "eq": eq_X.subs(delta,0),
             "data": tests.get_group("Circle + Drift"),
+            "const": True,
         },
         "Circle + Drift fy": {
-            "eq": eq_Y,
+            "eq": eq_Y.subs(delta,0),
             "data": tests.get_group("Circle + Drift"),
         },
         "Circle + Drift mz": {
-            "eq": eq_N,
+            "eq": eq_N.subs(delta,0),
             "data": tests.get_group("Circle + Drift"),
         },
+        #"Rudder and drift angle fy": {
+        #    "eq": eq_Y,
+        #    "data": tests.get_group('Rudder and drift angle'),
+        #    "const": True,
+        #},
+        #"Rudder and drift angle mz": {
+        #    "eq": eq_N,
+        #    "data": tests.get_group('Rudder and drift angle'),
+        #    "const": True,
+        #},
+                
+        
+        
     }
     
     return regression_pipeline

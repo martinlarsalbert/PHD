@@ -19,4 +19,8 @@ wPCC.VCT_exclude_parameters:
     Nvvdelta: 0
     Xthrustport : 0.883  # (1-tdf)
     Xthruststbd : 0.883  # (1-tdf)
+    #Yvvr: 0
+    #Yvrr: 0
+    #Nvvr: 0
+    #Nvrr: 0
     

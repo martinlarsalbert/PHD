@@ -305,6 +305,9 @@ def _regress_hull_VCT(
 
         df_VCT[key] = value
     
+    # First manual regression on the rudder parameters
+    model = manual_regression(model=model)
+    
     model, fits = regress_VCT(
         model=model,
         df_VCT=df_VCT,
@@ -312,10 +315,10 @@ def _regress_hull_VCT(
         exclude_parameters=exclude_parameters,
     )
 
+    # Separating the rudder hull interaction coefficients:
     model.parameters['a_H'] = model.parameters.pop('aH')
     model.parameters['x_H'] = model.parameters["axH"]/model.parameters['a_H']
     
-    model = manual_regression(model=model)
 
     if full_output:
         return model, fits
