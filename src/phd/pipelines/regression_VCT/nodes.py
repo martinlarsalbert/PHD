@@ -506,6 +506,9 @@ def adopting_to_MDL(models_VCT: dict, resistance_MDL: pd.DataFrame, tests_ek:dic
         #model.parameters["Yvdot"] *= 0.55
         #model.parameters["Nrdot"] *= 0.7
 
+        model.parameters['Nr'] = -0.0007225879175745149*1.7
+        model.parameters['l_R'] = -3.1115000000000004*1.2
+        
         model = fit_Nrdot(model=model, data_MDL_many=data_MDL_many)
         model = fit_Yvdot(model=model, data_MDL_many=data_MDL_many)
         

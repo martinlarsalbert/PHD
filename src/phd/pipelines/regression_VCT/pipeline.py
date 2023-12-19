@@ -56,6 +56,7 @@ def create_pipeline(**kwargs) -> Pipeline:
                 inputs=["models_VCT", "resistance_MDL", "tests_ek"],
                 outputs="models_VCT_MDL",
                 name="adopting_to_MDL",
+                tags=["generate_model", "regression_VCT"],
             ),
             node(
                 func=shape_optimization,
