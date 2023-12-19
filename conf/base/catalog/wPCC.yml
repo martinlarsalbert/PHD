@@ -94,6 +94,16 @@ wPCC.tests_ek_smooth_joined:
     index: True
     encoding: 'utf-8'
 
+wPCC.tests_ek_joined:
+  type: pandas.CSVDataSet
+  filepath: data/05_model_input/tests_ek_joined.csv
+  load_args:
+    index_col: 0
+    encoding: 'utf-8'
+  save_args:
+    index: True
+    encoding: 'utf-8'
+
 wPCC.covariance_matrixes:
   type: PartitionedDataSet
   path: data/03_primary/covariance_matrixes/wPCC

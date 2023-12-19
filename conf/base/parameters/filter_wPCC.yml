@@ -72,7 +72,7 @@ wPCC:
     - 22817 # Sailing
     - 22815 # Sailing
     - 22818 # Sailing
-#    - 22774
+    - 22774  # skipping the turning circle
     - 22776
 #    - 22612
 #    - 22613

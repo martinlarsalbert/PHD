@@ -405,6 +405,9 @@ def manual_regression(model: ModularVesselSimulator) -> ModularVesselSimulator:
     model.parameters['gamma_0_port']=gamma_0_
     model.parameters['gamma_0_stbd']=-gamma_0_
     
+    model.parameters['C_D_tune']=1.25
+    model.parameters['C_D0_tune']=4.8
+    
 
     return model
 

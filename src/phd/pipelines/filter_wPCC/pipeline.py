@@ -61,6 +61,12 @@ def create_pipeline(**kwargs) -> Pipeline:
                 name="get_tests_ek",
             ),
             node(
+                func=join_tests,
+                inputs=["tests_ek", "params:skip"],
+                outputs="tests_ek_joined",
+                name="join_tests_ek",
+            ),
+            node(
                 func=smoother_many,
                 inputs=[
                     "ek_filtered",
@@ -85,7 +91,7 @@ def create_pipeline(**kwargs) -> Pipeline:
                 func=join_tests,
                 inputs=["tests_ek_smooth", "params:skip"],
                 outputs="tests_ek_smooth_joined",
-                name="join_tests",
+                name="join_tests_ek_smooth",
             ),
         ]
     )

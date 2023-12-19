@@ -414,6 +414,7 @@ def join_tests(tests_ek_smooth: dict, exclude=[]) -> pd.DataFrame:
     log.info(
         f"Creating a joined dataset, that can be used in inverse dynamics regression"
     )
+    exclude = list([str(key) for key in exclude])
     for key, loader in tests_ek_smooth.items():
         if key in exclude:
             log.info(f"Excluding {key} from the joined dataset")
