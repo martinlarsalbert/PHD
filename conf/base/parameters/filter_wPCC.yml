@@ -1,9 +1,9 @@
 wPCC:
     ek_covariance_input:
         process_variance:
-            u : 0.5
-            v : 0.5
-            r : 0.5  # [deg]
+            u : 1.0
+            v : 1.0
+            r : 1.0  # [deg]
         measurement_error_max:
             positions: 0.05
             psi: 0.5  # [deg]
