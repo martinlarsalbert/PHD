@@ -519,6 +519,25 @@ def adopting_to_MDL(models_VCT: dict, resistance_MDL: pd.DataFrame, tests_ek:dic
 
     return models
 
+
+def adopting_hull_rudder_to_MDL(models_rudder_VCT: dict, resistance_MDL: pd.DataFrame, models_VCT: dict) -> dict:
+        
+    model_VCT = models_VCT["semiempirical_covered"]()
+    
+    models = {}
+    for name, loader in models_rudder_VCT.items():
+        model = loader()
+        add_MDL_resistance(model=model, resistance=resistance_MDL)
+
+        model.parameters['Nrdot'] = model_VCT.parameters['Nrdot']
+        model.parameters['Yvdot'] = model_VCT.parameters['Yvdot']
+        
+        
+        models[name] = model
+
+    return models
+
+
 def fit_Nrdot(model:ModularVesselSimulator, data_MDL_many:pd.DataFrame,):
     log.info("Fitting the Nrdot...")
     fit = fit_added_mass(model=model, data_MDL_many=data_MDL_many, eq=model.N_eq, move=p.Nrdot*r1d, x='r1d')
