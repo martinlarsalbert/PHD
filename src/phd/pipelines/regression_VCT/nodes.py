@@ -10,11 +10,11 @@ import numpy as np
 from vessel_manoeuvring_models.symbols import *
 from vessel_manoeuvring_models.models.diff_eq_to_matrix import DiffEqToMatrix
 import statsmodels.api as sm
-from vessel_manoeuvring_models.substitute_dynamic_symbols import run, lambdify
+from vessel_manoeuvring_models.substitute_dynamic_symbols import run, lambdify, remove_functions, equation_to_python_method
 from phd.visualization.plot_prediction import predict
 #from vct.read_shipflow import mirror_x_z
 from phd.pipelines.models import optimize_l_R_shape
-
+from sklearn.metrics import r2_score
 from vessel_manoeuvring_models.parameters import df_parameters
 p = df_parameters["symbol"]
 
@@ -654,97 +654,68 @@ def optimize(
 
     return model
 
-
 def add_MDL_resistance(
     model: ModularVesselSimulator, resistance: pd.DataFrame
 ) -> ModularVesselSimulator:
-    zero = pd.DataFrame({"u": [0.0], "X_D": [0]}, index=[0])
-    df_ = pd.concat((zero, resistance), axis=0).fillna(0)
-    coeffs = np.polyfit(x=df_["u"], y=df_["X_D"], deg=3)
-    resistance_prediction = pd.DataFrame(columns=["u"])
-    resistance_prediction["u"] = np.linspace(0, resistance["u"].max(), 100)
-    resistance_prediction["X_D"] = np.polyval(coeffs, x=resistance_prediction["u"])
+    
+    # Extrapolate down to minimum speed U0:
+    hull = model.subsystems['hull']
+    resistance_extrapolation = pd.DataFrame(columns=["u", "thrust"])
+    resistance_extrapolation["u"] = resistance_extrapolation["U"] = np.linspace(1.1*hull.U0, resistance["u"].min(), 3)
 
-    hull = model.subsystems["hull"]
-    # hull.U0=0.1
-    resistance_extrapolation = pd.DataFrame(columns=["u", "X_D"])
-    resistance_extrapolation["u"] = np.linspace(hull.U0, resistance["u"].min(), 3)
-    resistance_extrapolation["X_D"] = np.polyval(
-        coeffs, x=resistance_extrapolation["u"]
-    )
-    columns = model.states_str + model.control_keys
-    columns.remove("u")
-    resistance_extrapolation[columns] = 0
-    resistance_extrapolation["V"] = resistance_extrapolation["u"]
+    i = resistance["u"].idxmin()
+    first = resistance.loc[i]
+    a = first['thrust']/(first['u']**2)
+    resistance_extrapolation["thrust"] = a*resistance_extrapolation["u"]**2
+    df_resistance = pd.concat((resistance_extrapolation, resistance), axis=0).fillna(0)
+    df_resistance["thrust_port"] = df_resistance["thrust_stbd"] = df_resistance["thrust"]/2
+    
+    # Later for weighted regression:
+    mask = df_resistance['u'] > 0.6
+    df_resistance.loc[mask,'weight'] = 1
+    df_resistance.loc[~mask,'weight'] = 0.01
 
-    df_resistance_ = pd.concat((resistance_extrapolation, resistance), axis=0).fillna(0)
+    # Precalculate rudder and propeller etc:
+    df_calculation = model.calculate_subsystems(states_dict=df_resistance[model.states_str], control=df_resistance[model.control_keys])
+    df = pd.merge(left=df_calculation, right=df_resistance, how='left', left_index=True, right_index=True,suffixes=('','_MDL'))
 
-    df_resistance_[["thrust_port", "thrust_stbd"]] = 0
-    subs = {value: value.name for value in model.X_D_eq.rhs.args}
-    columns = list(subs.values())
-    columns.remove("X_H")
-    prediction = predict(model, data=df_resistance_)
-    df_resistance_[columns] = prediction[columns]
 
-    df_resistance_["u"] -= hull.U0
-    df_resistance_prime = model.prime_system.prime(
-        df_resistance_[model.states_str + model.control_keys + ["X_D"] + columns],
-        U=df_resistance_["V"],
-    )
-
-    ## Regress the resistance:
-    # eq_X_D = model.expand_subsystemequations(model.X_D_eq)
-    # eq = eq_X_D.subs([(v, 0), (r, 0), (thrust_stbd, 0), (thrust_port, 0), (X_RHI, 0)])
-
-    eq_X_D = model.X_D_eq.subs(subs)
-    eq_X_H = sp.Eq(X_H, sp.solve(eq_X_D, X_H)[0])
-    lambda_X_H = lambdify(eq_X_H.rhs)
-    df_resistance_prime["X_H"] = run(lambda_X_H, inputs=df_resistance_prime)
-
-    eq = (
-        model.subsystems["hull"]
-        .equations["X_H"]
-        .subs(
-            [
-                (v, 0),
-                (r, 0),
-            ]
-        )
-    )
-
-    eq_to_matrix = DiffEqToMatrix(
-        eq,
+    # ______________  Define the regression ____________:
+    # X_D = X_RHI + X_H(u, v, r, δ) + X_P(u, v, r, rev) + X_R(u, v, r, δ, thrust) + X_W(Cₓ₀, awa, Cₓ₁, A_XV, aws, Cₓ₃, Cₓ₂, Cₓ₅, ρ_A, Cₓ₄)
+    eq = remove_functions(model.X_D_eq)
+    # -> X_D = X_H + X_P + X_R + X_RHI + X_W
+    
+    eq_X_H = sp.Eq(X_H,sp.solve(eq, X_H)[0])
+    # -> X_H = X_D - X_P - X_R - X_RHI - X_W
+    lambda_X_H = equation_to_python_method(eq_X_H)
+    # Calculate what the hull resistance must be:
+    df['X_H'] = lambda_X_H(**df)
+    
+    eq_regression = hull.equations['X_H'].subs([(v,0),(r,0)])
+    # -> X_H = X_{0} + X_{u}⋅u
+        
+    exclude_parameters={}
+    eq_to_matrix_X_H = DiffEqToMatrix(
+        eq_regression,
         label=X_H,
-        base_features=[
-            u,
-            v,
-            r,
-            delta,
-            thrust,
-            thrust_port,
-            thrust_stbd,
-            y_p_port,
-            y_p_stbd,
-        ],
-        exclude_parameters={
-            "Xuuu": 0,
-            #'Xuu':0,
-            #'X0':0
-        },
+        base_features=[u, v, r, thrust],
+        exclude_parameters=exclude_parameters,
     )
-
-    X, y = eq_to_matrix.calculate_features_and_label(
-        data=df_resistance_prime,
-        y=df_resistance_prime["X_H"],
-        parameters=model.ship_parameters,
-    )
-
-    ols = sm.OLS(y, X)
+    
+    # Convert to prime system:
+    df_u0 = df.copy()
+    df_u0["u"] -= model.U0
+    df_prime = model.prime_system.prime(
+            df_u0,
+            U=df_u0["U"],
+            only_with_defined_units=True
+        )
+        
+    X,y = eq_to_matrix_X_H.calculate_features_and_label(data=df_prime, y=df_prime['X_H'])
+    ols = sm.WLS(y, X, weights=df['weight'])
     ols_fit = ols.fit()
     model.parameters.update(ols_fit.params)
-    
-    ## Manual tweaking:
-    factor = 0.8
-    model.parameters['X0']*=factor
-    model.parameters['Xu']*=factor
-    
+    log.info(ols_fit.summary2())
+    r2_SI = r2_score(y_true=df['X_H'], y_pred=predict(model, df)['X_H'])
+    log.info(f"In SI units r2 is {r2_SI}")
+    return model
