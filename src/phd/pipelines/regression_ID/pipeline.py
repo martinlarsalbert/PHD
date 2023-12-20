@@ -16,6 +16,7 @@ def create_pipeline(**kwargs) -> Pipeline:
             node(
                 func=regress_hull_inverse_dynamics,
                 #inputs=["models_VCT_MDL_optimize", "tests_ek_smooth_joined"],
+                #inputs=["models_VCT_MDL_optimize", "tests_ek_joined"],
                 inputs=["models_VCT_MDL", "tests_ek_joined"],
                 outputs="models_ID_hull",
                 name="regress_hull_inverse_dynamics",

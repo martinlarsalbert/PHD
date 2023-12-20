@@ -28,10 +28,13 @@ def predict_residual(x, model: ModularVesselSimulator, data: pd.DataFrame):
     df_force_predicted = calculate(model=model, data=data, l_R=x[0], kappa=x[1])
 
     scaler = x[2]
+    scaler2 = x[3]
 
     # 1)
-    residual = data["N_D"] - scaler * df_force_predicted["N_D"]
-
+    residual1 = data["N_D"] - scaler * df_force_predicted["N_D"]
+    residual2 = data["Y_D"] - scaler * df_force_predicted["Y_D"]
+    residual = np.concatenate((residual1.values,residual2.values))
+    
     return residual
 
 
@@ -62,7 +65,7 @@ def fit(model: ModularVesselSimulator, data: pd.DataFrame):
     else:
         kappa_0 = 0.5
 
-    x0 = [l_R_0, kappa_0, 1.0]
+    x0 = [l_R_0, kappa_0, 1.0, 1.0]
 
     return least_squares(
         fun=predict_residual,

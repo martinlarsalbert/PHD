@@ -509,8 +509,8 @@ def adopting_to_MDL(models_VCT: dict, resistance_MDL: pd.DataFrame, tests_ek:dic
         #model.parameters["Yvdot"] *= 0.55
         #model.parameters["Nrdot"] *= 0.7
 
-        model.parameters['Nr'] = -0.0007225879175745149*1.7
-        model.parameters['l_R'] = -3.1115000000000004*1.2
+        model.parameters['Nr'] = -0.0007225879175745149*2
+        #model.parameters['l_R'] = -3.1115000000000004*1.2
         
         model = fit_Nrdot(model=model, data_MDL_many=data_MDL_many)
         model = fit_Yvdot(model=model, data_MDL_many=data_MDL_many)
@@ -543,7 +543,13 @@ def fit_Nrdot(model:ModularVesselSimulator, data_MDL_many:pd.DataFrame,):
     fit = fit_added_mass(model=model, data_MDL_many=data_MDL_many, eq=model.N_eq, move=p.Nrdot*r1d, x='r1d')
     denominator = run(lambdify(df_parameters.loc['Nrdot','denominator']),inputs=model.ship_parameters)
     new_value = fit.params['r1d'] / denominator
-    log.info(f"Fitted Nrdot is {np.round(new_value/model.parameters['Nrdot'],2)} times the old one")
+    
+    change = new_value/model.parameters['Nrdot']
+    #if ((change < 0.2) or (change>3)):
+    #    raise ValueError(f"Fitted Nrdot is {np.round(change,2)} times the old one, which is too large difference!")
+    
+    log.info(f"Fitted Nrdot is {np.round(change,2)} times the old one")
+        
     model.parameters['Nrdot'] = new_value
     return model
 
@@ -552,7 +558,12 @@ def fit_Yvdot(model:ModularVesselSimulator, data_MDL_many:pd.DataFrame,):
     fit = fit_added_mass(model=model, data_MDL_many=data_MDL_many, eq=model.Y_eq, move=p.Yvdot*v1d, x='v1d')
     denominator = run(lambdify(df_parameters.loc['Yvdot','denominator']),inputs=model.ship_parameters)
     new_value = fit.params['v1d'] / denominator
-    log.info(f"Fitted Yvdot is {np.round(new_value/model.parameters['Yvdot'],2)} times the old one")
+    
+    change = new_value/model.parameters['Yvdot']
+    #if ((change < 0.2) or (change>3)):
+    #    raise ValueError(f"Fitted Yvdot is {np.round(change,2)} times the old one, which is too large difference!")
+    
+    log.info(f"Fitted Yvdot is {np.round(change,2)} times the old one")
     model.parameters['Yvdot'] = new_value
     return model
 
@@ -631,8 +642,8 @@ def shape_optimization(
 
 
 def optimize(
-    model: ModularVesselSimulator, tests_ek_smooth_joined
-) -> ModularVesselSimulator:
+    model: ModularVesselSimulator, tests_ek_smooth_joined) -> ModularVesselSimulator:
+
     ids = [
         22773,
         22772,
@@ -652,6 +663,11 @@ def optimize(
     model.parameters["kappa_outer"] = optimization.x[1]
     model.parameters["kappa_inner"] = optimization.x[1]
 
+    log.info(f"The shape oprimizer gave: l_R={optimization.x[0]}, kappa={optimization.x[1]}, scaler N ={optimization.x[2]}, scaler Y = {optimization.x[3]}")
+    
+    model = fit_Nrdot(model=model, data_MDL_many=data)
+    model = fit_Yvdot(model=model, data_MDL_many=data)
+    
     return model
 
 def add_MDL_resistance(
