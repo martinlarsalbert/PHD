@@ -18,15 +18,17 @@ def pipeline(df_VCT_prime: pd.DataFrame, model: ModularVesselSimulator) -> dict:
     rudder_hull_interaction = model.subsystems['rudder_hull_interaction']
     
     data_rudder = tests.get_group("Rudder angle").copy()
-    a_x_H = sp.symbols("a_x_H")
-    
+        
     regression_pipeline = {
         "rudder hull interaction aH": {
             "eq": rudder_hull_interaction.equations['Y_RHI'].subs(Y_RHI,Y_D_),
+            #"eq": sp.Eq(Y_D_,rudder_hull_interaction.equations['Y_RHI'].rhs + Y_R),
             "data": data_rudder,
         },
         "rudder hull interaction xH": {
-            "eq": rudder_hull_interaction.equations['N_RHI'].subs([(N_RHI,N_D_),(L,1),(a_H*x_H,a_x_H)]),
+            #"eq": rudder_hull_interaction.equations['N_RHI'].subs([(N_RHI,N_D_),(L,1),(a_H*x_H,a_x_H)]),
+            #"eq": sp.Eq(N_D_,rudder_hull_interaction.equations['N_RHI'].rhs.subs([(L,1),(a_H*x_H,a_x_H)]) + N_R),
+            "eq": sp.Eq(N_D_,x_H*N_R),
             "data": data_rudder,
         },
 
@@ -303,7 +305,7 @@ def fit(regression_pipeline: dict, model:ModularVesselSimulator, exclude_paramet
         eq_to_matrix = DiffEqToMatrix(
             eq,
             label=label,
-            base_features=[u, v, r, thrust, delta, thrust_port, thrust_stbd, y_p_port, y_p_stbd, Y_R],
+            base_features=[u, v, r, thrust, delta, thrust_port, thrust_stbd, y_p_port, y_p_stbd, Y_R, N_R],
             exclude_parameters=exclude_parameters,
         )
 

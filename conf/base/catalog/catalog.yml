@@ -48,6 +48,14 @@
   save_args:
     index: True
 
+"{namespace}.df_VCT_scaled":
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/{namespace}/df_VCT_scaled.csv
+  load_args:
+    index_col: 0
+  save_args:
+    index: True
+
 "{namespace}.shipdict_base":
   type: vct_pipelines.ship_dict_dataset.ShipDictDataSet
   filepath: data/01_raw/{namespace}/{{ship}}.ship

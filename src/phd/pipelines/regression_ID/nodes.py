@@ -27,6 +27,7 @@ import sympy as sp
 import logging
 import statsmodels.api as sm
 from vessel_manoeuvring_models.models.diff_eq_to_matrix import DiffEqToMatrix
+from pyfiglet import figlet_format
 
 log = logging.getLogger(__name__)
 
@@ -70,7 +71,9 @@ def regress_hull_inverse_dynamics(
     tests_ek_smooth_joined: pd.DataFrame,
 ) -> dict:
     models = {}
-
+    
+    log.info(figlet_format('Hull IDR', font='starwars'))
+    
     data = gather_data(tests_ek_smooth_joined=tests_ek_smooth_joined)
     
     for name, loader in base_models.items():
@@ -235,6 +238,8 @@ def regress_inverse_dynamics(
     steal_models: dict
 ) -> dict:
     models = {}
+    
+    log.info(figlet_format('Hull + Rudder IDR', font='starwars'))
 
     data = gather_data(tests_ek_smooth_joined=tests_ek_smooth_joined)
     

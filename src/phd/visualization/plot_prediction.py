@@ -165,6 +165,7 @@ def get_delta_corners(data, limit_factor=0.99):
 
 def plot_compare_model_forces(
     model: ModularVesselSimulator,
+    models: dict,
     data: pd.DataFrame,
     keys=["N_D", "N_H", "N_R"],
     styles= {
@@ -177,11 +178,7 @@ def plot_compare_model_forces(
             },
     }
 ):
-    if isinstance(model, dict):
-        models=model
-    else:
-        models={"Model":model}
-        
+       
     
     if len(styles) == 1:
         for name,model in models.items():
@@ -192,7 +189,7 @@ def plot_compare_model_forces(
     height_ratios[0]=0.5                          
     fig, axes = plt.subplots(nrows=len(keys) + 1, height_ratios=height_ratios)
     fig.set_size_inches(13, 13)
-    model = models[list(models.keys())[0]]
+    #model = models[list(models.keys())[0]]
     forces_from_motions = model.forces_from_motions(data=data)
     force_predictions = {name:predict(model=model, data=data) for name, model in models.items()}
     

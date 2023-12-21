@@ -16,7 +16,11 @@ from phd.visualization.plot_prediction import predict
 from phd.pipelines.models import optimize_l_R_shape
 from sklearn.metrics import r2_score
 from vessel_manoeuvring_models.parameters import df_parameters
+import phd.pipelines.regression_VCT.optimize
 p = df_parameters["symbol"]
+
+from pyfiglet import figlet_format
+
 
 import logging
 
@@ -95,7 +99,17 @@ def load_VCT(df_VCT_all_raw: dict) -> dict:
         extra_columns(df)        
         
     return df_VCT_all_raw
+
+def scale(df_VCT:pd.DataFrame, ship_data:dict)-> pd.DataFrame:
+    log.info('Scaling VCT results to model scale')
+    prime_system_model = PrimeSystem(L=ship_data['L'], rho=df_VCT.iloc[0]['rho'])
+    prime_system_ship = PrimeSystem(L=ship_data['L']*ship_data['scale_factor'], rho=df_VCT.iloc[0]['rho'])
     
+    df_VCT_prime = prime_system_ship.prime(df_VCT, U=df_VCT['U'], only_with_defined_units=True)
+    df_VCT_scaled = prime_system_model.unprime(df_VCT_prime, U=df_VCT['U']/np.sqrt(ship_data['scale_factor']), only_with_defined_units=True)
+    
+    return df_VCT_scaled
+
 def extra_columns(df):
     
     df["X_D"] = df["fx"]
@@ -245,7 +259,13 @@ def regress_hull_VCT(
     df_VCT: pd.DataFrame,
     exclude_parameters: dict = {},
 ):
-    log.info("_______________  Regressing hull VCT _______________")
+#    log.info("""
+# ____________________________________            
+#|                                    |
+#|       Regressing hull VCT          |
+#|____________________________________|
+#""")
+    log.info(figlet_format('Hull VCT', font='starwars'))
 
     df_VCT = df_VCT.copy()
     
@@ -274,42 +294,43 @@ def _regress_hull_VCT(
     full_output=False,
     exclude_parameters: dict = {},
 ):
-    log.info("Regressing hull VCT")
-    from .regression_pipeline import pipeline, fit
+    #log.info("Regressing hull VCT")
+    from .regression_pipeline import pipeline
 
-    log.info("Precalculate the rudders, propellers and wind_force")
-    calculation = {}
-    model.parameters.update(exclude_parameters)
-    for system_name, system in model.subsystems.items():
-        if system_name == "hull":
-            continue
-        try:
-            system.calculate_forces(
-                states_dict=df_VCT[model.states_str],
-                control=df_VCT[model.control_keys],
-                calculation=calculation,
-            )
-        except KeyError as e:
-            raise KeyError(f"Failed in subsystem:{system_name}")
-    
-    df_calculation = pd.DataFrame(calculation)
-    df_calculation_prime = model.prime_system.prime(df_calculation[['Y_R','N_R']],U=df_VCT['V'])
-    prime_system_ship = PrimeSystem(
-        L=model.ship_parameters["L"] * model.ship_parameters["scale_factor"],
-        rho=df_VCT.iloc[0]["rho"],
-    )
-    df_calculation_fullscale = prime_system_ship.unprime(df_calculation_prime, U=df_VCT['V'])
-    
-    for key,value in df_calculation_fullscale.items():
-        if not key in df_VCT:
-            log.info(f"Adding calculated:{key}")
-        else:
-            log.info(f"Replacing with calculated:{key}")
-
-        df_VCT[key] = value
-    
     # First manual regression on the rudder parameters
     model = manual_regression(model=model)
+        
+    #log.info("Precalculate the rudders, propellers and wind_force")
+    #calculation = {}
+    #model.parameters.update(exclude_parameters)
+    #for system_name, system in model.subsystems.items():
+    #    if system_name == "hull":
+    #        continue
+    #    try:
+    #        system.calculate_forces(
+    #            states_dict=df_VCT[model.states_str],
+    #            control=df_VCT[model.control_keys],
+    #            calculation=calculation,
+    #        )
+    #    except KeyError as e:
+    #        raise KeyError(f"Failed in subsystem:{system_name}")
+    #df_calculation = pd.DataFrame(calculation)
+    
+    #df_calculation_prime = model.prime_system.prime(df_calculation[['Y_R','N_R']],U=df_VCT['V'])
+    #prime_system_ship = PrimeSystem(
+    #    L=model.ship_parameters["L"] * model.ship_parameters["scale_factor"],
+    #    rho=df_VCT.iloc[0]["rho"],
+    #)
+    #df_calculation_fullscale = prime_system_ship.unprime(df_calculation_prime, U=df_VCT['V'])
+    #for key,value in df_calculation.items():
+    #    if not key in df_VCT:
+    #        log.info(f"Adding calculated:{key}")
+    #    else:
+    #        log.info(f"Replacing with calculated:{key}")
+#
+    #    df_VCT[key] = value
+    
+
     
     model, fits = regress_VCT(
         model=model,
@@ -317,12 +338,20 @@ def _regress_hull_VCT(
         pipeline=pipeline,
         exclude_parameters=exclude_parameters,
     )
-
     # Separating the rudder hull interaction coefficients:
-    model.parameters['a_H'] = model.parameters.pop('aH')
-    model.parameters['x_H'] = model.parameters["axH"]/model.parameters['a_H']
+    model.parameters['a_H']=model.parameters['aH']-1
+    model.parameters['x_H'] = model.parameters['xH']-1
+    model.parameters.pop('aH')
+    model.parameters.pop('xH')
+    log.info(f"a_H is:{model.parameters['a_H']}")
+    log.info(f"x_H is:{model.parameters['x_H']}")
     
-
+    # Optimization of rudder coefficients that are not so easy to regress with linear regression:
+    parameters = ['kappa_v','kappa_r', 'kappa_v_gamma_g', 'kappa_r_gamma_g']
+    log.info(f'Optimizing parameters:{parameters}')
+    model, changes = phd.pipelines.regression_VCT.optimize.fit(model=model, data=df_VCT, parameters=parameters)
+    log.info(f"Optimized the following parameters to:{changes}")
+    
     if full_output:
         return model, fits
     else:
@@ -333,7 +362,7 @@ def regress_hull_rudder_VCT(
     df_VCT: pd.DataFrame,
     exclude_parameters: dict = {},
 ):
-    log.info("______________________ Regressing hull+rudder VCT ______________________")
+    log.info(figlet_format('Hull + Rudder VCT', font='starwars'))
 
     df_VCT = df_VCT.copy()
     
@@ -386,17 +415,16 @@ def manual_regression(model: ModularVesselSimulator) -> ModularVesselSimulator:
     covered = model.ship_parameters["D"] / model.ship_parameters["b_R"] * 0.65
     model.ship_parameters["A_R_C"] = model.ship_parameters["A_R"] * covered
     model.ship_parameters["A_R_U"] = model.ship_parameters["A_R"] * (1 - covered)
-    #model.parameters['kappa_outer']=1.0
-    #model.parameters['kappa_inner']=0.75
-    #model.parameters['kappa_gamma']=0.3
-    model.parameters['kappa_outer']=0.94
-    model.parameters['kappa_inner']=0.94
-    model.parameters['kappa_gamma']=0.0
-    #model.parameters['delta_lim']=10000
+    #model.parameters['kappa_outer']=0.94
+    #model.parameters['kappa_inner']=0.94
+    model.parameters['kappa_v']=0.94
+    model.parameters['kappa_r']=0.94
+    model.parameters['kappa_v_gamma_g'] = 0
+    model.parameters['kappa_r_gamma_g'] = 0
+    #model.parameters['kappa_gamma']=0.0
+    
     model.ship_parameters['w_f']=0.27
-    #model.parameters['l_R']=1.2*model.ship_parameters['x_r']
-    #model.parameters['l_R']=1.38*model.ship_parameters['x_r']
-    model.parameters['l_R']=1.27*model.ship_parameters['x_r']
+    #model.parameters['l_R']=1.27*model.ship_parameters['x_r']
     c_ = (model.ship_parameters['c_t'] + model.ship_parameters['c_r'])/2
     model.ship_parameters['c_t']=1.30*0.1529126213592233
     model.ship_parameters['c_r'] = (c_*2-model.ship_parameters['c_t'])
@@ -408,7 +436,7 @@ def manual_regression(model: ModularVesselSimulator) -> ModularVesselSimulator:
     model.parameters['C_D_tune']=1.25
     model.parameters['C_D0_tune']=4.8
     
-
+    
     return model
 
 
@@ -457,12 +485,14 @@ def regress_VCT(
         + ["X_D", "Y_D", "N_D", "X_H", "Y_H", "N_H", "X_R", "Y_R", "N_R"]
         + ["test type", "model_name"]
     )
-    prime_system_ship = PrimeSystem(
-        L=model.ship_parameters["L"] * model.ship_parameters["scale_factor"],
-        rho=df_VCT.iloc[0]["rho"],
-    )
-    df_VCT_prime = prime_system_ship.prime(df_VCT_u0[keys], U=df_VCT["U"])
+    #prime_system_ship = PrimeSystem(
+    #    L=model.ship_parameters["L"] * model.ship_parameters["scale_factor"],
+    #    rho=df_VCT.iloc[0]["rho"],
+    #)
+    #df_VCT_prime = prime_system_ship.prime(df_VCT_u0[keys], U=df_VCT["U"])
 
+    df_VCT_prime = model.prime_system.prime(df_VCT_u0[keys], U=df_VCT["U"])
+    
     # for name, subsystem in model.subsystems.items():
     #    if isinstance(subsystem, PrimeEquationSubSystem):
     #        # subsystem.U0 = U0_ / np.sqrt(
@@ -489,6 +519,8 @@ def regress_VCT(
 
 def adopting_to_MDL(models_VCT: dict, resistance_MDL: pd.DataFrame, tests_ek:dict) -> dict:
     
+    log.info(figlet_format('Adopting to MDL', font='starwars'))
+    
     data_MDL_many = gather_data(tests_ek=tests_ek)
     
     models = {}
@@ -509,8 +541,12 @@ def adopting_to_MDL(models_VCT: dict, resistance_MDL: pd.DataFrame, tests_ek:dic
         #model.parameters["Yvdot"] *= 0.55
         #model.parameters["Nrdot"] *= 0.7
 
-        model.parameters['Nr'] = -0.0007225879175745149*2
         #model.parameters['l_R'] = -3.1115000000000004*1.2
+        
+        model.parameters['Nr']*=2        
+        #model.parameters['Nrdot']/=3.5
+        #model.parameters['Yvdot']=-0.006109387408263365
+        model.parameters['Yv']*=1.65
         
         model = fit_Nrdot(model=model, data_MDL_many=data_MDL_many)
         model = fit_Yvdot(model=model, data_MDL_many=data_MDL_many)
