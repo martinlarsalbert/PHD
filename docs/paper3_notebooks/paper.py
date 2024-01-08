@@ -54,7 +54,9 @@ def save_fig(fig: Figure, file_name: str):
 
 
 def save_eq(eq: sp.Eq, file_name:str=None):
+    display(file_name_with_nb_ref(file_name=file_name))
     display(eq)
+    display('')
     eq_latex = to_latex(eq=eq)
     
     if file_name is None:
