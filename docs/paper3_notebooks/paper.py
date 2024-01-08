@@ -3,6 +3,14 @@ import os.path
 from matplotlib.figure import Figure
 import matplotlib as plt
 import sympy as sp
+from phd.paper.equation import to_latex
+from IPython.display import display
+
+from phd.paper.equation import to_latex
+
+import logging
+log = logging.getLogger(__name__)
+
 
 # plt.style.use("paper")
 import arviz as az
@@ -10,7 +18,7 @@ import arviz as az
 az.style.use("arviz-grayscale")
 plt.rcParams["figure.dpi"] = 300
 
-paper_path = os.path.normpath("../../docs/paper3/")
+paper_path = r'/home/maa/dev/PHD/docs/paper'
 
 
 def file_name_with_nb_ref(file_name: str) -> str:
@@ -45,25 +53,22 @@ def save_fig(fig: Figure, file_name: str):
     fig.savefig(file_path)
 
 
-def save_eq(eq: sp.Eq, file_name: str, label: str = None):
-    file_path = file_path_with_nb_ref(file_name=file_name, directory="equations")
-    eq_latex = sp.latex(eq)
-
-    if label is None:
-        label = file_name
-
-    latex = (
-        r"""\begin{equation}
-    \begin{aligned}
-"""
-        + eq_latex
-        + r"""
-    \end{aligned}
-    \label{eq:"""
-        + label
-        + r"""}
-\end{equation}"""
-    )
-
-    with open(file_path, mode="w") as file:
-        file.write(latex)
+def save_eq(eq: sp.Eq, file_name:str=None):
+    display(eq)
+    eq_latex = to_latex(eq=eq)
+    
+    if file_name is None:
+        return eq_latex
+    
+    path = file_path_with_nb_ref(file_name=file_name, directory='equations')
+    
+    dir_path = os.path.split(path)[0]
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_path)
+        #print(f"Makedir:{dir_path}")
+    
+    #print(f"Writing:{path}")
+    with open(path, mode='w') as file:
+        file.write(eq_latex)    
+    
+        

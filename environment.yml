@@ -15,5 +15,6 @@ dependencies:
   - plotly_express
   - jupyterlab
   - geopandas
+  - bokeh==2.4.3
   - pip:
     - vessel-manoeuvring-models
