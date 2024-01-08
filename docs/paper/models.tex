@@ -18,6 +18,7 @@ The kinematics of the manoeuvring models are described by \autoref{eq:X}-\autore
 
 The external forces are expressed in a modular way similar to the MMG model \citep{yasukawa_introduction_2015},
 
+% Components:
 \begin{equation}
     \label{eq:X_D}
     \input{equations/mathematical_model_kinetics.X_D}
@@ -33,3 +34,50 @@ The external forces are expressed in a modular way similar to the MMG model \cit
     \input{equations/mathematical_model_kinetics.N_D}
 \end{equation}
 where the subscripts: H, P, R, W, and RHI represent contributions from: hull, propellers, rudders, wind and rudder hull interaction.
+
+% Hull:
+The hull forces are expressed with the following polynomials expressed in prime system units,
+
+\begin{equation}
+    \label{eq:X_H}
+    \input{equations/mathematical_model_kinetics.X_H}
+\end{equation}
+
+\begin{equation}
+    \label{eq:Y_H}
+    \input{equations/mathematical_model_kinetics.Y_H}
+\end{equation}
+
+\begin{equation}
+    \label{eq:N_H}
+    \input{equations/mathematical_model_kinetics.N_H}
+\end{equation}
+
+%Propellers:
+The propeller forces are expressed as,
+
+\begin{equation}
+    \label{eq:X_P}
+    \input{equations/mathematical_model_kinetics.X_P}
+\end{equation}
+
+\begin{equation}
+    \label{eq:Y_P}
+    \input{equations/mathematical_model_kinetics.Y_P}
+\end{equation}
+
+\begin{equation}
+    \label{eq:N_P}
+    \input{equations/mathematical_model_kinetics.N_P}
+\end{equation}
+
+The surge forces from the propellers are calculated as the propeller thrust times a thrust deduction coefficient $X_{thrust}=(1-t)$ as shown in for the port propeller in \autoref{eq:X_P_port} and a small yawing moment contribution as seen in \autoref{eq:N_P_port}.
+\begin{equation}
+    \label{eq:X_P_port}
+    \input{equations/mathematical_model_kinetics.X_P_port}
+\end{equation}
+
+\begin{equation}
+    \label{eq:N_P_port}
+    \input{equations/mathematical_model_kinetics.N_P_port}
+\end{equation}
