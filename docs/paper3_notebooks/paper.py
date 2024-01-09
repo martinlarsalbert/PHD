@@ -63,7 +63,8 @@ def save_eq(eq: sp.Eq, file_name:str=None, subs={}):
     if file_name is None:
         return eq_latex
     
-    path = file_path_with_nb_ref(file_name=file_name, directory='equations')
+    file_name_ext = f"{file_name}.tex"
+    path = file_path_with_nb_ref(file_name=file_name_ext, directory='equations')
     
     dir_path = os.path.split(path)[0]
     if not os.path.exists(dir_path):
