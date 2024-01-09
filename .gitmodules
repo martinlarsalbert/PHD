@@ -1,6 +1,3 @@
-[submodule "docs/paper/System-identification-for-a-physically-correct-ship-manoeuvring-model-in-wind-conditions"]
-	path = docs/paper/System-identification-for-a-physically-correct-ship-manoeuvring-model-in-wind-conditions
-	url = https://github.com/martinlarsalbert/System-identification-for-a-physically-correct-ship-manoeuvring-model-in-wind-conditions
 [submodule "docs/System-identification-for-a-physically-correct-ship-manoeuvring-model-in-wind-conditions"]
 	path = docs/System-identification-for-a-physically-correct-ship-manoeuvring-model-in-wind-conditions
 	url = https://github.com/martinlarsalbert/System-identification-for-a-physically-correct-ship-manoeuvring-model-in-wind-conditions
