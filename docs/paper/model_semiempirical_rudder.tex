@@ -1,0 +1,264 @@
+
+The semi-empirical rudder model is a lifting line model. The surge and sway force are expressed as rudder lift $L_R$, and drag $D_R$ projected on the ship through the rudder inflow angle $\alpha_f$ as seen in \autoref{eq:X_R_semiempirical} and \autoref{eq:Y_R_semiempirical}. $\alpha_f$ is an angle influenced by both the rudder angle $\delta$ as well as the angle of the inflow to the rudder from a combination of the propeller induced speed and the velocity in the wake of the ship. The yaw moment is modelled as the sway force times a lever arm $x_R$ as seen in \autoref{eq:N_R_semiempirical}.
+\begin{equation}
+    \label{eq:X_R_semiempirical}
+    \input{equations/mathematical_model_kinetics.X_R_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:Y_R_semiempirical}
+    \input{equations/mathematical_model_kinetics.Y_R_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:N_R_semiempirical}
+    \input{equations/mathematical_model_kinetics.N_R_semiempirical}
+\end{equation}
+
+The total rudder lift is calculated as the sum of the lift from the part of the rudder that is covered by the propeller race $L_{RC}$ and the uncovered part $L_{RU}$ as seen in \autoref{eq:L_R_semiempirical}.
+\begin{equation}
+    \label{eq:L_R_semiempirical}
+    \input{equations/mathematical_model_kinetics.L_R_semiempirical}
+\end{equation}
+The lift forces are calculated with the lift coefficient $C_L$ as seen in \autoref{eq:L_R_U_semiempirical} and \autoref{eq:L_R_C_semiempirical}. These equations are essentially the same except that the lift by the covered part $L_{RC}$ is diminished by the factor $\lambda_R$ due to the limited radius of the propeller slipstream in the lateral direction.
+
+\begin{equation}
+    \label{eq:L_R_U_semiempirical}
+    \input{equations/mathematical_model_kinetics.L_R_U_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:L_R_C_semiempirical}
+    \input{equations/mathematical_model_kinetics.L_R_C_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:lambda_R_semiempirical}
+    \input{equations/mathematical_model_kinetics.lambda_R_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:f_semiempirical}
+    \input{equations/mathematical_model_kinetics.f_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:d_semiempirical}
+    \input{equations/mathematical_model_kinetics.d_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:V_x_corr_semiempirical}
+    \input{equations/mathematical_model_kinetics.V_x_corr_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:r_Delta_semiempirical}
+    \input{equations/mathematical_model_kinetics.r_Delta_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:alpha_f_semiempirical}
+    \input{equations/mathematical_model_kinetics.alpha_f_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:D_R_semiempirical}
+    \input{equations/mathematical_model_kinetics.D_R_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:C_D_C_semiempirical}
+    \input{equations/mathematical_model_kinetics.C_D_C_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:C_D0_C_semiempirical}
+    \input{equations/mathematical_model_kinetics.C_D0_C_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:C_F_C_semiempirical}
+    \input{equations/mathematical_model_kinetics.C_F_C_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:Re_F_C_semiempirical}
+    \input{equations/mathematical_model_kinetics.Re_F_C_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:V_R_C_semiempirical}
+    \input{equations/mathematical_model_kinetics.V_R_C_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:C_D_U_semiempirical}
+    \input{equations/mathematical_model_kinetics.C_D_U_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:C_L_semiempirical}
+    \input{equations/mathematical_model_kinetics.C_L_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:C_N_semiempirical}
+    \input{equations/mathematical_model_kinetics.C_N_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:C_L_max_semiempirical}
+    \input{equations/mathematical_model_kinetics.C_L_max_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:dC_L_dalpha_semiempirical}
+    \input{equations/mathematical_model_kinetics.dC_L_dalpha_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:a_0_semiempirical}
+    \input{equations/mathematical_model_kinetics.a_0_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:C_D_crossflow_semiempirical}
+    \input{equations/mathematical_model_kinetics.C_D_crossflow_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:lambda__semiempirical}
+    \input{equations/mathematical_model_kinetics.lambda__semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:B_0_semiempirical}
+    \input{equations/mathematical_model_kinetics.B_0_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:B_s_semiempirical}
+    \input{equations/mathematical_model_kinetics.B_s_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:u_s_semiempirical}
+    \input{equations/mathematical_model_kinetics.u_s_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:alpha_s_semiempirical}
+    \input{equations/mathematical_model_kinetics.alpha_s_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:alpha_semiempirical}
+    \input{equations/mathematical_model_kinetics.alpha_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:gamma_semiempirical}
+    \input{equations/mathematical_model_kinetics.gamma_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:AR_e_semiempirical}
+    \input{equations/mathematical_model_kinetics.AR_e_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:AR_g_semiempirical}
+    \input{equations/mathematical_model_kinetics.AR_g_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:C_D0_U_semiempirical}
+    \input{equations/mathematical_model_kinetics.C_D0_U_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:C_F_U_semiempirical}
+    \input{equations/mathematical_model_kinetics.C_F_U_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:Re_F_U_semiempirical}
+    \input{equations/mathematical_model_kinetics.Re_F_U_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:V_R_U_semiempirical}
+    \input{equations/mathematical_model_kinetics.V_R_U_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:V_R_x_U_semiempirical}
+    \input{equations/mathematical_model_kinetics.V_R_x_U_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:V_x_U_semiempirical}
+    \input{equations/mathematical_model_kinetics.V_x_U_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:V_R_y_semiempirical}
+    \input{equations/mathematical_model_kinetics.V_R_y_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:kappa_r_tot_semiempirical}
+    \input{equations/mathematical_model_kinetics.kappa_r_tot_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:kappa_v_tot_semiempirical}
+    \input{equations/mathematical_model_kinetics.kappa_v_tot_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:gamma_g_semiempirical}
+    \input{equations/mathematical_model_kinetics.gamma_g_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:V_R_x_C_semiempirical}
+    \input{equations/mathematical_model_kinetics.V_R_x_C_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:V_x_C_semiempirical}
+    \input{equations/mathematical_model_kinetics.V_x_C_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:r_p_semiempirical}
+    \input{equations/mathematical_model_kinetics.r_p_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:r_infty_semiempirical}
+    \input{equations/mathematical_model_kinetics.r_infty_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:V_infty_semiempirical}
+    \input{equations/mathematical_model_kinetics.V_infty_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:C_Th_semiempirical}
+    \input{equations/mathematical_model_kinetics.C_Th_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:V_A_semiempirical}
+    \input{equations/mathematical_model_kinetics.V_A_semiempirical}
+\end{equation}
+%
+\begin{equation}
+    \label{eq:c_semiempirical}
+    \input{equations/mathematical_model_kinetics.c_semiempirical}
+\end{equation}
+%
