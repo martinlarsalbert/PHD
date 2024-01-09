@@ -8,6 +8,17 @@ def to_latex_equation(eq:sp.Eq, label:str)-> str:
     
     return s_latex
 
-def to_latex(eq:sp.Eq)-> str:
+
+standard_substitutions={
+    'delta':r'\delta',
+}
+
+def to_latex(eq:sp.Eq, do_standard_substitutions=True)-> str:
     eq_latex = latex(eq)    
-    return eq_latex
+    
+    eq_latex_subs = str(eq_latex)
+    if do_standard_substitutions:
+        for old,new in standard_substitutions.items():
+            eq_latex_subs=eq_latex_subs.replace(old,new)
+    
+    return eq_latex_subs

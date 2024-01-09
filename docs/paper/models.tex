@@ -33,11 +33,10 @@ The external forces are expressed in a modular way similar to the MMG model \cit
     \label{eq:N_D}
     \input{equations/mathematical_model_kinetics.N_D}
 \end{equation}
-where the subscripts: H, P, R, W, and RHI represent contributions from: hull, propellers, rudders, wind and rudder hull interaction.
+where the subscripts: H, P, R, and RHI represent contributions from: hull, propellers, rudders, and rudder hull interaction.
 
 % Hull:
 The hull forces are expressed with the following polynomials expressed in prime system units,
-
 \begin{equation}
     \label{eq:X_H}
     \input{equations/mathematical_model_kinetics.X_H}
@@ -55,7 +54,6 @@ The hull forces are expressed with the following polynomials expressed in prime 
 
 %Propellers:
 The propeller forces are expressed as,
-
 \begin{equation}
     \label{eq:X_P}
     \input{equations/mathematical_model_kinetics.X_P}
@@ -70,7 +68,6 @@ The propeller forces are expressed as,
     \label{eq:N_P}
     \input{equations/mathematical_model_kinetics.N_P}
 \end{equation}
-
 The surge forces from the propellers are calculated as the propeller thrust times a thrust deduction coefficient $X_{thrust}=(1-t)$ as shown in for the port propeller in \autoref{eq:X_P_port} and a small yawing moment contribution as seen in \autoref{eq:N_P_port}.
 \begin{equation}
     \label{eq:X_P_port}
@@ -81,3 +78,16 @@ The surge forces from the propellers are calculated as the propeller thrust time
     \label{eq:N_P_port}
     \input{equations/mathematical_model_kinetics.N_P_port}
 \end{equation}
+
+%Rudder hull interaction:
+There is an interaction effect between the rudder and hull. The flow in the ship's aft is influenced by the rudder -- which generates lift on the hull surface -- so that forces from rudder actions are generated both on the rudder and on the hull. This effect is modelled by the coefficients $\alpha_H$ and $x_H$ as seen in \autoref{eq:Y_RHI} and \autoref{eq:N_RHI}.
+\begin{equation}
+    \label{eq:Y_RHI}
+    \input{equations/mathematical_model_kinetics.Y_RHI}
+\end{equation}
+
+\begin{equation}
+    \label{eq:N_RHI}
+    \input{equations/mathematical_model_kinetics.N_RHI}
+\end{equation}
+In this paper two different rudder models are used for the rudder forces, which are described in the next section.

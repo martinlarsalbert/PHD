@@ -4,7 +4,7 @@ from matplotlib.figure import Figure
 import matplotlib as plt
 import sympy as sp
 from phd.paper.equation import to_latex
-from IPython.display import display
+from IPython.display import display, Latex, Math, HTML
 
 from phd.paper.equation import to_latex
 
@@ -54,10 +54,11 @@ def save_fig(fig: Figure, file_name: str):
 
 
 def save_eq(eq: sp.Eq, file_name:str=None):
-    display(file_name_with_nb_ref(file_name=file_name))
-    display(eq)
-    display('')
+    display(HTML(file_name_with_nb_ref(file_name=file_name)))
     eq_latex = to_latex(eq=eq)
+    display(Math(eq_latex))
+    display(HTML('<br>'))
+    
     
     if file_name is None:
         return eq_latex
