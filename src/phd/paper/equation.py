@@ -10,15 +10,23 @@ def to_latex_equation(eq:sp.Eq, label:str)-> str:
 
 
 standard_substitutions={
+    #'alpha':r'\alpha',
+    #'alpha_fport':r'\alpha_f_port',
     'delta':r'\delta',
+    'infty':r'\infty',
+    'thrust':'T',
+    
 }
 
-def to_latex(eq:sp.Eq, do_standard_substitutions=True)-> str:
+def to_latex(eq:sp.Eq, do_standard_substitutions=True, subs={})-> str:
     eq_latex = latex(eq)    
     
     eq_latex_subs = str(eq_latex)
     if do_standard_substitutions:
-        for old,new in standard_substitutions.items():
+        substitutions = standard_substitutions.copy()
+        substitutions.update(subs)
+        
+        for old,new in substitutions.items():
             eq_latex_subs=eq_latex_subs.replace(old,new)
     
     return eq_latex_subs
