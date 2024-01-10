@@ -18,7 +18,7 @@ import arviz as az
 az.style.use("arviz-grayscale")
 plt.rcParams["figure.dpi"] = 300
 
-paper_path = r'/home/maa/dev/PHD/docs/paper'
+paper_path = r'/home/maa/dev/PHD/docs/System-identification-for-a-physically-correct-ship-manoeuvring-model-in-wind-conditions'
 
 
 def file_name_with_nb_ref(file_name: str) -> str:
