@@ -3,7 +3,7 @@ from vessel_manoeuvring_models.models.modular_simulator import ModularVesselSimu
 import matplotlib.pyplot as plt
 from vessel_manoeuvring_models.substitute_dynamic_symbols import get_function_subs
 import numpy as np
-
+from matplotlib.ticker import StrMethodFormatter
 
 def predict(model: ModularVesselSimulator, data: pd.DataFrame) -> pd.DataFrame:
     df_force_predicted = pd.DataFrame(
@@ -188,7 +188,7 @@ def plot_compare_model_forces(
     height_ratios=np.ones(len(keys)+1)
     height_ratios[0]=0.5                          
     fig, axes = plt.subplots(nrows=len(keys) + 1, height_ratios=height_ratios)
-    fig.set_size_inches(13, 13)
+    #fig.set_size_inches(13, 13)
     #model = models[list(models.keys())[0]]
     forces_from_motions = model.forces_from_motions(data=data)
     force_predictions = {name:predict(model=model, data=data) for name, model in models.items()}
@@ -197,8 +197,8 @@ def plot_compare_model_forces(
 
     starts, ends, corners = get_delta_corners(data=data)
 
-    data.plot(y="beta", color="red", ax=ax)
-    data.plot(y="delta", color="g", ax=ax)
+    data.plot(y="beta", color="red", label=r'$\beta$', ax=ax)
+    data.plot(y="delta", color="g", label=r'$\delta$', ax=ax)
     ax.set_xlim(data.index[0], data.index[-1])
     ax.legend(loc="upper left")
     ax.set_xticks(corners.index)
@@ -207,19 +207,26 @@ def plot_compare_model_forces(
     # ax.grid(False)
 
     ax2 = ax.twinx()
-    data.plot(y="r", color="b", ax=ax2)
+    data.plot(y="r", color="b", label=r'$r$', ax=ax2)
     ax2.legend(loc="lower left")
     ax2.grid(False)
     ax2.set_yticklabels([])
 
+    units={
+        'X':'N',
+        'Y':'N',
+        'N':'Nm',
+    }
+    
     for key, ax in zip(keys, axes[1:]):
         if key in forces_from_motions:
             forces_from_motions.plot(y=key, **styles["Experiment"], ax=ax)
 
         for name, forces_predicted in force_predictions.items():
             forces_predicted.plot(y=key, **styles[name], ax=ax)
-
-        ax.set_ylabel(rf"${key}$ $[Nm]$")
+        
+        unit = units.get(key[0],'-')
+        ax.set_ylabel(rf"${key}$ $[{unit}]$")
         ax.get_legend().set_visible(False)
         ax.get_legend().set_visible(False)
         ax.set_xlim(data.index[0], data.index[-1])
@@ -228,7 +235,9 @@ def plot_compare_model_forces(
 
     axes[1].legend()
     axes[-1].set_xlabel("Time [s]")
-    axes[-1].set_xticklabels(np.round(axes[-1].get_xticks(), 1))
+    #axes[-1].set_xticklabels(np.round(axes[-1].get_xticks(), 0))
+    axes[-1].set_xticklabels([])
+    #axes[-1].set_major_formatter(StrMethodFormatter('{x:,.0f}'))
     
     ylims=[]
     for ax in axes[1:]:
@@ -237,8 +246,12 @@ def plot_compare_model_forces(
     for ax in axes[1:]:
         ax.set_ylim(ylims)
     
+    for ax in axes:
+        ax.grid(True)
     
     plt.tight_layout()
+    
+    return fig
 
 def group_parameters(df:pd.DataFrame, joins=['Nv','Nr','Nvr']):
     
@@ -272,5 +285,11 @@ def plot_parameter_contributions(model, data:pd.DataFrame, ax=None, prefix='N', 
         label = group[0] + "".join([f"+{item}" for item in group[1:]])
         df_parameters_contributions_clean[label] = df_parameters_contributions[group].sum(axis=1)
         
+    SI_units = {
+        'moment':'Nm',
+        'force':'N'
+    }
+    
+    ax.set_ylabel(f"${prefix}_H$ $[{SI_units.get(unit,unit)}]$")
     
     return df_parameters_contributions_clean.plot(ax=ax)

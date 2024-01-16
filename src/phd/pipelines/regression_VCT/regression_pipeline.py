@@ -328,6 +328,7 @@ def fit(regression_pipeline: dict, model:ModularVesselSimulator, exclude_paramet
             raise ValueError(f"Failed in regression:{name}")
         ols_fit.X = X
         ols_fit.y = y
+        ols_fit.eq = eq
         new_parameters.update(ols_fit.params)
         exclude_parameters.update(new_parameters)
         #data[str(eq.rhs)] = ols_fit.predict(X)  # So that Y_R can be used again...

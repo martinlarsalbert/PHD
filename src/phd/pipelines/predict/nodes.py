@@ -5,8 +5,10 @@ generated using Kedro 0.18.7
 
 import pandas as pd
 import numpy as np
-from sklearn.metrics import r2_score, mean_squared_error
+from sklearn.metrics import mean_absolute_error
 from vessel_manoeuvring_models.models.modular_simulator import ModularVesselSimulator
+from phd.visualization.plot_prediction import plot_total_force, plot_force_components, predict, plot_compare_model_forces, plot_parameter_contributions
+
 import logging
 
 
@@ -80,19 +82,18 @@ def force_prediction_score(models: dict, time_series: dict) -> pd.DataFrame:
 
     return force_prediction_scores
 
-
-def score(df_force: pd.DataFrame, df_force_predicted: pd.DataFrame):
-    s = pd.Series()
-
-    for dof in dofs:
-        s[f"r2({dof})"] = r2_score(y_true=df_force[dof], y_pred=df_force_predicted[dof])
-        s[f"rmse({dof})"] = np.sqrt(
-            mean_squared_error(y_true=df_force[dof], y_pred=df_force_predicted[dof])
-        )
-
-    return s
-
-
+def score(model:ModularVesselSimulator, data:pd.DataFrame, keys=['X_D','Y_D','N_D']):
+    
+    forces_from_motions = model.forces_from_motions(data=data)
+    df_predict = predict(model=model, data=data).dropna()
+    forces_from_motions = forces_from_motions.loc[df_predict.index].copy()
+    
+    scores = {}
+    for key in keys:
+        scores[key] = mean_absolute_error(y_true=forces_from_motions[key], y_pred=df_predict[key])
+        #scores[key] = r2_score(y_true=forces_from_motions[key], y_pred=df_predict[key])
+    
+    return scores  
 def select_prediction_dataset_7m(
     time_series: dict, test_meta_data: pd.DataFrame
 ) -> dict:

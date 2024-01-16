@@ -439,6 +439,44 @@ def manual_regression(model: ModularVesselSimulator) -> ModularVesselSimulator:
     
     return model
 
+def df_VCT_to_prime(model: ModularVesselSimulator,df_VCT: pd.DataFrame)-> pd.DataFrame:
+    df_VCT["U"] = df_VCT["V"]
+
+    replacements = {
+        "X_D" : "fx",
+        "Y_D" : "fy",
+        "N_D" : "mz",
+        "X_H" : "fx_hull",
+        "Y_H" : "fy_hull",
+        "N_H" : "mz_hull",
+        "X_R" : "fx_rudders",
+        "Y_R" : "fy_rudders",
+        "N_R" : "mz_rudders",       
+    }
+    for key,replacement in replacements.items():
+        if not key in df_VCT:
+            df_VCT[key] = df_VCT[replacement]
+    
+    zeros = ["x0","y0","psi","twa","tws",]
+    for zero in zeros:
+        if not zero in df_VCT:
+            df_VCT[zero]= 0
+
+    U0_ = model.U0
+    df_VCT_u0 = df_VCT.copy()
+    df_VCT_u0["u"] -= U0_ * np.sqrt(model.ship_parameters["scale_factor"])
+
+    keys = (
+        model.states_str
+        + ["beta", "V", "U"]
+        + model.control_keys
+        + ["X_D", "Y_D", "N_D", "X_H", "Y_H", "N_H", "X_R", "Y_R", "N_R"]
+        + ["test type", "model_name"]
+    )
+
+    df_VCT_prime = model.prime_system.prime(df_VCT_u0[keys], U=df_VCT["U"])
+    return df_VCT_prime
+    
 
 def regress_VCT(
     model: ModularVesselSimulator,
