@@ -25,7 +25,7 @@ def create_pipeline(**kwargs) -> Pipeline:
             node(
                 func=regress_inverse_dynamics,
                 #inputs=["base_models_simple", "tests_ek_smooth_joined", "models_VCT_MDL_optimize"],
-                inputs=["base_models_simple", "tests_ek_joined", "models_VCT_MDL_optimize"],
+                inputs=["base_models_simple", "tests_ek_joined", "models_VCT_MDL"],
                 outputs="models_ID_hull_rudder",
                 name="regress_inverse_dynamics",
                 tags=tags,
