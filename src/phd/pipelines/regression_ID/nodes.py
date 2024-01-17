@@ -80,6 +80,11 @@ def regress_hull_inverse_dynamics(
         base_model = loader()
         exclude_parameters = exclude_parameters_global.copy()
         
+        ## Stealing the resistance
+        exclude_parameters['X0'] = base_model.parameters['X0']
+        exclude_parameters['Xu'] = base_model.parameters['Xu']
+        
+        
         base_model.parameters['Xthrust'] = 1 - base_model.ship_parameters['tdf']
 
         models[name], fits = _regress_hull_inverse_dynamics(
@@ -248,8 +253,10 @@ def regress_inverse_dynamics(
     for name, loader in base_models.items():
         base_model = loader()
         exclude_parameters = exclude_parameters_global.copy()
-        #exclude_parameters["X0"] = steal_model.parameters["X0"]
-        #exclude_parameters["Xu"] = steal_model.parameters["Xu"]
+        
+        ## Stealing the resistance
+        exclude_parameters["X0"] = steal_model.parameters["X0"]
+        exclude_parameters["Xu"] = steal_model.parameters["Xu"]
         
         base_model.parameters['Xthrust'] = 1 - base_model.ship_parameters['tdf']
         steals = ['Nrdot','Nvdot','Yrdot','Yvdot']
