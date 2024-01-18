@@ -15,6 +15,7 @@ dependencies:
   - plotly_express
   - jupyterlab
   - geopandas
+  - arviz
   - pip:
     - vessel-manoeuvring-models
     - pyfiglet
