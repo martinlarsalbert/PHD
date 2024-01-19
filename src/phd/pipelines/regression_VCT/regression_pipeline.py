@@ -9,29 +9,46 @@ import logging
 log = logging.getLogger(__name__)
 
 
+def pipeline_RHI(df_VCT_prime: pd.DataFrame, model: ModularVesselSimulator) -> dict:
+    hull = model.subsystems["hull"]
+    assert isinstance(hull, PrimeEquationSubSystem)
+
+    tests = df_VCT_prime.groupby(by="test type")
+
+    rudder_hull_interaction = model.subsystems["rudder_hull_interaction"]
+
+    data_rudder = tests.get_group("Rudder angle").copy()
+
+    regression_pipeline = {
+        "rudder hull interaction aH": {
+            "eq": rudder_hull_interaction.equations["Y_RHI"].subs(Y_RHI, Y_D_),
+            # "eq": sp.Eq(Y_D_,rudder_hull_interaction.equations['Y_RHI'].rhs + Y_R),
+            "data": data_rudder,
+        },
+        "rudder hull interaction xH": {
+            # "eq": rudder_hull_interaction.equations['N_RHI'].subs([(N_RHI,N_D_),(L,1),(a_H*x_H,a_x_H)]),
+            # "eq": sp.Eq(N_D_,rudder_hull_interaction.equations['N_RHI'].rhs.subs([(L,1),(a_H*x_H,a_x_H)]) + N_R),
+            "eq": sp.Eq(N_D_, x_H * N_R),
+            "data": data_rudder,
+        },
+    }
+
+    return regression_pipeline
+
+
 def pipeline(df_VCT_prime: pd.DataFrame, model: ModularVesselSimulator) -> dict:
     hull = model.subsystems["hull"]
     assert isinstance(hull, PrimeEquationSubSystem)
 
     tests = df_VCT_prime.groupby(by="test type")
-    
-    rudder_hull_interaction = model.subsystems['rudder_hull_interaction']
-    
-    data_rudder = tests.get_group("Rudder angle").copy()
-        
-    regression_pipeline = {
-        "rudder hull interaction aH": {
-            "eq": rudder_hull_interaction.equations['Y_RHI'].subs(Y_RHI,Y_D_),
-            #"eq": sp.Eq(Y_D_,rudder_hull_interaction.equations['Y_RHI'].rhs + Y_R),
-            "data": data_rudder,
-        },
-        "rudder hull interaction xH": {
-            #"eq": rudder_hull_interaction.equations['N_RHI'].subs([(N_RHI,N_D_),(L,1),(a_H*x_H,a_x_H)]),
-            #"eq": sp.Eq(N_D_,rudder_hull_interaction.equations['N_RHI'].rhs.subs([(L,1),(a_H*x_H,a_x_H)]) + N_R),
-            "eq": sp.Eq(N_D_,x_H*N_R),
-            "data": data_rudder,
-        },
 
+    # Adding the rudder hull interaction to the hull forces (otherwise they will be included both in the hull forces and the RHI forces):
+    # eq_Y_H = sp.Eq(
+    #    hull.equations["Y_H"].lhs, hull.equations["Y_H"].rhs + (a_H - 1) * Y_R
+    # )
+    eq_Y_H = hull.equations["Y_H"]
+
+    regression_pipeline = {
         "resistance": {
             "eq": hull.equations["X_H"].subs(
                 [
@@ -43,28 +60,28 @@ def pipeline(df_VCT_prime: pd.DataFrame, model: ModularVesselSimulator) -> dict:
             if "resistance" in tests.groups
             else tests.get_group("self propulsion"),
         },
-        "resistance fy": {
-            "eq": hull.equations["Y_H"].subs(
-                [
-                    (v, 0),
-                    (r, 0),
-                ]
-            ),
-            "data": tests.get_group("resistance")
-            if "resistance" in tests.groups
-            else tests.get_group("self propulsion"),
-        },
-        "resistance mz": {
-            "eq": hull.equations["N_H"].subs(
-                [
-                    (v, 0),
-                    (r, 0),
-                ]
-            ),
-            "data": tests.get_group("resistance")
-            if "resistance" in tests.groups
-            else tests.get_group("self propulsion"),
-        },
+        # "resistance fy": {
+        #    "eq": eq_Y_H.subs(
+        #        [
+        #            (v, 0),
+        #            (r, 0),
+        #        ]
+        #    ),
+        #    "data": tests.get_group("resistance")
+        #    if "resistance" in tests.groups
+        #    else tests.get_group("self propulsion"),
+        # },
+        # "resistance mz": {
+        #    "eq": hull.equations["N_H"].subs(
+        #        [
+        #            (v, 0),
+        #            (r, 0),
+        #        ]
+        #    ),
+        #    "data": tests.get_group("resistance")
+        #    if "resistance" in tests.groups
+        #    else tests.get_group("self propulsion"),
+        # },
         "Drift angle fx": {
             "eq": hull.equations["X_H"].subs(
                 [
@@ -75,7 +92,7 @@ def pipeline(df_VCT_prime: pd.DataFrame, model: ModularVesselSimulator) -> dict:
             "const": True,
         },
         "Drift angle fy": {
-            "eq": hull.equations["Y_H"].subs(
+            "eq": eq_Y_H.subs(
                 [
                     (r, 0),
                 ]
@@ -97,10 +114,10 @@ def pipeline(df_VCT_prime: pd.DataFrame, model: ModularVesselSimulator) -> dict:
                 ]
             ),
             "data": tests.get_group("Circle"),
-            "const":True,
+            "const": True,
         },
         "Circle fy": {
-            "eq": hull.equations["Y_H"].subs(
+            "eq": eq_Y_H.subs(
                 [
                     (v, 0),
                 ]
@@ -118,10 +135,10 @@ def pipeline(df_VCT_prime: pd.DataFrame, model: ModularVesselSimulator) -> dict:
         "Circle + Drift fx": {
             "eq": hull.equations["X_H"],
             "data": tests.get_group("Circle + Drift"),
-            "const": True
+            "const": True,
         },
         "Circle + Drift fy": {
-            "eq": hull.equations["Y_H"],
+            "eq": eq_Y_H,
             "data": tests.get_group("Circle + Drift"),
         },
         "Circle + Drift mz": {
@@ -136,39 +153,43 @@ def pipeline(df_VCT_prime: pd.DataFrame, model: ModularVesselSimulator) -> dict:
 def pipeline_with_rudder(
     df_VCT_prime: pd.DataFrame, model: ModularVesselSimulator
 ) -> dict:
-   
-    
     eq_X = model.expand_subsystemequations(model.X_D_eq)
     eq_Y = model.expand_subsystemequations(model.Y_D_eq)
     eq_N = model.expand_subsystemequations(model.N_D_eq)
-     
+
     hull = model.subsystems["hull"]
     assert isinstance(hull, PrimeEquationSubSystem)
 
     tests = df_VCT_prime.groupby(by="test type")
-    rudders = model.subsystems['rudders']
-   
-    mask = df_VCT_prime['test type'].isin([
-        'Circle + rudder angle',
-        'Rudder and drift angle',
-    ])
+    rudders = model.subsystems["rudders"]
+
+    mask = df_VCT_prime["test type"].isin(
+        [
+            "Circle + rudder angle",
+            "Rudder and drift angle",
+        ]
+    )
     data_flow_straightening = df_VCT_prime.loc[mask]
     data_rudder = tests.get_group("Rudder angle").copy()
     regression_pipeline = {
         "Rudder fx": {
-            "eq": rudders.equations['X_R'],
+            "eq": rudders.equations["X_R"],
             "data": data_rudder,
-            "const":True,
+            "const": True,
         },
         "Rudder fy": {
-            "eq": eq_Y.subs([(v,0),(r,0)]),
+            "eq": eq_Y.subs([(v, 0), (r, 0)]),
             "data": data_rudder,
         },
         "Rudder mz": {
-            "eq": eq_N.subs([(v,0),(r,0),]),
+            "eq": eq_N.subs(
+                [
+                    (v, 0),
+                    (r, 0),
+                ]
+            ),
             "data": data_rudder,
         },
-        
         "resistance": {
             "eq": eq_X.subs(
                 [
@@ -180,123 +201,94 @@ def pipeline_with_rudder(
             if "resistance" in tests.groups
             else tests.get_group("self propulsion"),
         },
-        "resistance fy": {
-            "eq": eq_Y.subs(
-                [
-                    (v, 0),
-                    (r, 0),
-                ]
-            ),
-            "data": tests.get_group("resistance")
-            if "resistance" in tests.groups
-            else tests.get_group("self propulsion"),
-        },
-        "resistance mz": {
-            "eq": eq_N.subs(
-                [
-                    (v, 0),
-                    (r, 0),
-                ]
-            ),
-            "data": tests.get_group("resistance")
-            if "resistance" in tests.groups
-            else tests.get_group("self propulsion"),
-        },
+        # "resistance fy": {
+        #    "eq": eq_Y.subs(
+        #        [
+        #            (v, 0),
+        #            (r, 0),
+        #        ]
+        #    ),
+        #    "data": tests.get_group("resistance")
+        #    if "resistance" in tests.groups
+        #    else tests.get_group("self propulsion"),
+        # },
+        # "resistance mz": {
+        #    "eq": eq_N.subs(
+        #        [
+        #            (v, 0),
+        #            (r, 0),
+        #        ]
+        #    ),
+        #    "data": tests.get_group("resistance")
+        #    if "resistance" in tests.groups
+        #    else tests.get_group("self propulsion"),
+        # },
         "Drift angle fx": {
-            "eq": eq_X.subs(
-                [
-                    (r, 0),
-                    (delta,0)
-                ]
-            ),
+            "eq": eq_X.subs([(r, 0), (delta, 0)]),
             "data": tests.get_group("Drift angle"),
             "const": True,
         },
         "Drift angle fy": {
-            "eq": eq_Y.subs(
-                [
-                    (r, 0),
-                    (delta,0)
-                ]
-            ),
+            "eq": eq_Y.subs([(r, 0), (delta, 0)]),
             "data": tests.get_group("Drift angle"),
         },
         "Drift angle mz": {
-            "eq": eq_N.subs(
-                [
-                    (r, 0),
-                    (delta,0)
-                ]
-            ),
+            "eq": eq_N.subs([(r, 0), (delta, 0)]),
             "data": tests.get_group("Drift angle"),
         },
         "Circle fx": {
-            "eq": eq_X.subs(
-                [
-                    (v, 0),
-                    (delta,0)
-                ]
-            ),
+            "eq": eq_X.subs([(v, 0), (delta, 0)]),
             "data": tests.get_group("Circle"),
             "const": True,
         },
         "Circle fy": {
-            "eq": eq_Y.subs(
-                [
-                    (v, 0),
-                    (delta,0)
-                ]
-            ),
+            "eq": eq_Y.subs([(v, 0), (delta, 0)]),
             "data": tests.get_group("Circle"),
         },
         "Circle mz": {
-            "eq": eq_N.subs(
-                [
-                    (v, 0),
-                    (delta,0)
-                ]
-            ),
+            "eq": eq_N.subs([(v, 0), (delta, 0)]),
             "data": tests.get_group("Circle"),
         },
         "Circle + Drift fx": {
-            "eq": eq_X.subs(delta,0),
+            "eq": eq_X.subs(delta, 0),
             "data": tests.get_group("Circle + Drift"),
             "const": True,
         },
         "Circle + Drift fy": {
-            "eq": eq_Y.subs(delta,0),
+            "eq": eq_Y.subs(delta, 0),
             "data": tests.get_group("Circle + Drift"),
         },
         "Circle + Drift mz": {
-            "eq": eq_N.subs(delta,0),
+            "eq": eq_N.subs(delta, 0),
             "data": tests.get_group("Circle + Drift"),
         },
-        #"Rudder and drift angle fy": {
+        # "Rudder and drift angle fy": {
         #    "eq": eq_Y,
         #    "data": tests.get_group('Rudder and drift angle'),
         #    "const": True,
-        #},
-        #"Rudder and drift angle mz": {
+        # },
+        # "Rudder and drift angle mz": {
         #    "eq": eq_N,
         #    "data": tests.get_group('Rudder and drift angle'),
         #    "const": True,
-        #},
-                
-        
-        
+        # },
     }
-    
+
     return regression_pipeline
 
 
-def fit(regression_pipeline: dict, model:ModularVesselSimulator, exclude_parameters={}):
+def fit(
+    regression_pipeline: dict, model: ModularVesselSimulator, exclude_parameters={}
+):
     models = {}
     exclude_parameters = exclude_parameters.copy()
     new_parameters = exclude_parameters.copy()
+    log.info(f"Excluding:{exclude_parameters}")
     for name, regression in regression_pipeline.items():
         log.info(f"Fitting:{name}")
         eq = regression["eq"]
-        const = regression.get("const",False)
+
+        const = regression.get("const", False)
         if eq.rhs == 0:
             print(f"skipping:{name}")
             continue
@@ -305,18 +297,32 @@ def fit(regression_pipeline: dict, model:ModularVesselSimulator, exclude_paramet
         eq_to_matrix = DiffEqToMatrix(
             eq,
             label=label,
-            base_features=[u, v, r, thrust, delta, thrust_port, thrust_stbd, y_p_port, y_p_stbd, Y_R, N_R],
+            base_features=[
+                u,
+                v,
+                r,
+                thrust,
+                delta,
+                thrust_port,
+                thrust_stbd,
+                y_p_port,
+                y_p_stbd,
+                Y_R,
+                N_R,
+            ],
             exclude_parameters=exclude_parameters,
         )
 
         data = regression["data"]
         assert len(data) > 0
         key = eq_to_matrix.acceleration_equation.lhs.name
-        X, y = eq_to_matrix.calculate_features_and_label(data=data, y=data[key], parameters=model.ship_parameters)
-        
+        X, y = eq_to_matrix.calculate_features_and_label(
+            data=data, y=data[key], parameters=model.ship_parameters
+        )
+
         if const:
-            X['const'] = 1
-        
+            X["const"] = 1
+
         if len(X.columns) == 0:
             print(f"skipping:{name} with equation: {eq}")
             continue
@@ -331,6 +337,6 @@ def fit(regression_pipeline: dict, model:ModularVesselSimulator, exclude_paramet
         ols_fit.eq = eq
         new_parameters.update(ols_fit.params)
         exclude_parameters.update(new_parameters)
-        #data[str(eq.rhs)] = ols_fit.predict(X)  # So that Y_R can be used again...
-        
+        # data[str(eq.rhs)] = ols_fit.predict(X)  # So that Y_R can be used again...
+
     return models, new_parameters

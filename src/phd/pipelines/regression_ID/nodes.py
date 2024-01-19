@@ -32,19 +32,19 @@ from pyfiglet import figlet_format
 log = logging.getLogger(__name__)
 
 exclude_parameters_global = {
-    "a_H"  : 0.07,  # hull rudder interaction,
-    "Yrrr" : 0,
-    "Nvvv" : 0,
-    "Nvvr" : 0,
-    "Nvrr" : 0,
-    "Yvvr" : 0,
-    "Yvrr" : 0,
-    "Y0"   : 0,
-    "N0"   : 0,
+    # "a_H": 0.07,  # hull rudder interaction,
+    "Yrrr": 0,
+    "Nvvv": 0,
+    "Nvvr": 0,
+    "Nvrr": 0,
+    "Yvvr": 0,
+    "Yvrr": 0,
+    "Y0": 0,
+    "N0": 0,
 }
 
-def gather_data(tests_ek_smooth_joined:pd.DataFrame)->pd.DataFrame:
-    
+
+def gather_data(tests_ek_smooth_joined: pd.DataFrame) -> pd.DataFrame:
     ids = [
         22773,
         22772,
@@ -54,38 +54,38 @@ def gather_data(tests_ek_smooth_joined:pd.DataFrame)->pd.DataFrame:
 
     mask = tests_ek_smooth_joined["id"].isin(ids)
     data = tests_ek_smooth_joined.loc[mask].copy()
-    
-    data['V'] = data['U'] = np.sqrt(data['u']**2 + data['v']**2)
-    data['beta'] = -np.arctan2(data['v'],data['u'])
-    data['rev'] = data[['Prop/PS/Rpm','Prop/SB/Rpm']].mean(axis=1)
-    data['twa']=0
-    data['tws']=0
-    
-    data['thrust_port'] = data['Prop/PS/Thrust']
-    data['thrust_stbd'] = data['Prop/SB/Thrust']
-    
+
+    data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
+    data["beta"] = -np.arctan2(data["v"], data["u"])
+    data["rev"] = data[["Prop/PS/Rpm", "Prop/SB/Rpm"]].mean(axis=1)
+    data["twa"] = 0
+    data["tws"] = 0
+
+    data["thrust_port"] = data["Prop/PS/Thrust"]
+    data["thrust_stbd"] = data["Prop/SB/Thrust"]
+
     return data
+
 
 def regress_hull_inverse_dynamics(
     base_models: dict,
     tests_ek_smooth_joined: pd.DataFrame,
 ) -> dict:
     models = {}
-    
-    log.info(figlet_format('Hull IDR', font='starwars'))
-    
+
+    log.info(figlet_format("Hull IDR", font="starwars"))
+
     data = gather_data(tests_ek_smooth_joined=tests_ek_smooth_joined)
-    
+
     for name, loader in base_models.items():
         base_model = loader()
         exclude_parameters = exclude_parameters_global.copy()
-        
+
         ## Stealing the resistance
-        exclude_parameters['X0'] = base_model.parameters['X0']
-        exclude_parameters['Xu'] = base_model.parameters['Xu']
-        
-        
-        base_model.parameters['Xthrust'] = 1 - base_model.ship_parameters['tdf']
+        exclude_parameters["X0"] = base_model.parameters["X0"]
+        exclude_parameters["Xu"] = base_model.parameters["Xu"]
+
+        base_model.parameters["Xthrust"] = 1 - base_model.ship_parameters["tdf"]
 
         models[name], fits = _regress_hull_inverse_dynamics(
             vmm_model=base_model,
@@ -121,6 +121,10 @@ def _regress_hull_inverse_dynamics(
     eq_f_X_H = sp.Eq(f_X_H, sp.solve(model.X_eq, f_X_H)[0])
     eq_f_Y_H = sp.Eq(f_Y_H, sp.solve(model.Y_eq, f_Y_H)[0])
     eq_f_N_H = sp.Eq(f_N_H, sp.solve(model.N_eq, f_N_H)[0])
+
+    log.info(sp.pprint(eq_f_X_H))
+    log.info(sp.pprint(eq_f_Y_H))
+    log.info(sp.pprint(eq_f_N_H))
 
     data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
     data["rev"] = data[["Prop/SB/Rpm", "Prop/PS/Rpm"]].mean(axis=1)
@@ -236,34 +240,30 @@ def _regress_hull_inverse_dynamics(
         return model
 
 
-
 def regress_inverse_dynamics(
-    base_models: dict,
-    tests_ek_smooth_joined: pd.DataFrame,
-    steal_models: dict
+    base_models: dict, tests_ek_smooth_joined: pd.DataFrame, steal_models: dict
 ) -> dict:
     models = {}
-    
-    log.info(figlet_format('Hull + Rudder IDR', font='starwars'))
+
+    log.info(figlet_format("Hull + Rudder IDR", font="starwars"))
 
     data = gather_data(tests_ek_smooth_joined=tests_ek_smooth_joined)
-    
-    steal_model = steal_models['semiempirical_covered']()
-    
+
+    steal_model = steal_models["semiempirical_covered"]()
+
     for name, loader in base_models.items():
         base_model = loader()
         exclude_parameters = exclude_parameters_global.copy()
-        
+
         ## Stealing the resistance
         exclude_parameters["X0"] = steal_model.parameters["X0"]
         exclude_parameters["Xu"] = steal_model.parameters["Xu"]
-        
-        base_model.parameters['Xthrust'] = 1 - base_model.ship_parameters['tdf']
-        steals = ['Nrdot','Nvdot','Yrdot','Yvdot']
+
+        base_model.parameters["Xthrust"] = 1 - base_model.ship_parameters["tdf"]
+        steals = ["Nrdot", "Nvdot", "Yrdot", "Yvdot"]
         for steal in steals:
             base_model.parameters[steal] = steal_model.parameters[steal]
-        
-        
+
         models[name], fits = _regress_inverse_dynamics(
             vmm_model=base_model,
             data=data,
@@ -271,11 +271,8 @@ def regress_inverse_dynamics(
             full_output=True,
         )
 
-        for key, fit in fits.items():
-            log.info(key)
-            log.info(fit.summary2())
-
     return models
+
 
 def _regress_inverse_dynamics(
     vmm_model: ModularVesselSimulator,
