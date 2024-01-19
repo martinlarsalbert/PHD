@@ -24,7 +24,7 @@ plt.rcParams["axes.titlesize"] = textsize
 plt.rcParams["legend.fontsize"] = textsize
 plt.rcParams["xtick.labelsize"] = textsize
 plt.rcParams["ytick.labelsize"] = textsize
-plt.rcParams["text.usetex"] = True
+#plt.rcParams["text.usetex"] = True
 plt.rcParams["font.family"] = 'serif'
 
 paper_path = r'/home/maa/dev/PHD/docs/System-identification-for-a-physically-correct-ship-manoeuvring-model-in-wind-conditions'
