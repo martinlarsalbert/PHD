@@ -16,6 +16,7 @@ dependencies:
   - jupyterlab
   - geopandas
   - arviz
+  - seaborn
   - pip:
     - vessel-manoeuvring-models
     - pyfiglet

@@ -268,6 +268,23 @@ def group_parameters(df:pd.DataFrame, joins=['Nv','Nr','Nvr']):
         
     return groups
 
+def joined_parameter_contributions(model, data:pd.DataFrame, ax=None, prefix='N', unit='moment'):
+
+    
+    hull = model.subsystems['hull']
+    df_parameters_contributions = hull.calculate_parameter_contributions(eq=hull.equations[f'{prefix}_H'], data=data, unit=unit)
+    
+    groupers = ["v","r","vr"]
+    joins = [f"{prefix}{group}" for group in groupers]
+    groups = group_parameters(df=df_parameters_contributions, joins=joins)
+
+    df_parameters_contributions_clean = pd.DataFrame(index=df_parameters_contributions.index)
+    for name, group in groups.items():
+        label = group[0] + "".join([f"+{item}" for item in group[1:]])
+        df_parameters_contributions_clean[label] = df_parameters_contributions[group].sum(axis=1)
+    
+    return df_parameters_contributions_clean
+
 def plot_parameter_contributions(model, data:pd.DataFrame, ax=None, prefix='N', unit='moment'):
 
     if ax is None:
@@ -293,3 +310,12 @@ def plot_parameter_contributions(model, data:pd.DataFrame, ax=None, prefix='N', 
     ax.set_ylabel(f"${prefix}_H$ $[{SI_units.get(unit,unit)}]$")
     
     return df_parameters_contributions_clean.plot(ax=ax)
+
+def same_ylims(axes):
+    ylims = []
+    for ax in axes:
+        ylims.append(ax.get_ylim())
+    ylims = np.array(ylims)
+    new_ylims = (np.min(ylims[:,0]),np.max(ylims[:,1]),)
+    for ax in axes:
+        ax.set_ylim(new_ylims)

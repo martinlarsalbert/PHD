@@ -49,11 +49,14 @@ def gather_data(tests_ek_smooth_joined: pd.DataFrame) -> pd.DataFrame:
         22773,
         22772,
         22770,
-        22764,
+        22765,
     ]
 
     mask = tests_ek_smooth_joined["id"].isin(ids)
     data = tests_ek_smooth_joined.loc[mask].copy()
+    assert set(ids) == set(data['id'].unique()), f"One of the required tests ({ids}) is missing"    
+    
+    log.info(f"Training model with tests: {data['id'].unique()}")
 
     data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
     data["beta"] = -np.arctan2(data["v"], data["u"])
@@ -73,7 +76,7 @@ def regress_hull_inverse_dynamics(
 ) -> dict:
     models = {}
 
-    log.info(figlet_format("Hull IDR", font="starwars"))
+    log.info(figlet_format("Semi-empirical ID", font="starwars"))
 
     data = gather_data(tests_ek_smooth_joined=tests_ek_smooth_joined)
 
@@ -245,7 +248,7 @@ def regress_inverse_dynamics(
 ) -> dict:
     models = {}
 
-    log.info(figlet_format("Hull + Rudder IDR", font="starwars"))
+    log.info(figlet_format("Abkowitz ID", font="starwars"))
 
     data = gather_data(tests_ek_smooth_joined=tests_ek_smooth_joined)
 
