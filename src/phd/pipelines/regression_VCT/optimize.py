@@ -46,21 +46,32 @@ def calculate(model: ModularVesselSimulator, data: pd.DataFrame, x, parameters: 
 
 
 def predict_residual(
-    x, model: ModularVesselSimulator, data: pd.DataFrame, parameters: list
+    x,
+    model: ModularVesselSimulator,
+    data: pd.DataFrame,
+    parameters: list,
+    residual_keys=["N_R", "Y_R"],
 ):
     df_force_predicted = calculate(model=model, data=data, x=x, parameters=parameters)
 
     # 1)
-    # residual1 = data["N_D"] - df_force_predicted["N_D"]
-    # residual2 = data["Y_D"] - df_force_predicted["Y_D"]
-    residual1 = data["N_R"] - df_force_predicted["N_R"]
-    residual2 = data["Y_R"] - df_force_predicted["Y_R"]
-    residual = np.concatenate((residual1.values, residual2.values))
+
+    # residual1 = data["N_R"] - df_force_predicted["N_R"]
+    # residual2 = data["Y_R"] - df_force_predicted["Y_R"]
+
+    residuals = [data[key] - df_force_predicted[key] for key in residual_keys]
+
+    residual = np.concatenate(residuals)
 
     return residual
 
 
-def fit(model: ModularVesselSimulator, data: pd.DataFrame, parameters: list):
+def fit(
+    model: ModularVesselSimulator,
+    data: pd.DataFrame,
+    parameters: list,
+    residual_keys=["N_R", "Y_R"],
+):
     model = model.copy()
 
     if not "rev" in data:
@@ -74,7 +85,12 @@ def fit(model: ModularVesselSimulator, data: pd.DataFrame, parameters: list):
 
     # df_force = model.forces_from_motions(data=data)
 
-    kwargs = {"model": model, "data": data, "parameters": parameters}
+    kwargs = {
+        "model": model,
+        "data": data,
+        "parameters": parameters,
+        "residual_keys": residual_keys,
+    }
 
     x0 = [
         model.parameters[parameter]
