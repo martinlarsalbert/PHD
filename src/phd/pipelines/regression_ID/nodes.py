@@ -39,6 +39,8 @@ exclude_parameters_global = {
     "Nvrr": 0,
     "Yvvr": 0,
     "Yvrr": 0,
+    "Yr":0,
+    "Yrrr":0,
     "Y0": 0,
     "N0": 0,
 }
