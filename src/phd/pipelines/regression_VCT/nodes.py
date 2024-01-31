@@ -468,7 +468,6 @@ def _regress_hull_rudder_VCT(
 def manual_regression(model: ModularVesselSimulator) -> ModularVesselSimulator:
     """Manual regression based on visual inspection."""
 
-    model.parameters["delta_lim"] = np.deg2rad(90)
     covered = model.ship_parameters["D"] / model.ship_parameters["b_R"] * 0.65
     model.ship_parameters["A_R_C"] = model.ship_parameters["A_R"] * covered
     model.ship_parameters["A_R_U"] = model.ship_parameters["A_R"] * (1 - covered)
@@ -480,7 +479,6 @@ def manual_regression(model: ModularVesselSimulator) -> ModularVesselSimulator:
     model.parameters["kappa_r_gamma_g"] = 0
     # model.parameters['kappa_gamma']=0.0
 
-    model.ship_parameters["w_f"] = 0.27
     # model.parameters['l_R']=1.27*model.ship_parameters['x_r']
     c_ = (model.ship_parameters["c_t"] + model.ship_parameters["c_r"]) / 2
     model.ship_parameters["c_t"] = 1.30 * 0.1529126213592233
@@ -492,6 +490,10 @@ def manual_regression(model: ModularVesselSimulator) -> ModularVesselSimulator:
 
     model.parameters["C_D_tune"] = 1.25
     model.parameters["C_D0_tune"] = 4.8
+    
+    model.parameters['delta_lim'] = np.deg2rad(15)
+    model.parameters['s'] = -10
+    model.ship_parameters['w_f']=0.297
 
     return model
 
@@ -657,13 +659,14 @@ def adopting_to_MDL(
 
         # model.parameters['l_R'] = -3.1115000000000004*1.2
 
-        model.parameters["Nr"] *= 3
+        model.parameters["Nr"] *= 2.8
         # model.parameters['Nrdot']/=3.5
         # model.parameters['Yvdot']=-0.006109387408263365
         model.parameters["Yv"] *= 1.65
+        model.parameters["Nrdot"]*=0.3
 
-        model = fit_Nrdot(model=model, data_MDL_many=data_MDL_many)
-        model = fit_Yvdot(model=model, data_MDL_many=data_MDL_many)
+        #model = fit_Nrdot(model=model, data_MDL_many=data_MDL_many)
+        #model = fit_Yvdot(model=model, data_MDL_many=data_MDL_many)
 
         models[name] = model
 

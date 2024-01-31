@@ -252,3 +252,9 @@ def preprocess(data_MDL, ship_data: dict):
     data_MDL = data_MDL.loc[0:].copy()
 
     return data_MDL
+
+def zigzag_angle(data_MDL:pd.DataFrame):
+    angle_abs = np.rad2deg(data_MDL['delta'].abs().max())
+    angle_sign = np.sign(data_MDL.iloc[0:10]['delta'].mean())
+    angle = np.round(angle_sign*angle_abs)
+    return angle
