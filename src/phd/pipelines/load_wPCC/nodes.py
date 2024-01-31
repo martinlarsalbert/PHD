@@ -230,7 +230,6 @@ def _move_to_lpp_half(data: pd.DataFrame, ship_data: dict) -> pd.DataFrame:
 def preprocess(data_MDL, ship_data: dict):
     data_MDL["V"] = data_MDL["U"] = np.sqrt(data_MDL["u"] ** 2 + data_MDL["v"] ** 2)
     data_MDL["beta"] = -np.arctan2(data_MDL["v"], data_MDL["u"])
-    data_MDL["beta_deg"] = np.rad2deg(data_MDL["beta"])
     data_MDL["rev"] = data_MDL[["Prop/PS/Rpm", "Prop/SB/Rpm"]].mean(axis=1)
     data_MDL["twa"] = 0
     data_MDL["tws"] = 0
@@ -241,6 +240,11 @@ def preprocess(data_MDL, ship_data: dict):
     data_MDL["q1d"] = 0
     data_MDL["thrust_port"] = data_MDL["Prop/PS/Thrust"]
     data_MDL["thrust_stbd"] = data_MDL["Prop/SB/Thrust"]
+    data_MDL['thrust'] = data_MDL["thrust_port"] + data_MDL["thrust_stbd"]
+    data_MDL['psi_deg'] = np.rad2deg(data_MDL['psi'])
+    data_MDL['beta_deg'] = np.rad2deg(data_MDL['beta'])
+    data_MDL['delta_deg'] = np.rad2deg(data_MDL['delta'])
+    
 
     # Remove the firs part:
     dt = pd.Series(data_MDL.index).diff().mean()

@@ -187,3 +187,38 @@ def find_initial_equilibrium_rev(
     return least_squares(
         fun=predict_fx_rev, x0=[data.iloc[0]["rev"]], bounds=(0, np.inf), kwargs=kwargs
     )
+
+def postprocess(df):
+    df['V'] = df['U'] = np.sqrt(df['u']**2 + df['v']**2)
+    df['beta'] = -np.arctan2(df['v'],df['u'])
+    df['beta_deg'] = np.rad2deg(df['beta'])
+    df['psi_deg'] = np.rad2deg(df['psi'])
+
+def simulate_closed_loop(model:ModularVesselSimulator, data:pd.DataFrame):
+    u0 = data.iloc[0]['u']
+    rev = None
+    rudder_rate = 2.32 * np.sqrt(model.ship_parameters["scale_factor"])
+    angle_abs = np.rad2deg(data['delta'].abs().max())
+    angle_sign = np.sign(data.iloc[0:10]['delta'].mean())
+    angle = np.round(angle_sign*angle_abs)
+    twa=None
+    tws=None
+    neutral_rudder_angle=0
+    thrust_port = data['thrust_port']
+    thrust_stbd = data['thrust_stbd']
+    result_closed_loop = vessel_manoeuvring_models.models.IMO_simulations.zigzag(
+            model=model,
+            u0=u0,
+            rev=rev,
+            thrust_port=thrust_port,
+            thrust_stbd=thrust_stbd,
+            rudder_rate=rudder_rate,
+            angle=angle,
+            heading_deviation=angle,
+            twa=twa,
+            tws=tws,
+            neutral_rudder_angle=neutral_rudder_angle,
+            t_max=data.index[-1],
+        )
+    postprocess(result_closed_loop)
+    return result_closed_loop

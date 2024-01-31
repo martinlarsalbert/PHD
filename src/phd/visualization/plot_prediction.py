@@ -197,8 +197,9 @@ def plot_compare_model_forces(
 
     starts, ends, corners = get_delta_corners(data=data)
 
-    data.plot(y="beta", color="red", label=r'$\beta$', ax=ax)
-    data.plot(y="delta", color="g", label=r'$\delta$', ax=ax)
+    style='--'
+    data.plot(y="beta", style=style,color="red", label=r'$\beta$', ax=ax)
+    data.plot(y="delta",  style=style,color="g", label=r'$\delta$', ax=ax)
     ax.set_xlim(data.index[0], data.index[-1])
     ax.legend(loc="upper left")
     ax.set_xticks(corners.index)
@@ -207,7 +208,7 @@ def plot_compare_model_forces(
     # ax.grid(False)
 
     ax2 = ax.twinx()
-    data.plot(y="r", color="b", label=r'$r$', ax=ax2)
+    data.plot(y="r",  style=style,color="b", label=r'$r$', ax=ax2)
     ax2.legend(loc="lower left")
     ax2.grid(False)
     ax2.set_yticklabels([])

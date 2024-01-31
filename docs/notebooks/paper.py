@@ -19,7 +19,7 @@ import arviz as az
 # az.style.use("arviz-grayscale")
 az.style.use("arviz-white")
 plt.rcParams["figure.dpi"] = 100
-textsize = 12
+textsize = 11
 plt.rcParams["axes.labelsize"] = textsize
 plt.rcParams["axes.titlesize"] = textsize
 plt.rcParams["legend.fontsize"] = textsize
