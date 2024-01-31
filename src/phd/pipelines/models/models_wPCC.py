@@ -139,7 +139,7 @@ class ModelTowed(MainModel):
 
         if not "Xthruststbd" in self.parameters:
             self.parameters["Xthruststbd"] = 1 - self.ship_parameters["tdf"]
-            
+
         if not "Xthrust" in self.parameters:
             self.parameters["Xthrust"] = 1 - self.ship_parameters["tdf"]
 
@@ -154,9 +154,9 @@ class ModelTowed(MainModel):
 
         if not "C_D0_tune" in self.parameters:
             self.parameters["C_D0_tune"] = 1
-            
+
         if not "x_H" in self.parameters:
-            self.parameters["x_H"] = -1/2
+            self.parameters["x_H"] = -1 / 2
 
     def add_added_mass(self):
         mask = df_parameters["state"] == "dot"
@@ -173,7 +173,9 @@ class ModelTowed(MainModel):
         )
 
     def add_propellers(self):
-        add_propeller_simple(model=self, create_jacobians=self.create_jacobians)  # Not used if thrust=0
+        add_propeller_simple(
+            model=self, create_jacobians=self.create_jacobians
+        )  # Not used if thrust=0
 
     def add_rudders(self, in_propeller_race: bool):
         rudder_port = semiempirical_rudder_MAK.SemiempiricalRudderSystemMAK(
@@ -337,6 +339,9 @@ class ModelSemiempiricalCovered(ModelTowedSemiempiricalCovered):
             "delta_lim": np.deg2rad(35),
             "delta_alpha_s": np.deg2rad(0),  # Later stall when propeller race
             "Omega": 0,
+            "delta_0": np.deg2rad(20),  # start of lift gap loss (S-curve)
+            "delta_1": np.deg2rad(30),  # end of lift gap loss (S-curve)
+            "s": 0,  # "stall" due to gap loss (S-curve), alternative to use delta_0 and delta_1
         }
         for key, value in rudder_parameters.items():
             if not key in self.parameters:

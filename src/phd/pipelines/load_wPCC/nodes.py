@@ -225,3 +225,30 @@ def _move_to_lpp_half(data: pd.DataFrame, ship_data: dict) -> pd.DataFrame:
     data["u1d"] = run(lambda_u1d, inputs=data, x_G=ship_data["x_G"])
     data["v1d"] = run(lambda_v1d, inputs=data, x_G=ship_data["x_G"])
     return data
+
+
+def preprocess(data_MDL, ship_data: dict):
+    data_MDL["V"] = data_MDL["U"] = np.sqrt(data_MDL["u"] ** 2 + data_MDL["v"] ** 2)
+    data_MDL["beta"] = -np.arctan2(data_MDL["v"], data_MDL["u"])
+    data_MDL["beta_deg"] = np.rad2deg(data_MDL["beta"])
+    data_MDL["rev"] = data_MDL[["Prop/PS/Rpm", "Prop/SB/Rpm"]].mean(axis=1)
+    data_MDL["twa"] = 0
+    data_MDL["tws"] = 0
+    data_MDL["theta"] = 0
+    data_MDL["q"] = 0
+    data_MDL["phi"] = data_MDL["roll"]
+    data_MDL["p"] = 0
+    data_MDL["q1d"] = 0
+    data_MDL["thrust_port"] = data_MDL["Prop/PS/Thrust"]
+    data_MDL["thrust_stbd"] = data_MDL["Prop/SB/Thrust"]
+
+    # Remove the firs part:
+    dt = pd.Series(data_MDL.index).diff().mean()
+    rudder_rate = 2.32 * np.sqrt(ship_data["scale_factor"])
+    start = (
+        data_MDL["delta"].diff().abs() > 0.5 * np.deg2rad(rudder_rate) * dt
+    ).idxmax()
+    data_MDL.index = pd.Series(data_MDL.index) - start
+    data_MDL = data_MDL.loc[0:].copy()
+
+    return data_MDL

@@ -8,20 +8,20 @@ Reference model:
   label: Reference model
   color: blue
   style: '-'
-  lw: 0.5
+  lw: 1
 Abkowitz VCT:
   label: Abkowitz VCT
   color: magenta
   style: '-'
-  lw: 0.5
+  lw: 1
 Physics informed ID:
   label: Physics informed ID
   color: green
   style: '-'
-  lw: 0.5
+  lw: 1
 Abkowitz ID:
   label: Abkowitz ID
   color: red
   style: '-'
-  lw: 0.5
+  lw: 1
   

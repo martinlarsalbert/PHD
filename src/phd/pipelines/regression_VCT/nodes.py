@@ -357,6 +357,13 @@ def _regress_hull_VCT(
     )
     log.info(f"Optimized the following parameters to:{changes}")
 
+    parameters = ["C_D_tune", "C_D0_tune"]
+    log.info(f"Optimizing parameters:{parameters}")
+    model, changes = phd.pipelines.regression_VCT.optimize.fit(
+        model=model, data=df_VCT, parameters=parameters, residual_keys=["X_R"]
+    )
+    log.info(f"Optimized the following parameters to:{changes}")
+
     model, fits_RHI = regress_VCT(
         model=model,
         df_VCT=df_VCT,
@@ -578,7 +585,8 @@ def regress_VCT(
     # U0_ = df_VCT["V"].min()
     U0_ = model.U0
     df_VCT_u0 = df_VCT.copy()
-    df_VCT_u0["u"] -= U0_ * np.sqrt(model.ship_parameters["scale_factor"])
+    # df_VCT_u0["u"] -= U0_ * np.sqrt(model.ship_parameters["scale_factor"])
+    df_VCT_u0["u"] -= U0_
 
     keys = (
         model.states_str
