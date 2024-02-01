@@ -175,11 +175,48 @@ def select(df_VCT_all_raw: dict) -> pd.DataFrame:
     """
     selection = [
         df_VCT_all_raw["M5139-02-A_MS.df_VCT"](),
-        df_VCT_all_raw["V2_3_R2_MDL_additional.df_VCT"](),
+        #df_VCT_all_raw["V2_3_R2_MDL_additional.df_VCT"](),
     ]
     df_VCT_raw = pd.concat(selection, axis=0)
+    
+    
     return df_VCT_raw
 
+def load_MDL(tests:dict, exclude=[])->pd.DataFrame:
+    
+    _ = []
+    for name, loader in tests.items():
+        if name in exclude:
+            continue
+        
+        df = loader()
+        df = df.rolling(window=100).mean().dropna()  # simple filtering
+        df['id'] = name
+        _.append(df)
+    
+    data_MDL = pd.concat(_,axis=0)
+    return data_MDL
+
+def limit_states_for_regression(df_VCT_scaled:pd.DataFrame,tests:dict, exclude=[])->pd.DataFrame:
+    
+    exclude = list([str(key) for key in exclude])
+    
+    #Only pick states that are relevant for the MDL tests:
+    data_MDL = load_MDL(tests=tests, exclude=exclude)
+    data_MDL['beta'] = np.arctan2(-data_MDL['v'],data_MDL['u'])
+    
+    keys = ['beta','r']
+    log.info(f"Only using VCT data with {keys} with states of MDL tests:{data_MDL['id'].unique()}")
+    for key in keys:
+        max_value = data_MDL[key].abs().max()
+        log.info(f"max({key})={max_value}")
+        mask = df_VCT_scaled[key].abs() <= max_value
+        df_VCT_scaled=df_VCT_scaled.loc[mask].copy()
+    
+    log.info(f"Limiting states in VCT data: {df_VCT_scaled[keys].abs().max()}")
+    
+    return df_VCT_scaled
+    
 
 def add_extra_points_with_multiple_test_types(
     df_VCT: pd.DataFrame,
@@ -659,14 +696,22 @@ def adopting_to_MDL(
 
         # model.parameters['l_R'] = -3.1115000000000004*1.2
 
-        model.parameters["Nr"] *= 2.8
-        # model.parameters['Nrdot']/=3.5
-        # model.parameters['Yvdot']=-0.006109387408263365
-        model.parameters["Yv"] *= 1.65
-        model.parameters["Nrdot"]*=0.3
+        #model.parameters["Nr"] *= 2.8
+        #model.parameters["Yv"] *= 1.65
+        
+        #model.parameters['Nr']=-0.001292	
+        #model.parameters['Nv']=-0.002960
+        #model.parameters['Yv']=-0.008505        
+        #model.parameters["Nrdot"]*=0.3
 
         #model = fit_Nrdot(model=model, data_MDL_many=data_MDL_many)
         #model = fit_Yvdot(model=model, data_MDL_many=data_MDL_many)
+        
+        #model.ship_parameters['x_R']=-2.45*1.5
+        #model.set_ship_parameters(model.ship_parameters)
+        
+        model.parameters['Nr']*=2
+        model.parameters['Nrdot']*=0.25
 
         models[name] = model
 

@@ -33,6 +33,7 @@ from vessel_manoeuvring_models.models.semiempirical_covered_system import (
     SemiempiricalRudderSystemCovered,
 )
 from vessel_manoeuvring_models.models.abkowitz_rudder_system import AbkowitzRudderSystem
+from vessel_manoeuvring_models.models.simple_rudder_system import SimpleRudderSystem
 from .subsystems import add_wind_force_system as add_wind
 from vessel_manoeuvring_models.prime_system import PrimeSystem
 
@@ -419,6 +420,24 @@ class ModelWithSimpleAbkowitzRudder(ModelWithSimpleRudder):
         self.subsystems["rudder_hull_interaction"] = RudderHullInteractionDummySystem(
             ship=self, create_jacobians=self.create_jacobians
         )
+        
+class ModelMartinsSimple(ModelWithSimpleRudder):
+    """This is the model that was used in the Lic. Thesis.
+    """
+    def add_rudders(self, in_propeller_race=True):
+        self.subsystems["rudders"] = SimpleRudderSystem(
+            ship=self, create_jacobians=self.create_jacobians
+        )
+
+        ## Add rudder hull interaction subsystem:
+        self.subsystems["rudder_hull_interaction"] = RudderHullInteractionDummySystem(
+            ship=self, create_jacobians=self.create_jacobians
+        )
+        
+    def add_hull(self):
+        self.subsystems["hull"] = hull_simple(
+            model=self, create_jacobians=self.create_jacobians
+        )
 
 
 class ModelWithSimpleRudderQuadraticHull(ModelWithSimpleRudder):
@@ -527,6 +546,28 @@ def hull_quadratic(model: ModularVesselSimulator, create_jacobians=True):
         ## + p.Nthrust * thrust
         + p.N0  # Very important !
         # + p.N0u * u + p.N0uu * u**2,
+    )
+    equations_hull = [eq_X_H, eq_Y_H, eq_N_H]
+    hull = PrimeEquationSubSystem(
+        ship=model, equations=equations_hull, create_jacobians=create_jacobians
+    )
+    return hull
+
+def hull_simple(model: ModularVesselSimulator, create_jacobians=True):
+    eq_X_H = sp.Eq(
+        X_H,
+        p.Xu * u + p.Xuu * u ** 2
+        + p.Xrr * r ** 2 + p.Xvr * v * r
+    )
+    eq_Y_H = sp.Eq(
+        Y_H,
+        p.Yv * v + p.Yr * r + p.Yu * u
+        + p.Yur * u * r
+        )
+    eq_N_H = sp.Eq(
+        N_H,
+        p.Nv * v + p.Nr * r + p.Nu * u
+        + p.Nur * u * r
     )
     equations_hull = [eq_X_H, eq_Y_H, eq_N_H]
     hull = PrimeEquationSubSystem(

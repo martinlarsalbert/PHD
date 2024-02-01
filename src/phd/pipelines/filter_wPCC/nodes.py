@@ -18,7 +18,7 @@ from vessel_manoeuvring_models.angles import smallest_signed_angle
 from phd.helpers import identity_decorator
 
 log = logging.getLogger(__name__)
-
+from pyfiglet import figlet_format
 
 def guess_covariance_matrixes_many(ek_covariance_input: dict, datas: dict) -> dict:
     covariance_matrixes_many = {}
@@ -101,6 +101,30 @@ def initial_state(
     x0 = data.iloc[0:5][state_columns].mean()
 
     return {key: float(value) for key, value in x0.items()}
+
+def filter_many1(
+    datas: dict,
+    models: dict,
+    covariance_matrixes: dict,
+    x0: dict,
+    filter_model_name: str,
+    accelerometer_position: dict,
+    skip: dict,
+    ) -> dict:
+    log.info(figlet_format("1st", font="starwars"))
+    return filter_many(datas=datas,models=models,covariance_matrixes=covariance_matrixes, x0=x0, filter_model_name=filter_model_name, accelerometer_position=accelerometer_position, skip=skip)
+
+def filter_many2(
+    datas: dict,
+    models: dict,
+    covariance_matrixes: dict,
+    x0: dict,
+    filter_model_name: str,
+    accelerometer_position: dict,
+    skip: dict,
+    ) -> dict:
+    log.info(figlet_format("2nd", font="starwars"))
+    return filter_many(datas=datas,models=models,covariance_matrixes=covariance_matrixes, x0=x0, filter_model_name=filter_model_name, accelerometer_position=accelerometer_position, skip=skip)
 
 
 def filter_many(

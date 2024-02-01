@@ -41,6 +41,7 @@ exclude_parameters_global = {
     "Yvrr": 0,
     "Yr":0,
     "Yrrr":0,
+    "Yvvv":0,
     "Y0": 0,
     "N0": 0,
 }
@@ -250,13 +251,14 @@ def regress_inverse_dynamics(
 ) -> dict:
     models = {}
 
-    log.info(figlet_format("Abkowitz ID", font="starwars"))
+    log.info(figlet_format("ID", font="starwars"))
 
     data = gather_data(tests_ek_smooth_joined=tests_ek_smooth_joined)
 
     steal_model = steal_models["semiempirical_covered"]()
 
     for name, loader in base_models.items():
+        log.info(figlet_format(f"{name}", font="starwars"))
         base_model = loader()
         exclude_parameters = exclude_parameters_global.copy()
 

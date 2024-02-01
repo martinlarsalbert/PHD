@@ -36,7 +36,7 @@ from .subsystems import (
 from .subsystems import add_wind_force_system as add_wind
 from vessel_manoeuvring_models.prime_system import PrimeSystem
 
-from .models_wPCC import ModelSemiempiricalCovered, ModelWithSimpleAbkowitzRudder
+from .models_wPCC import ModelSemiempiricalCovered, ModelWithSimpleAbkowitzRudder, ModelMartinsSimple
 
 import logging
 
@@ -69,7 +69,11 @@ def base_models_simple(ship_data: dict, parameters: dict) -> dict:
     name = "Abkowitz"
     log.info(f'Creating: "{name}"')
     model = ModelWithSimpleAbkowitzRudder(ship_data=ship_data, create_jacobians=True)
+    models[name] = model
 
+    name = "Martins simple"
+    log.info(f'Creating: "{name}"')
+    model = ModelMartinsSimple(ship_data=ship_data, create_jacobians=True)
     models[name] = model
 
     # Updating the parameters:

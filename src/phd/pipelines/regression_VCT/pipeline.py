@@ -15,6 +15,7 @@ from .nodes import (
     manual_regression,
     shape_optimization,
     adopting_hull_rudder_to_MDL,
+    limit_states_for_regression,
 )
 
 
@@ -26,39 +27,46 @@ def create_pipeline(**kwargs) -> Pipeline:
                 inputs=["df_VCT_all_raw"],
                 outputs="df_VCT_all",
                 name="load_VCT_node",
-                tags=['load_VCT'],
+                tags=['load_VCT','regression_VCT'],
             ),
             node(
                 func=select,
                 inputs=["df_VCT_all"],
                 outputs="df_VCT_raw",
                 name="select_VCT_node",
-                tags=['load_VCT'],
+                tags=['load_VCT','regression_VCT'],
             ),
             node(
                 func=add_extra_circle_drift,
                 inputs=["df_VCT_raw"],
                 outputs="df_VCT",
                 name="add_extra_circle_drift_node",
-                tags=['load_VCT'],
+                tags=['load_VCT','regression_VCT'],
             ),
             node(
                 func=scale,
                 inputs=["df_VCT","ship_data"],
                 outputs="df_VCT_scaled",
                 name="scale_VCT_node",
-                tags=['load_VCT'],
+                tags=['load_VCT','regression_VCT'],
+            ),
+            node(
+                func=limit_states_for_regression,
+                inputs=["df_VCT_scaled","tests","params:skip"],
+                outputs="df_VCT_scaled_limited",
+                name="limit_states_for_regression_node",
+                tags=['load_VCT','regression_VCT'],
             ),
             node(
                 func=regress_hull_VCT,
-                inputs=["base_models", "df_VCT_scaled","params:VCT_exclude_parameters"],
+                inputs=["base_models", "df_VCT_scaled_limited","params:VCT_exclude_parameters"],
                 outputs="models_VCT",
                 name="regress_hull_VCT",
                 tags=["generate_model", "regression_VCT"]
             ),
             node(
                 func=regress_hull_rudder_VCT,
-                inputs=["base_models_simple", "df_VCT_scaled", "params:VCT_exclude_parameters"],
+                inputs=["base_models_simple", "df_VCT_scaled_limited", "params:VCT_exclude_parameters"],
                 outputs="models_rudder_VCT",
                 name="regress_hull_rudder_VCT",
                 tags=["generate_model", "regression_VCT"]

@@ -56,6 +56,14 @@
   save_args:
     index: True
 
+"{namespace}.df_VCT_scaled_limited":
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/{namespace}/df_VCT_scaled_limited.csv
+  load_args:
+    index_col: 0
+  save_args:
+    index: True
+
 "{namespace}.shipdict_base":
   type: vct_pipelines.ship_dict_dataset.ShipDictDataSet
   filepath: data/01_raw/{namespace}/{{ship}}.ship
@@ -309,9 +317,23 @@
     type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
   filename_suffix: .pkl
 
+"{namespace}.models_ID_hull2":
+  type: PartitionedDataSet
+  path: data/06_models/{namespace}/models_ID_hull2
+  dataset:
+    type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
+  filename_suffix: .pkl
+
 "{namespace}.models_ID_hull_rudder":
   type: PartitionedDataSet
   path: data/06_models/{namespace}/models_ID_hull_rudder
+  dataset:
+    type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
+  filename_suffix: .pkl
+
+"{namespace}.models_ID_hull_rudder2":
+  type: PartitionedDataSet
+  path: data/06_models/{namespace}/models_ID_hull_rudder2
   dataset:
     type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
   filename_suffix: .pkl

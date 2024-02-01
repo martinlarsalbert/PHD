@@ -1,12 +1,20 @@
 wPCC:
     ek_covariance_input:
         process_variance:
-            u : 0.7
-            v : 0.7
-            r : 0.7  # [deg]
+            u : 1.7
+            v : 1.7
+            r : 1.7  # [deg]
         measurement_error_max:
-            positions: 0.05
-            psi: 0.5  # [deg]
+            positions: 0.01
+            psi: 0.25  # [deg]
+    ek_covariance_input2:
+        process_variance:
+            u : 0.05
+            v : 0.05
+            r : 0.1  # [deg]
+        measurement_error_max:
+            positions: 0.01
+            psi: 0.25  # [deg]
     #filter_model_name: semiempirical_covered
     filter_model_name: Abkowitz
     skip:

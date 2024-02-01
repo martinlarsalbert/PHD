@@ -59,6 +59,17 @@ wPCC.tests_ek:
       index: True
   filename_suffix: .csv
 
+wPCC.tests_ek2:
+  type: PartitionedDataSet
+  path: data/03_primary/tests_preprocessed/wPCC/ek2
+  dataset:
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
+
 wPCC.tests_ek_smooth:
   type: PartitionedDataSet
   path: data/03_primary/tests_preprocessed/wPCC/ek_smooth
@@ -73,6 +84,13 @@ wPCC.tests_ek_smooth:
 wPCC.ek_filtered:
   type: PartitionedDataSet
   path: data/03_primary/ek_filtered/wPCC
+  dataset:
+    type: ek_dataset.ExtendedKalmanDataSet
+  filename_suffix: .pkl
+
+wPCC.ek_filtered2:
+  type: PartitionedDataSet
+  path: data/03_primary/ek_filtered2/wPCC
   dataset:
     type: ek_dataset.ExtendedKalmanDataSet
   filename_suffix: .pkl
@@ -104,9 +122,26 @@ wPCC.tests_ek_joined:
     index: True
     encoding: 'utf-8'
 
+wPCC.tests_ek_joined2:
+  type: pandas.CSVDataSet
+  filepath: data/05_model_input/tests_ek_joined2.csv
+  load_args:
+    index_col: 0
+    encoding: 'utf-8'
+  save_args:
+    index: True
+    encoding: 'utf-8'
+
 wPCC.covariance_matrixes:
   type: PartitionedDataSet
   path: data/03_primary/covariance_matrixes/wPCC
+  dataset:
+    type: yaml.YAMLDataSet
+  filename_suffix: .yml
+
+wPCC.covariance_matrixes2:
+  type: PartitionedDataSet
+  path: data/03_primary/covariance_matrixes2/wPCC
   dataset:
     type: yaml.YAMLDataSet
   filename_suffix: .yml

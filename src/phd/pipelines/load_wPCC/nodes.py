@@ -136,6 +136,7 @@ def _load(
     data["r1d"] = derivative(data, "r")
 
     data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
+    data["beta"] = -np.arctan2(data["v"], data["u"])
     data = add_thrust(data, thrust_channels=thrust_channels, rev_channels=rev_channels)
 
     data["twa"] = 0
@@ -230,17 +231,25 @@ def _move_to_lpp_half(data: pd.DataFrame, ship_data: dict) -> pd.DataFrame:
 def preprocess(data_MDL, ship_data: dict):
     data_MDL["V"] = data_MDL["U"] = np.sqrt(data_MDL["u"] ** 2 + data_MDL["v"] ** 2)
     data_MDL["beta"] = -np.arctan2(data_MDL["v"], data_MDL["u"])
-    data_MDL["rev"] = data_MDL[["Prop/PS/Rpm", "Prop/SB/Rpm"]].mean(axis=1)
+    
+    if "Prop/PS/Rpm" in data_MDL and "Prop/SB/Rpm" in data_MDL:
+        data_MDL["rev"] = data_MDL[["Prop/PS/Rpm", "Prop/SB/Rpm"]].mean(axis=1)
+    
     data_MDL["twa"] = 0
     data_MDL["tws"] = 0
     data_MDL["theta"] = 0
     data_MDL["q"] = 0
-    data_MDL["phi"] = data_MDL["roll"]
+    if "roll" in data_MDL:
+        data_MDL["phi"] = data_MDL["roll"]
+    
     data_MDL["p"] = 0
     data_MDL["q1d"] = 0
-    data_MDL["thrust_port"] = data_MDL["Prop/PS/Thrust"]
-    data_MDL["thrust_stbd"] = data_MDL["Prop/SB/Thrust"]
-    data_MDL['thrust'] = data_MDL["thrust_port"] + data_MDL["thrust_stbd"]
+    
+    if "Prop/PS/Thrust" in data_MDL:
+        data_MDL["thrust_port"] = data_MDL["Prop/PS/Thrust"]
+        data_MDL["thrust_stbd"] = data_MDL["Prop/SB/Thrust"]
+        data_MDL['thrust'] = data_MDL["thrust_port"] + data_MDL["thrust_stbd"]
+    
     data_MDL['psi_deg'] = np.rad2deg(data_MDL['psi'])
     data_MDL['beta_deg'] = np.rad2deg(data_MDL['beta'])
     data_MDL['delta_deg'] = np.rad2deg(data_MDL['delta'])
