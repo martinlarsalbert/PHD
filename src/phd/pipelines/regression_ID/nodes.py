@@ -44,6 +44,7 @@ exclude_parameters_global = {
     "Yvvv":0,
     "Y0": 0,
     "N0": 0,
+    "Nrrr": 0,
 }
 
 
