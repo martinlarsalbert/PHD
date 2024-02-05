@@ -575,7 +575,7 @@ def df_VCT_to_prime(
         + ["beta", "V", "U"]
         + model.control_keys
         + ["X_D", "Y_D", "N_D", "X_H", "Y_H", "N_H", "X_R", "Y_R", "N_R"]
-        + ["test type", "model_name"]
+        + ["test type", "model_name","thrust"]
     )
 
     df_VCT_prime = model.prime_system.prime(df_VCT_u0[keys], U=df_VCT["U"])
