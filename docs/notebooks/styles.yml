@@ -1,33 +1,25 @@
 Experiment:
-  label: Experiment
+  label: Model test
   color: black
   style: '-'
-  lw: 1.0
   zorder: -10
 Reference model:
-  label: Reference model
+  label: Reference
   color: blue
   style: '-'
-  lw: 1
 Abkowitz VCT:
   label: Abkowitz VCT
   color: magenta
   style: '-'
-  lw: 1
 Physics informed ID:
-  label: Physics informed ID
+  label: PISM
   color: green
   style: '-'
-  lw: 1
 Abkowitz ID:
-  label: Abkowitz ID
+  label: Mathematical
   color: red
   style: '-'
-  lw: 1
 Martins simple ID:
   label: Martins simple ID
   color: magenta
-  style: '-'
-  lw: 1
-
-  
+  style: '-' 

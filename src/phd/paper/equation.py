@@ -12,7 +12,7 @@ def to_latex_equation(eq:sp.Eq, label:str)-> str:
 standard_substitutions={
     #'alpha':r'\alpha',
     #'alpha_fport':r'\alpha_f_port',
-    'delta':r'\delta',
+    #'delta':r'\delta',
     'infty':r'\infty',
     'thrust':'T',
     
