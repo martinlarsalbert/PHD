@@ -187,7 +187,7 @@ def plot_compare_model_forces(
 
     height_ratios=np.ones(len(keys)+1)
     height_ratios[0]=0.5                          
-    fig, axes = plt.subplots(nrows=len(keys) + 1, height_ratios=height_ratios)
+    fig, axes = plt.subplots(nrows=len(keys) + 1, height_ratios=height_ratios, constrained_layout = True)
     #fig.set_size_inches(13, 13)
     #model = models[list(models.keys())[0]]
     forces_from_motions = model.forces_from_motions(data=data)

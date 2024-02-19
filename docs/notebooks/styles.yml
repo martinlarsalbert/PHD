@@ -12,11 +12,11 @@ Abkowitz VCT:
   color: magenta
   style: '-'
 Physics informed ID:
-  label: PISM
+  label: PI
   color: green
   style: '-'
 Abkowitz ID:
-  label: Mathematical
+  label: PU
   color: red
   style: '-'
 Martins simple ID:

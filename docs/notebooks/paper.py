@@ -27,9 +27,13 @@ plt.rcParams["axes.titlesize"] = textsize
 plt.rcParams["legend.fontsize"] = textsize
 plt.rcParams["xtick.labelsize"] = textsize
 plt.rcParams["ytick.labelsize"] = textsize
-plt.rcParams["figure.figsize"] = (5.5,3.25)
+
+latex_textheight = 7.59108
+latex_textwidth = 5.39749
+plt.rcParams["figure.figsize"] = (latex_textwidth,0.4*latex_textheight)
 plt.rcParams['lines.linewidth'] = 0.75
 plt.rcParams['lines.markersize'] = 4
+plt.rcParams['grid.linewidth'] = 0.1
 
 #plt.rcParams["text.usetex"] = True
 plt.rcParams["font.family"] = "serif"
