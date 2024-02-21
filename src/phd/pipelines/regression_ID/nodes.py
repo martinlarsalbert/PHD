@@ -134,7 +134,8 @@ def _regress_hull_inverse_dynamics(
     log.info(sp.pprint(eq_f_N_H))
 
     data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
-    data["rev"] = data[["Prop/SB/Rpm", "Prop/PS/Rpm"]].mean(axis=1)
+    if "Prop/SB/Rpm" in data and "Prop/PS/Rpm" in data:
+        data["rev"] = data[["Prop/SB/Rpm", "Prop/PS/Rpm"]].mean(axis=1)
 
     if not "twa" in data:
         data["twa"] = 0
@@ -387,11 +388,15 @@ def _regress_inverse_dynamics(
     for eq_to_matrix in [eq_to_matrix_X_D, eq_to_matrix_Y_D, eq_to_matrix_N_D]:
         key = eq_to_matrix.acceleration_equation.lhs.name
         log.info(f"Regressing:{key}")
-        X, y = eq_to_matrix.calculate_features_and_label(
-            data=data_prime,
-            y=data_prime[key],
-            parameters=model.ship_parameters,
-        )
+        try:
+            X, y = eq_to_matrix.calculate_features_and_label(
+                data=data_prime,
+                y=data_prime[key],
+                parameters=model.ship_parameters,
+            )
+        except Exception as e:
+            raise ValueError(f"Failed on equation:{eq_to_matrix.acceleration_equation}")
+            
         ols = sm.OLS(y, X)
         fits[key] = ols_fit = ols.fit()
         new_parameters.update(ols_fit.params)

@@ -31,7 +31,7 @@ def create_pipeline(**kwargs) -> Pipeline:
             func=base_models,
             inputs=["ship_data", "params:parameters"],
             outputs="base_models",
-            name="base_models_node",
+            name="base_models",
             tags=["generate_model"]
         ),
         node(

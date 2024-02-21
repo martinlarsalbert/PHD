@@ -21,6 +21,7 @@ from vessel_manoeuvring_models.models.subsystem import PrimeEquationSubSystem
 from vessel_manoeuvring_models.substitute_dynamic_symbols import run
 from .subsystems import (
     add_propeller_simple,
+    add_propellers_simple,
     add_rudder_simple,
     add_dummy_wind_force_system,
 )
@@ -132,7 +133,10 @@ class ModelTowed(MainModel):
     def setup_parameters(self, ship_data: dict):
         ship_data = ship_data.copy()
         ship_data["r_0"] = ship_data["D"] / 2
-        ship_data["x"] = ship_data["x_p"] - ship_data["x_r"]
+        
+        if not "x" in ship_data:
+            ship_data["x"] = ship_data["x_p"] - ship_data["x_r"]
+        
         self.set_ship_parameters(ship_data)
 
         if not "Xthrustport" in self.parameters:
@@ -166,7 +170,9 @@ class ModelTowed(MainModel):
             key: run(lambda_, **self.ship_parameters)
             for key, lambda_ in lambdas_added_mass.items()
         }
-        self.parameters.update(added_masses)
+        for key,value in added_masses.items():
+            if not key in self.parameters:
+                self.parameters[key] = added_masses[key]  # (avoid overwriting)
 
     def add_hull(self):
         self.subsystems["hull"] = hull(
@@ -174,9 +180,14 @@ class ModelTowed(MainModel):
         )
 
     def add_propellers(self):
-        add_propeller_simple(
-            model=self, create_jacobians=self.create_jacobians
-        )  # Not used if thrust=0
+        if self.is_twin_screw:
+            add_propellers_simple(
+                model=self, create_jacobians=self.create_jacobians
+            )
+        else:
+            add_propeller_simple(
+                model=self, create_jacobians=self.create_jacobians
+            )
 
     def add_rudders(self, in_propeller_race: bool):
         rudder_port = semiempirical_rudder_MAK.SemiempiricalRudderSystemMAK(
@@ -226,6 +237,15 @@ class ModelTowed(MainModel):
         self.subsystems["rudder_hull_interaction"] = RudderHullInteractionSystem(
             ship=self, create_jacobians=self.create_jacobians
         )
+        
+    @property
+    def is_twin_screw(self):
+        if self.ship_parameters['TWIN']==1:
+            return True
+        elif self.ship_parameters['TWIN']==0:
+            return False
+        else:
+            raise ValueError(f"Bad value for TWIN:{self.ship_parameters['TWIN']}") 
 
 
 class ModelTowedSemiempiricalCovered(ModelTowed):
@@ -242,7 +262,10 @@ class ModelTowedSemiempiricalCovered(ModelTowed):
         ## Add dummy wind system:
         add_dummy_wind_force_system(model=self, create_jacobians=self.create_jacobians)
 
-        self.control_keys = ["delta", "thrust_port", "thrust_stbd"]
+        if self.is_twin_screw:
+            self.control_keys = ["delta", "thrust_port", "thrust_stbd"]
+        else:
+            self.control_keys = ["delta", "thrust"]
 
     def add_rudders(self, in_propeller_race: bool):
         rudder_port = SemiempiricalRudderSystemCovered(
@@ -297,7 +320,14 @@ class ModelTowedSemiempiricalCovered(ModelTowed):
 
 
 class ModelSemiempiricalCovered(ModelTowedSemiempiricalCovered):
+    
     def add_rudders(self, in_propeller_race: bool):
+        if self.is_twin_screw:
+            self.add_rudders_twin_screw(in_propeller_race=in_propeller_race)
+        else:
+            self.add_rudders_single_screw(in_propeller_race=in_propeller_race)
+    
+    def add_rudders_twin_screw(self, in_propeller_race: bool):
         rudder_port = SemiempiricalRudderSystemCovered(
             ship=self,
             create_jacobians=self.create_jacobians,
@@ -353,6 +383,56 @@ class ModelSemiempiricalCovered(ModelTowedSemiempiricalCovered):
             ship=self, create_jacobians=self.create_jacobians
         )
 
+    def add_rudders_single_screw(self, in_propeller_race: bool):
+        rudder = SemiempiricalRudderSystemCovered(
+            ship=self,
+            create_jacobians=self.create_jacobians,
+            in_propeller_race=in_propeller_race,
+            suffix="",
+        )
+        self.subsystems["rudder"] = rudder
+
+        ## Add rudders system (joining the rudder forces)
+        #rudders = semiempirical_rudder_MAK.Rudders(
+        #    ship=self, create_jacobians=self.create_jacobians
+        #)
+        #self.subsystems["rudders"] = rudders
+
+        ## Default parameters:
+        c = (self.ship_parameters['c_t'] + self.ship_parameters['c_r'])/2
+        
+        rudder_particulars = {
+            "x_R": self.ship_parameters["x_r"],
+            "y_R": 0,
+            "z_R": 0,
+            "w_f": self.ship_parameters["w_p0"],
+            "A_R_C": self.ship_parameters["D"] * c,
+            "A_R_U": (self.ship_parameters["b_R"] - self.ship_parameters["D"])
+            * c,
+        }
+        self.ship_parameters.update(rudder_particulars)
+        rudder_parameters = {
+            "nu": 1.18849e-06,
+            "e_0": 0.9,
+            "kappa": 0.85,
+            "kappa_gamma": 0,
+            "l_R": self.ship_parameters["x_r"],
+            "delta_lim": np.deg2rad(35),
+            "delta_alpha_s": np.deg2rad(0),  # Later stall when propeller race
+            "Omega": 0,
+            "delta_0": np.deg2rad(20),  # start of lift gap loss (S-curve)
+            "delta_1": np.deg2rad(30),  # end of lift gap loss (S-curve)
+            "s": 0,  # "stall" due to gap loss (S-curve), alternative to use delta_0 and delta_1
+        }
+        for key, value in rudder_parameters.items():
+            if not key in self.parameters:
+                self.parameters[key] = value
+
+        ## Add rudder hull interaction subsystem:
+        self.subsystems["rudder_hull_interaction"] = RudderHullInteractionSystem(
+            ship=self, create_jacobians=self.create_jacobians
+        )
+    
 
 class ModelWithPropellerRace(ModelTowed):
     def setup_subsystems(self):
@@ -399,7 +479,10 @@ class ModelWithSimpleRudder(ModelTowed):
         ## Add dummy wind system:
         add_dummy_wind_force_system(model=self, create_jacobians=self.create_jacobians)
 
-        self.control_keys = ["delta", "thrust_port", "thrust_stbd", "thrust"]
+        if self.is_twin_screw:
+            self.control_keys = ["delta", "thrust_port", "thrust_stbd", "thrust"]
+        else:
+            self.control_keys = ["delta", "thrust"]
 
     def add_rudders(self, in_propeller_race=True):
         add_rudder_simple(model=self)
@@ -411,7 +494,25 @@ class ModelWithSimpleRudder(ModelTowed):
 
 
 class ModelWithSimpleAbkowitzRudder(ModelWithSimpleRudder):
-    def add_rudders(self, in_propeller_race=True):
+    def add_rudders(self, in_propeller_race: bool):
+        if self.is_twin_screw:
+            self.add_rudders_twin_screw(in_propeller_race=in_propeller_race)
+        else:
+            self.add_rudders_single_screw(in_propeller_race=in_propeller_race)
+        
+    def add_rudders_twin_screw(self, in_propeller_race=True):
+        log.info("Twin screw ship")
+        self.subsystems["rudders"] = AbkowitzRudderSystem(
+            ship=self, create_jacobians=self.create_jacobians
+        )
+
+        ## Add rudder hull interaction subsystem:
+        self.subsystems["rudder_hull_interaction"] = RudderHullInteractionDummySystem(
+            ship=self, create_jacobians=self.create_jacobians
+        )
+        
+    def add_rudders_single_screw(self, in_propeller_race=True):
+        log.info("Single screw ship")
         self.subsystems["rudders"] = AbkowitzRudderSystem(
             ship=self, create_jacobians=self.create_jacobians
         )

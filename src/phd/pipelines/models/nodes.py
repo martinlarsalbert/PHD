@@ -49,16 +49,22 @@ def base_models(ship_data: dict, parameters: dict) -> dict:
     name = "semiempirical_covered"
     log.info(f'Creating: "{name}"')
     model = ModelSemiempiricalCovered(ship_data=ship_data, create_jacobians=True)
-    delattr(
-        model.subsystems["rudder_port"], "lambdas"
-    )  # These do not work with pickle (for some reason)
-    delattr(model.subsystems["rudder_stbd"], "lambdas")
+    
+    if "rudder_port" in model.subsystems:
+        delattr(
+            model.subsystems["rudder_port"], "lambdas"
+        )  # These do not work with pickle (for some reason)
+    
+    if "rudder_stbd" in model.subsystems:
+        delattr(model.subsystems["rudder_stbd"], "lambdas")
 
     models[name] = model
 
     # Updating the parameters:
     for name, model in models.items():
-        parameters_ = parameters.get(name, parameters["default"])
+        #parameters_ = parameters.get(name, parameters["default"])
+        parameters_ = parameters["default"]
+        log.info(f"Using default parameters:{parameters_}")
         model.parameters.update(parameters_)
 
     return models
@@ -78,7 +84,8 @@ def base_models_simple(ship_data: dict, parameters: dict) -> dict:
 
     # Updating the parameters:
     for name, model in models.items():
-        parameters_ = parameters.get(name, parameters["default"])
+        parameters_ = parameters["default"]
+        log.info(f"Using default parameters:{parameters_}")
         model.parameters.update(parameters_)
 
     return models

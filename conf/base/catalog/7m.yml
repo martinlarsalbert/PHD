@@ -77,17 +77,6 @@
       index: True
   filename_suffix: .csv
 
-7m.tests_ek_smooth:
-  type: PartitionedDataSet
-  path: data/03_primary/tests_preprocessed/7m/ek_smooth
-  dataset:
-    type: pandas.CSVDataSet
-    load_args:
-      index_col: 0
-    save_args:
-      index: True
-  filename_suffix: .csv
-
 HMD_PCTC.wind_data:
   type: pandas.CSVDataSet
   filepath: data/01_raw/7m/HMD_PCTC.wind_data.csv

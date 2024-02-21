@@ -7,6 +7,7 @@ from vessel_manoeuvring_models.models.propeller import (
     PropellersSystem,
     PropellerSystem,
     PropellersSimpleSystem,
+    PropellerSimpleSystem
 )
 from vessel_manoeuvring_models.models.modular_simulator import ModularVesselSimulator
 from vessel_manoeuvring_models.models.semiempirical_rudder import (
@@ -55,11 +56,15 @@ def add_propeller(model: ModularVesselSimulator, create_jacobians=True):
     model.parameters["Xthrust"] = 1 - model.ship_parameters["tdf"]
 
 
-def add_propeller_simple(model: ModularVesselSimulator, create_jacobians=True):
+def add_propellers_simple(model: ModularVesselSimulator, create_jacobians=True):
     ## Add propeller:
     propellers = PropellersSimpleSystem(ship=model, create_jacobians=create_jacobians)
     model.subsystems["propellers"] = propellers
 
+def add_propeller_simple(model: ModularVesselSimulator, create_jacobians=True):
+    ## Add propeller:
+    propellers = PropellerSimpleSystem(ship=model, create_jacobians=create_jacobians)
+    model.subsystems["propellers"] = propellers
 
 def add_rudder(model: ModularVesselSimulator, create_jacobians=True):
     ## Add rudder:

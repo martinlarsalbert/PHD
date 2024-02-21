@@ -13,3 +13,11 @@ wPCC.parameters:
     gamma_0_port: 0.042446
     gamma_0_stbd: -0.042446
 
+kvlcc2_hsva.parameters:
+  default:
+    C_L_tune: 1.0
+    C_D_tune: 1.0
+    C_D0_tune: 1.0
+    Nrdot: -0.0006500000000000001  # Taken from Stern (2011) recalculated to PrimeI. Stern, F., K. Agdraup, S. Y. Kim, A. C. Hochbaum, K. P. Rhee, F. Quadvlieg, P. Perdon, T. Hino, R. Broglia, and J. Gorski. ‘Experience from SIMMAN 2008—The First Workshop on Verification and Validation of Ship Maneuvering Simulation Methods’. Journal of Ship Research 55, no. 02 (1 June 2011): 135–47. https://doi.org/10.5957/jsr.2011.55.2.135.
+    Yvdot: -0.014495 # (Yasukawa 2015)
+    Xudot: 0.00143 # (Yasukawa 2015)

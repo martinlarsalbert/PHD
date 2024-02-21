@@ -204,14 +204,23 @@ def simulate_closed_loop(model:ModularVesselSimulator, data:pd.DataFrame):
     twa=None
     tws=None
     neutral_rudder_angle=0
-    thrust_port = data['thrust_port']
-    thrust_stbd = data['thrust_stbd']
+    
+    if 'thrust_port' in data:
+        thrust_port = data['thrust_port']
+        thrust_stbd = data['thrust_stbd']
+        thrust = None
+    else:
+        thrust_port = None
+        thrust_stbd = None
+        thrust = data['thrust']
+    
     result_closed_loop = vessel_manoeuvring_models.models.IMO_simulations.zigzag(
             model=model,
             u0=u0,
             rev=rev,
             thrust_port=thrust_port,
             thrust_stbd=thrust_stbd,
+            thrust=thrust,
             rudder_rate=rudder_rate,
             angle=angle,
             heading_deviation=angle,

@@ -27,6 +27,7 @@ def register_pipelines() -> Dict[str, Pipeline]:
     pipelines = {}
     # pipelines["load_7m"] = load_7m.create_pipeline()
     pipelines["models"] = pipeline(models.create_pipeline(), namespace="wPCC")
+    pipelines["models_kvlcc2"] = pipeline(models.create_pipeline(), namespace="kvlcc2_hsva")
 
     pipelines["regression_VCT"] = pipeline(
         regression_VCT.create_pipeline(), namespace="wPCC"

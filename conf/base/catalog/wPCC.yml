@@ -70,9 +70,9 @@ wPCC.tests_ek2:
       index: True
   filename_suffix: .csv
 
-wPCC.tests_ek_smooth:
+"{namespace}.tests_ek_smooth":
   type: PartitionedDataSet
-  path: data/03_primary/tests_preprocessed/wPCC/ek_smooth
+  path: data/03_primary/tests_preprocessed/{namespace}/ek_smooth
   dataset:
     type: pandas.CSVDataSet
     load_args:
