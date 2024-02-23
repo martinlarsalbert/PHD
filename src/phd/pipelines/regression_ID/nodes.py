@@ -114,6 +114,7 @@ def _regress_hull_inverse_dynamics(
     exclude_parameters: dict = {},
     full_output=False,
 ) -> ModularVesselSimulator:
+    data = data.copy()
     log.info("Regressing only hull from MDL with inverse dynamics")
 
     f_X_H = sp.Function("X_H")(u, v, r, delta)
@@ -149,7 +150,7 @@ def _regress_hull_inverse_dynamics(
         ].copy()
         # data.drop(columns=["thrust"], inplace=True)
 
-    data["beta"] = -np.arctan2(data["v"], data["u"])
+    #data["beta"] = -np.arctan2(data["v"], data["u"])
 
     # Precalculate the rudders, propellers and wind_force:
     calculation = {}
@@ -163,11 +164,15 @@ def _regress_hull_inverse_dynamics(
                 control=data[model.control_keys],
                 calculation=calculation,
             )
-        except KeyError as e:
-            raise KeyError(f"Failed in subsystem:{system_name}")
+        except Exception as e:
+            raise Exception(f"Failed in subsystem:{system_name}")
 
     df_calculation = pd.DataFrame(calculation, index=data.index)
+    if "beta" in df_calculation:
+        df_calculation.drop(columns="beta",inplace=True)
+    
     data = pd.concat((data, df_calculation), axis=1)
+    
     data_u0 = data.copy()
     # U0_ = float(data["u"].min())
     # data_u0["u"] -= U0_
@@ -289,6 +294,7 @@ def _regress_inverse_dynamics(
     exclude_parameters={},
     full_output=False,
 ) -> ModularVesselSimulator:
+    data = data.copy()
     log.info("Regressing hull, propellers, and rudders from MDL with inverse dynamics")
     exclude_parameters = exclude_parameters.copy()
     model = vmm_model.copy()

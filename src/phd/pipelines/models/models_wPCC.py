@@ -33,6 +33,7 @@ from vessel_manoeuvring_models.models import semiempirical_rudder_MAK
 from vessel_manoeuvring_models.models.semiempirical_covered_system import (
     SemiempiricalRudderSystemCovered,
 )
+from vessel_manoeuvring_models.models.MMG_wake_system import MMGWakeSystem
 from vessel_manoeuvring_models.models.abkowitz_rudder_system import AbkowitzRudderSystem
 from vessel_manoeuvring_models.models.simple_rudder_system import SimpleRudderSystem
 from .subsystems import add_wind_force_system as add_wind
@@ -218,7 +219,9 @@ class ModelTowed(MainModel):
             "y_R": 0,
             "z_R": 0,
             "w_f": self.ship_parameters["w_p0"],
+            
         }
+                
         self.ship_parameters.update(rudder_particulars)
         rudder_parameters = {
             "nu": 1.18849e-06,
@@ -253,6 +256,10 @@ class ModelTowedSemiempiricalCovered(ModelTowed):
         ## Add hull:
         self.add_hull()
 
+        if not self.is_twin_screw:
+            #For single screw use different wake for different inflow angles (beta_p):
+            self.subsystems['mmg_wake_system'] = MMGWakeSystem(ship=self, create_jacobians=self.create_jacobians, suffix='')
+            
         ## Add propeller:
         self.add_propellers()
 
@@ -405,7 +412,7 @@ class ModelSemiempiricalCovered(ModelTowedSemiempiricalCovered):
             "x_R": self.ship_parameters["x_r"],
             "y_R": 0,
             "z_R": 0,
-            "w_f": self.ship_parameters["w_p0"],
+            #"w_f": self.ship_parameters["w_p0"], # (w_f is calculated from the MMGWakeSystem)
             "A_R_C": self.ship_parameters["D"] * c,
             "A_R_U": (self.ship_parameters["b_R"] - self.ship_parameters["D"])
             * c,
