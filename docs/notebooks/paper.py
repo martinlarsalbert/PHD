@@ -72,9 +72,18 @@ def save_fig(fig: Figure, file_name: str):
     file_path = file_path_with_nb_ref(file_name=file_name, directory="figures")
     fig.savefig(file_path)
 
-def scale_figure(fig,scale=1):
+def scale_figure(fig,scale=1, scale_x=1, scale_y=1):
     size = np.array(fig.get_size_inches())
-    new_size=scale*size
+    
+    new_size = size
+    
+    if scale!=1:
+        new_size=scale*size
+    elif scale_x!=1:
+        new_size[0] = scale_x*size[0]
+    elif scale_y!=1:
+        new_size[1] = scale_y*size[1]
+        
     fig.set_size_inches(new_size)
 
 def save_eq(eq: sp.Eq, file_name: str = None, subs={}, replace_latex={}):
