@@ -3,6 +3,11 @@ Experiment:
   color: black
   style: '-'
   zorder: -10
+CMT:
+  label: CMT
+  color: black
+  style: '-'
+  zorder: -10
 Reference model:
   label: Reference
   color: blue
