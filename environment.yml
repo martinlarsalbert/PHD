@@ -18,5 +18,5 @@ dependencies:
   - arviz
   - seaborn
   - pip:
-    - vessel-manoeuvring-models
+    - vessel-manoeuvring-models==0.0.18
     - pyfiglet
