@@ -5,7 +5,7 @@ from kedro.framework.project import find_pipelines
 from kedro.pipeline import Pipeline
 from kedro.pipeline.modular_pipeline import pipeline
 from .pipelines import (
-    # load_7m,
+    load_7m,
     # filter,
     filter_wPCC,
     load_wPCC,
@@ -25,10 +25,10 @@ def register_pipelines() -> Dict[str, Pipeline]:
     """
     # pipelines = find_pipelines()
     pipelines = {}
-    # pipelines["load_7m"] = load_7m.create_pipeline()
+    
+    ## wPCC
     pipelines["models"] = pipeline(models.create_pipeline(), namespace="wPCC")
-    pipelines["models_kvlcc2"] = pipeline(models.create_pipeline(), namespace="kvlcc2_hsva")
-
+    
     pipelines["regression_VCT"] = pipeline(
         regression_VCT.create_pipeline(), namespace="wPCC"
     )
@@ -55,5 +55,14 @@ def register_pipelines() -> Dict[str, Pipeline]:
         resistance_MDL.create_pipeline(), namespace="wPCC"
     )
 
+    ## KVLCC2
+    pipelines["models_kvlcc2"] = pipeline(models.create_pipeline(), namespace="kvlcc2_hsva")
+    
+    ## 7m
+    pipelines["load_7m"] = load_7m.create_pipeline()
+    
+    
+    
+    #-------------------
     pipelines["__default__"] = sum(pipelines.values())
     return pipelines

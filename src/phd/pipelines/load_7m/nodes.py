@@ -22,6 +22,7 @@ from vessel_manoeuvring_models.prime_system import PrimeSystem
 from .reference_frames import lambda_x_0, lambda_y_0, lambda_v1d, lambda_u1d
 from vessel_manoeuvring_models.substitute_dynamic_symbols import run
 from datetime import date
+from scipy.interpolate import interp1d
 
 
 def load(
@@ -31,6 +32,7 @@ def load(
     missions: dict,
     psi_correction=0,
     cutting: dict = {},
+    correct_GPS_sampling_times=True,
 ) -> dict:
     """_summary_
 
@@ -52,6 +54,13 @@ def load(
     psi_correction : float
         correction of the heading [deg] (psi=psi+np.deg2rad(psi_correction))
 
+    correct_GPS_sampling_times: bool
+        There is a problem with the time stamps from the GPS.
+        The sampling time is usually 0.2 s, but sometimes it is slightly off, like 0.22 etc.
+        This creates an unphysical spike in the time derivatives.
+        This correction instead assumes a constant sampling time: 0,0.2,0.4,...
+        If there is missing data like: 0.81,1.23,... this is converted to 0.8,1.2 
+        
 
     Returns
     -------
@@ -80,6 +89,7 @@ def load(
             missions=missions_str,
             psi_correction=psi_correction,
             cut=cut,
+            correct_GPS_sampling_times=correct_GPS_sampling_times,
         )
         units_all.update(units)
         time_series[key] = data
@@ -107,6 +117,7 @@ def _load(
     missions: str,
     psi_correction=0,
     cut: tuple = None,
+    correct_GPS_sampling_times=True,
 ):
     data = loader()
     # data.index = pd.to_datetime(data.index, unit="s")  # This was used in the first batch
@@ -125,7 +136,16 @@ def _load(
     add_missions(data=data, missions=missions)
     data["date"] = data.index
     data.index = (data.index - data.index[0]).total_seconds()
+    
+    if correct_GPS_sampling_times:
+        # (See explanation in the loader doctring)
+        
+        time_fixed = np.arange(0,data.index[-1]+0.2,0.2)
 
+        f = interp1d(x=time_fixed, y=time_fixed, kind='nearest')
+        data['time_raw'] = data.index
+        data.index = f(data.index)
+    
     if not cut is None:
         data = data.loc[cut[0] : cut[1]].copy()
 
@@ -685,9 +705,9 @@ def scale_ship_data(ship_data_wPCC: dict, scale_factor: float, rho: float) -> di
     prime_system_7m = PrimeSystem(L=lpp, rho=rho)
     ship_data_7m = prime_system_7m.unprime(ship_data_wPCC_prime)
 
-    ship_data_7m["x_G"] = (
-        -4.784 / 100 * ship_data_7m["L"]
-    )  # Value taken from hydrostatics(wPCC has x_G=0 because motions are given at CG).
+    #ship_data_7m["x_G"] = (
+    #    -4.784 / 100 * ship_data_7m["L"]
+    #)  # Value taken from hydrostatics(wPCC has x_G=0 because motions are given at CG).
     ship_data_7m[
         "x_r"
     ] -= 0.05  # E-mail from Ulysse: "...This means that the rudders stick out a little bit aft of the boat (something like 5-6 cm). "

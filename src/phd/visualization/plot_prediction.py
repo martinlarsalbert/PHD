@@ -227,7 +227,7 @@ def plot_compare_model_forces(
             forces_predicted.plot(y=key, **styles[name], ax=ax)
         
         unit = units.get(key[0],'-')
-        ax.set_ylabel(rf"${key}$ $[{unit}]$")
+        ax.set_ylabel(rf"${key}$ [{unit}]")
         ax.get_legend().set_visible(False)
         ax.get_legend().set_visible(False)
         ax.set_xlim(data.index[0], data.index[-1])
