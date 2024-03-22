@@ -6,77 +6,80 @@ class KalmanFilter:
 
     def __init__(
         self,
-        Ad: np.ndarray,
-        Bd: np.ndarray,
-        Cd: np.ndarray,
-        Ed: np.ndarray,
-        Qd: float,
-        Rd: float,
+        A: np.ndarray,
+        B: np.ndarray,
+        H: np.ndarray,
+        E: np.ndarray,
+        Q: float,
+        R: float,
     ) -> pd.DataFrame:
         """Example kalman filter for yaw and yaw rate
         Parameters
         ----------
-        Ad : np.ndarray
-            2x2 array: discrete time transition matrix
-        Bd : np.ndarray
-            2x1 array: discrete time input transition matrix
-        Cd : np.ndarray
-            1x2 array: measurement transition matrix
+        A : np.ndarray
+        B : np.ndarray
+        H : np.ndarray
+            observation model
         Ed : np.ndarray
             2x1 array
-        Qd : float
+        Q : float
             process noise
-        Rd : float
+        R : float
             measurement noise
         Returns
         -------
         pd.DataFrame
             data frame with filtered data
         """
-        self.Ad=Ad
-        self.Bd=Bd
-        self.Cd=Cd
-        self.Ed=Ed
-        self.Qd=Qd
-        self.Rd=Rd
+        self.A=A
+        self.B=B
+        self.H=H
+        self.E=E
+        self.Q=Q
+        self.R=R
         
 
     def predict(self, x_hat, P_hat, u, h):
         
-        Ad = self.Ad
-        Bd = self.Bd
-        Ed = self.Ed
-        Qd = self.Qd
+        A = self.A
+        B = self.B
+        E = self.E
+        Q = self.Q
+        Delta = B*h
+        Ed = E*h
+        Qd = Q*h
         
         n_states = len(x_hat)
-        self.Phi = Phi = np.eye(n_states) + Ad*h
-        #Phi = Ad
+        self.Phi = Phi = np.eye(n_states) + A*h
+        #Phi = A
         
         
         # Predictor (k+1)
-        x_prd = Phi @ x_hat + Bd @ u
-        #P_prd = Ad @ P_hat @ Ad.T + Ed * Qd @ Ed.T
-        P_prd = Phi @ P_hat @ Phi.T + Qd
+        x_prd = Phi @ x_hat + Delta @ u
+        #P_prd = A @ P_hat @ A.T + Ed * Qd @ Ed.T
+        #P_prd = Phi @ P_hat @ Phi.T + Qd
+        P_prd = Phi @ P_hat @ Phi.T + Ed * Qd @ Ed.T
         
         return x_prd, P_prd
     
-    def update(self, y, P_prd, x_prd):
+    def update(self, y, P_prd, x_prd, h):
             
-        Cd = self.Cd
-        Rd = self.Rd
+        H = self.H
+        R = self.R
+        Rd = R*h
         n_states = len(x_prd)
         
-        epsilon = y - Cd @ x_prd  # Error between meassurement (y) and predicted measurement Cd @ x_prd
+        epsilon = y - H @ x_prd  # Error between meassurement (y) and predicted measurement H @ x_prd
         
         # Compute kalman gain:
-        S = Cd @ P_prd @ Cd.T + Rd  # System uncertainty
-        K = P_prd @ Cd.T @ inv(S)
+        S = H @ P_prd @ H.T + Rd  # System uncertainty
+        K = P_prd @ H.T @ inv(S)
 
         # State corrector:
         x_hat = x_prd + K @ epsilon
         
         # corrector
-        IKC = np.eye(n_states) - K @ Cd        
+        IKC = np.eye(n_states) - K @ H        
         P_hat = IKC * P_prd @ IKC.T + K * Rd @ K.T
         
         return x_hat, P_hat
@@ -125,11 +128,11 @@ class KalmanFilter:
         for i in range(N-1):
             u = us[i]
             
-            x_hat[:,i], P_hat = self.update(y=ys[:,i], P_prd=P_hat, x_prd=x_prd[:,i])
+            x_hat[:,i], P_hat = self.update(y=ys[:,i], P_prd=P_hat, x_prd=x_prd[:,i], h=h)
             x_prd[:,i+1],_ = self.predict(x_hat=x_hat[:,i], P_hat=P_hat, u=u, h=h)
         
         i+=1
-        x_hat[:,i], P_hat = self.update(y=ys[:,i], P_prd=P_hat, x_prd=x_prd[:,i])
+        x_hat[:,i], P_hat = self.update(y=ys[:,i], P_prd=P_hat, x_prd=x_prd[:,i],h=h)
         
         return x_hat
         
