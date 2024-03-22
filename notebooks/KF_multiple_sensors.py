@@ -2,6 +2,16 @@ import numpy as np
 import pandas as pd
 from numpy.linalg.linalg import inv, pinv
 
+from dataclasses import dataclass
+
+
+@dataclass
+class FilterResult:
+    x_prd : np.ndarray
+    x_hat : np.ndarray
+    K : np.ndarray
+    epsilon: np.ndarray
+
 class KalmanFilter:
 
     def __init__(
@@ -45,20 +55,25 @@ class KalmanFilter:
         B = self.B
         E = self.E
         Q = self.Q
-        Delta = B*h
-        Ed = E*h
+        self.Delta = Delta =  B*h
+        self.Gamma = Gamma = E*h
         Qd = Q*h
         
         n_states = len(x_hat)
+        n_inputs = len(u)
         self.Phi = Phi = np.eye(n_states) + A*h
         #Phi = A
         
         
         # Predictor (k+1)
-        x_prd = Phi @ x_hat + Delta @ u
-        #P_prd = A @ P_hat @ A.T + Ed * Qd @ Ed.T
-        #P_prd = Phi @ P_hat @ Phi.T + Qd
-        P_prd = Phi @ P_hat @ Phi.T + Ed * Qd @ Ed.T
+        # State estimate propagation:
+        x_prd = Phi @ x_hat
+        if n_inputs>0:
+            # Add inputs if they exist:
+            x_prd+=Delta @ u
+            
+        # Error covariance propagation:
+        P_prd = Phi @ P_hat @ Phi.T + Gamma * Qd @ Gamma.T
         
         return x_prd, P_prd
     
@@ -71,18 +86,18 @@ class KalmanFilter:
         
         epsilon = y - H @ x_prd  # Error between meassurement (y) and predicted measurement H @ x_prd
         
-        # Compute kalman gain:
+        # Compute kalman gain matrix:
         S = H @ P_prd @ H.T + Rd  # System uncertainty
         K = P_prd @ H.T @ inv(S)
 
-        # State corrector:
+        # State estimate update:
         x_hat = x_prd + K @ epsilon
         
-        # corrector
+        # Error covariance update:
         IKC = np.eye(n_states) - K @ H        
         P_hat = IKC * P_prd @ IKC.T + K * Rd @ K.T
         
-        return x_hat, P_hat
+        return x_hat, P_hat, K.flatten(), epsilon.flatten()
     
     
     def filter(self,
@@ -112,6 +127,7 @@ class KalmanFilter:
         assert ys.ndim==2
         
         N = ys.shape[1]
+        n_measurement_states = ys.shape[0]
         n_states = len(x0)
         
         if len(us)!=N:
@@ -122,19 +138,26 @@ class KalmanFilter:
         x_prd[:,0] = x0
         
         x_hat=np.zeros((n_states,N))
+        K=np.zeros((n_states,N))
+        epsilon=np.zeros((n_measurement_states,N))
         
-        P_hat = P_prd 
+        #P_hat = P_prd 
         
         for i in range(N-1):
             u = us[i]
             
-            x_hat[:,i], P_hat = self.update(y=ys[:,i], P_prd=P_hat, x_prd=x_prd[:,i], h=h)
-            x_prd[:,i+1],_ = self.predict(x_hat=x_hat[:,i], P_hat=P_hat, u=u, h=h)
+            x_hat[:,i], P_hat, K[:,i], epsilon[:,i] = self.update(y=ys[:,i], P_prd=P_prd, x_prd=x_prd[:,i], h=h)
+            x_prd[:,i+1],P_prd = self.predict(x_hat=x_hat[:,i], P_hat=P_hat, u=u, h=h)
         
         i+=1
-        x_hat[:,i], P_hat = self.update(y=ys[:,i], P_prd=P_hat, x_prd=x_prd[:,i],h=h)
+        x_hat[:,i], P_hat, K[:,i], epsilon[:,i] = self.update(y=ys[:,i], P_prd=P_prd, x_prd=x_prd[:,i],h=h)
         
-        return x_hat
+        result = FilterResult(x_prd=x_prd, x_hat=x_hat, K=K, epsilon=epsilon)
+        #result['x_prd'] = x_prd
+        #result['x_hat'] = x_hat
+        #result['K'] = K
+        
+        return result
         
     
     def simulate(self, x0: np.ndarray, t:np.ndarray, us: np.ndarray):
