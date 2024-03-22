@@ -39,17 +39,24 @@ class KalmanFilter:
         self.Ed=Ed
         self.Qd=Qd
         self.Rd=Rd
+        
 
-    def predict(self, x_hat, P_hat, u):
+    def predict(self, x_hat, P_hat, u, h):
         
         Ad = self.Ad
         Bd = self.Bd
         Ed = self.Ed
         Qd = self.Qd
         
+        n_states = len(x_hat)
+        self.Phi = Phi = np.eye(n_states) + Ad*h
+        #Phi = Ad
+        
+        
         # Predictor (k+1)
-        x_prd = Ad @ x_hat + Bd @ u
-        P_prd = Ad @ P_hat @ Ad.T + Ed * Qd @ Ed.T
+        x_prd = Phi @ x_hat + Bd @ u
+        #P_prd = Ad @ P_hat @ Ad.T + Ed * Qd @ Ed.T
+        P_prd = Phi @ P_hat @ Phi.T + Qd
         
         return x_prd, P_prd
     
@@ -66,7 +73,7 @@ class KalmanFilter:
         K = P_prd @ Cd.T @ inv(S)
 
         # State corrector:
-        x_hat = x_prd + K.flatten() * epsilon
+        x_hat = x_prd + K @ epsilon
         
         # corrector
         IKC = np.eye(n_states) - K @ Cd        
@@ -79,7 +86,7 @@ class KalmanFilter:
         x0: np.ndarray,
         P_prd: np.ndarray,
         #h_m: float,
-        #h: float,
+        h: float,
         us: np.ndarray,
         ys: np.ndarray,):
         """_summary_
@@ -99,7 +106,9 @@ class KalmanFilter:
             1D array: measured yaw
         """
         
-        N = len(ys)
+        assert ys.ndim==2
+        
+        N = ys.shape[1]
         n_states = len(x0)
         
         if len(us)!=N:
@@ -113,14 +122,14 @@ class KalmanFilter:
         
         P_hat = P_prd 
         
-        for i,t_ in enumerate(ys[0:-1]):
+        for i in range(N-1):
             u = us[i]
             
-            x_hat[:,i], P_hat = self.update(y=ys[i], P_prd=P_hat, x_prd=x_prd[:,i])
-            x_prd[:,i+1],_ = self.predict(x_hat=x_hat[:,i], P_hat=P_hat, u=u)
+            x_hat[:,i], P_hat = self.update(y=ys[:,i], P_prd=P_hat, x_prd=x_prd[:,i])
+            x_prd[:,i+1],_ = self.predict(x_hat=x_hat[:,i], P_hat=P_hat, u=u, h=h)
         
         i+=1
-        x_hat[:,i], P_hat = self.update(y=ys[i], P_prd=P_hat, x_prd=x_prd[:,i])
+        x_hat[:,i], P_hat = self.update(y=ys[:,i], P_prd=P_hat, x_prd=x_prd[:,i])
         
         return x_hat
         
@@ -139,7 +148,8 @@ class KalmanFilter:
         
         for i,t_ in enumerate(t[0:-1]):
             u = us[i]
-            x_hat[:,i+1],_ = self.predict(x_hat=x_hat[:,i], P_hat=P_hat, u=u)
+            h = t[i+1]-t[i]
+            x_hat[:,i+1],_ = self.predict(x_hat=x_hat[:,i], P_hat=P_hat, u=u, h=h)
             
         return x_hat
             
