@@ -19,9 +19,9 @@ class KalmanFilter:
         A: np.ndarray,
         B: np.ndarray,
         H: np.ndarray,
-        E: np.ndarray,
         Q: float,
         R: float,
+        E: np.ndarray=None,
     ) -> pd.DataFrame:
         """Example kalman filter for yaw and yaw rate
         Parameters
@@ -44,8 +44,12 @@ class KalmanFilter:
         self.A=A
         self.B=B
         self.H=H
-        self.E=E
         self.Q=Q
+        if E is None:
+            self.E = np.eye(len(A))  # The entire Q is used
+        else:
+            self.E=E
+                    
         self.R=R
         
 
@@ -57,8 +61,7 @@ class KalmanFilter:
         Q = self.Q
         self.Delta = Delta =  B*h
         self.Gamma = Gamma = E*h
-        Qd = Q*h
-        
+          
         n_states = len(x_hat)
         n_inputs = len(u)
         self.Phi = Phi = np.eye(n_states) + A*h
@@ -73,7 +76,9 @@ class KalmanFilter:
             x_prd+=Delta @ u
             
         # Error covariance propagation:
-        P_prd = Phi @ P_hat @ Phi.T + Gamma * Qd @ Gamma.T
+        #P_prd = Phi @ P_hat @ Phi.T + Gamma * Q @ Gamma.T ## Note Q not Qd!
+        Qd = Q*h
+        P_prd = Phi @ P_hat @ Phi.T + Qd
         
         return x_prd, P_prd
     
@@ -97,7 +102,7 @@ class KalmanFilter:
         IKC = np.eye(n_states) - K @ H        
         P_hat = IKC * P_prd @ IKC.T + K * Rd @ K.T
         
-        return x_hat, P_hat, K.flatten(), epsilon.flatten()
+        return x_hat, P_hat, K, epsilon.flatten()
     
     
     def filter(self,
@@ -134,11 +139,12 @@ class KalmanFilter:
             us = np.tile(us,[N,1])
         
         # Initialize:
-        x_prd=np.zeros((n_states,N))
-        x_prd[:,0] = x0
+        x_prds=np.zeros((n_states,N))
+        x_prd = x0
+        x_prds[:,0] = x_prd.flatten()
         
-        x_hat=np.zeros((n_states,N))
-        K=np.zeros((n_states,N))
+        x_hats=np.zeros((n_states,N))
+        Ks=np.zeros((N,n_states,n_measurement_states))
         epsilon=np.zeros((n_measurement_states,N))
         
         #P_hat = P_prd 
@@ -146,13 +152,19 @@ class KalmanFilter:
         for i in range(N-1):
             u = us[i]
             
-            x_hat[:,i], P_hat, K[:,i], epsilon[:,i] = self.update(y=ys[:,i], P_prd=P_prd, x_prd=x_prd[:,i], h=h)
-            x_prd[:,i+1],P_prd = self.predict(x_hat=x_hat[:,i], P_hat=P_hat, u=u, h=h)
+            x_hat, P_hat, K, epsilon[:,i] = self.update(y=ys[:,[i]], P_prd=P_prd, x_prd=x_prd, h=h)
+            x_hats[:,i] = x_hat.flatten()
+            Ks[i,:,:] = K          
+            
+            x_prd,P_prd = self.predict(x_hat=x_hat, P_hat=P_hat, u=u, h=h)
+            x_prds[:,i+1] = x_prd.flatten()
         
         i+=1
-        x_hat[:,i], P_hat, K[:,i], epsilon[:,i] = self.update(y=ys[:,i], P_prd=P_prd, x_prd=x_prd[:,i],h=h)
+        x_hat, P_hat, K, epsilon[:,i] = self.update(y=ys[:,[i]], P_prd=P_prd, x_prd=x_prd,h=h)
+        x_hats[:,i] = x_hat.flatten()
+        Ks[i,:,:] = K
         
-        result = FilterResult(x_prd=x_prd, x_hat=x_hat, K=K, epsilon=epsilon)
+        result = FilterResult(x_prd=x_prds, x_hat=x_hats, K=Ks, epsilon=epsilon)
         #result['x_prd'] = x_prd
         #result['x_hat'] = x_hat
         #result['K'] = K
@@ -170,7 +182,7 @@ class KalmanFilter:
             us = np.tile(us,[N,1])
         
         x_hat=np.zeros((len(x0),N))
-        x_hat[:,0] = x0
+        x_hat[:,0] = x0.flatten()
         
         for i,t_ in enumerate(t[0:-1]):
             u = us[i]
