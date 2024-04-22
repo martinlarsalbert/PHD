@@ -6,14 +6,16 @@ from kedro.pipeline import Pipeline
 from kedro.pipeline.modular_pipeline import pipeline
 from .pipelines import (
     load_7m,
-    # filter,
+    filter,
     filter_wPCC,
     load_wPCC,
     regression_VCT,
     regression_ID,
     models,
+    models_7m,
     resistance_MDL,
     added_mass_from_inverse_dynamics,
+    regression_VCT_7m,
 )
 
 
@@ -60,8 +62,11 @@ def register_pipelines() -> Dict[str, Pipeline]:
     
     ## 7m
     pipelines["load_7m"] = load_7m.create_pipeline()
-    
-    
+    pipelines["models_7m"] = pipeline(models_7m.create_pipeline())
+    pipelines["filter_7m"] = pipeline(filter.create_pipeline(), namespace="7m")
+    pipelines["regression_VCT_7m"] = pipeline(
+        regression_VCT_7m.create_pipeline(), namespace="7m"
+    )    
     
     #-------------------
     pipelines["__default__"] = sum(pipelines.values())

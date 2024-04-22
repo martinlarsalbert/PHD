@@ -106,6 +106,7 @@ def filter_many(
     filter_model_name: str,
     accelerometer_position: dict,
     skip: dict,
+    cutting,
 ) -> dict:
     ek_many = {}
     time_steps_many = {}
@@ -116,13 +117,16 @@ def filter_many(
         if name in skip:
             log.info(f"Skipping the filtering for: {name}")
             continue
-
+        
+        mask = ((data.index>=cutting[name][0]) & (data.index<=cutting[name][1]))
+        data = data.loc[mask].copy()
+        
         log.info(f"Filtering: {name}")
         ek_many[name], time_steps_many[name], df_kalman_many[name] = filter(
             data=data,
             models=models,
-            covariance_matrixes=covariance_matrixes[name],
-            x0=x0[name],
+            covariance_matrixes=covariance_matrixes[name](),
+            x0=x0[name](),
             filter_model_name=filter_model_name,
             accelerometer_position=accelerometer_position,
         )
@@ -206,10 +210,11 @@ def filter(
 def smoother_many(
     ek: dict,
     datas: dict,
-    time_steps: dict,
+    #time_steps: dict,
     covariance_matrixes: dict,
     accelerometer_position: dict,
     skip: dict,
+    cutting,
 ):
     ek_many = {}
     df_smooth_many = {}
@@ -219,28 +224,35 @@ def smoother_many(
         if name in skip:
             log.info(f"Skipping the smoothing for: {name}")
             continue
-
+        
+        #cutter = cutting[name]
+        #mask = ((data.index>=cutter[0]) & (data.index<=cutter[1]))
+        #data = data.loc[mask].copy()
+        
         log.info(f"Smoothing: {name}")
         ek_many[name], df_smooth_many[name] = smoother(
-            ek=ek[name],
+            ek=ek[name](),
             data=data,
-            time_steps=time_steps[name],
-            covariance_matrixes=covariance_matrixes[name],
+            #time_steps=time_steps[name],
+            covariance_matrixes=covariance_matrixes[name](),
             accelerometer_position=accelerometer_position,
         )
 
-    return ek_many, df_smooth_many
+    #return ek_many, df_smooth_many
+    return df_smooth_many
 
 
 def smoother(
     ek: ExtendedKalmanModular,
     data: pd.DataFrame,
-    time_steps,
+    #time_steps,
     covariance_matrixes: dict,
     accelerometer_position: dict,
 ):
     ## Update parameters
-    ek = ek.copy()
+    
+    #time_steps = ek.time_steps[0:len(data)]
+    time_steps = ek.time_steps
 
     E = np.array(
         [
@@ -326,6 +338,10 @@ def divide_into_tests_filtered(
                 meta_data["global time start"] : meta_data["global time end"]
             ].copy()
 
+            if len(test)==0:
+                log.info(f"Test:{id} ({meta_data['type']}) is outside of data")
+                continue
+            
             statistics = run_statistics(data=test, units=units)
             meta_data.update(statistics)
             _.append(meta_data)
@@ -340,8 +356,9 @@ def divide_into_tests_filtered(
 
 
 def derivative(df, key):
-    d = np.diff(df[key]) / np.diff(df.index)
-    d = np.concatenate((d, [d[-1]]))
+    #d = np.diff(df[key]) / np.diff(df.index)
+    #d = np.concatenate((d, [d[-1]]))
+    d = np.gradient(df[key],df.index)
     return d
 
 
@@ -403,3 +420,6 @@ def lowpass(
     df_lowpass["r1d"] = r_ = derivative(df_lowpass, "r")
 
     return df_lowpass
+    
+    
+    

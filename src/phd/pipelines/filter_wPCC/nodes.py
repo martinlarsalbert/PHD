@@ -16,6 +16,7 @@ from numpy import cos as cos
 from numpy import sin as sin
 from vessel_manoeuvring_models.angles import smallest_signed_angle
 from phd.helpers import identity_decorator
+from phd.helpers import derivative
 
 log = logging.getLogger(__name__)
 from pyfiglet import figlet_format
@@ -376,10 +377,6 @@ def get_tests_ek_(loader, kalman=True):
     calculated_signals(df)
 
 
-def derivative(df, key):
-    d = np.diff(df[key]) / np.diff(df.index)
-    d = np.concatenate((d, [d[-1]]))
-    return d
 
 
 def lowpass(df: pd.DataFrame, cutoff: float = 1.0, order=1) -> pd.DataFrame:

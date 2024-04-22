@@ -26,14 +26,14 @@
 #  filter_model_name: vmm_simple.VCT_MDL_resistance
   ek_covariance_input:
     process_variance:
-      u : 0.2
-      v : 0.2
-      r : 0.01  # [rad/s]
+      u : 1.33333333
+      v : 0.35555556
+      r : 0.6769276  # [rad/s]
     measurement_error_max:
-      positions: 0.10
-      psi: 0.5  # [deg]
-      r: 0.01  # [rad/s]  # Yaw rate r is also a measurement from GyroZ
-  filter_model_name: vmm_simple.VCT_MDL_resistance
+      positions: 0.20
+      psi: 5  # [deg]
+      r: 1.0  # [rad/s]  # Yaw rate r is also a measurement from GyroZ
+  filter_model_name: Abkowitz
   skip:
     - 02_inclination_test
     #- 01_motoring_7m_all_data  # Just for now...
@@ -41,3 +41,5 @@
     01_motoring_7m_all_data:
       - 0
       - 9000
+      #- 100
+      

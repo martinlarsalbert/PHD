@@ -52,6 +52,27 @@
     index: True
     encoding: 'utf-8'
 
+7m.covariance_matrixes:
+  type: PartitionedDataSet
+  path: data/03_primary/covariance_matrixes/7m
+  dataset:
+    type: yaml.YAMLDataSet
+  filename_suffix: .yml
+
+7m.covariance_matrixes2:
+  type: PartitionedDataSet
+  path: data/03_primary/covariance_matrixes2/7m
+  dataset:
+    type: yaml.YAMLDataSet
+  filename_suffix: .yml
+
+7m.x0:
+  type: PartitionedDataSet
+  path: data/03_primary/x0/7m
+  dataset:
+    type: yaml.YAMLDataSet
+  filename_suffix: .yml
+
 7m.test_ek_smooth_meta_data:
   type: pandas.CSVDataSet
   filepath: data/03_primary/tests_preprocessed/7m/test_ek_smooth_meta_data.csv
@@ -64,6 +85,19 @@
     index: True
     encoding: 'utf-8'
 
+7m.ek_filtered:
+  type: PartitionedDataSet
+  path: data/03_primary/ek_filtered/7m
+  dataset:
+    type: ek_dataset.ExtendedKalmanDataSet
+  filename_suffix: .pkl
+
+7m.ek_smooth:
+  type: PartitionedDataSet
+  path: data/03_primary/ek_smooth/7m
+  dataset:
+    type: ek_dataset.ExtendedKalmanDataSet
+  filename_suffix: .pkl
 
 
 7m.tests_ek:

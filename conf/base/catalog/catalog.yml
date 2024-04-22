@@ -56,6 +56,14 @@
   save_args:
     index: True
 
+"{namespace}.df_VCT_prime":
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/{namespace}/df_VCT_prime.csv
+  load_args:
+    index_col: 0
+  save_args:
+    index: True
+
 "{namespace}.df_VCT_scaled_limited":
   type: pandas.CSVDataSet
   filepath: data/02_intermediate/{namespace}/df_VCT_scaled_limited.csv

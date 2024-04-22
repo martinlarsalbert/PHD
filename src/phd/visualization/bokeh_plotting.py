@@ -32,7 +32,7 @@ def color_gen():
 
 
 xs = {
-    "resistance": "V",
+    "resistance": "u",
     "Thrust variation": "thrust",
     "Thrust variation VCT": "thrust",
     "Thrust variation CT": "thrust",
@@ -193,7 +193,7 @@ def create_tab(
 
     for test_type, df_ in df.groupby("test type"):
 
-        x = xs.get(test_type, "V")
+        x = xs.get(test_type, "u")
         x_range = (df[x].min(), df[x].max())
 
         groups = df_.groupby(by=by)

@@ -31,14 +31,14 @@ def create_pipeline(**kwargs) -> Pipeline:
                 func=initial_state_many,
                 inputs=[data],  # (data has the raw positions)
                 outputs="x0",
-                name="initial_state_node",
+                name="kedro",
                 tags=["ek", "filter"],
             ),
             node(
                 func=estimate_propeller_speed_many,
                 inputs=[
                     data,
-                    "models",
+                    "models_rudder_VCT",
                     "params:filter_model_name",
                 ],
                 outputs="time_series_rev",
@@ -49,12 +49,13 @@ def create_pipeline(**kwargs) -> Pipeline:
                 func=filter_many,
                 inputs=[
                     "time_series_rev",
-                    "models",
+                    "models_rudder_VCT",
                     "covariance_matrixes",
                     "x0",
                     "params:filter_model_name",
                     "params:accelerometer_position",
                     "params:skip",
+                    "params:cutting",
                 ],
                 outputs=[
                     "ek_filtered",
@@ -75,12 +76,14 @@ def create_pipeline(**kwargs) -> Pipeline:
                 inputs=[
                     "ek_filtered",
                     "time_series_rev",  # (data has the raw positions)
-                    "time_steps",
+                    #"time_steps",
                     "covariance_matrixes",
                     "params:accelerometer_position",
                     "params:skip",
+                    "params:cutting",
                 ],
-                outputs=["ek_smooth", "time_series_preprocessed.ek_smooth"],
+                #outputs=["ek_smooth", "time_series_preprocessed.ek_smooth"],
+                outputs="time_series_preprocessed.ek_smooth",
                 name="smoother_node",
                 tags=["ek", "filter"],
             ),

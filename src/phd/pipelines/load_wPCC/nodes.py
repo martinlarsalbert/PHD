@@ -17,6 +17,7 @@ from vessel_manoeuvring_models.symbols import *
 from phd.pipelines.load_7m.reference_frames import O_B, B, I, O, subs
 from sympy.physics.vector import ReferenceFrame, Point
 from vessel_manoeuvring_models.substitute_dynamic_symbols import run
+from phd.helpers import derivative
 
 ## Equations:
 P = Point("P")  # New origo
@@ -38,11 +39,6 @@ eqs = acceleration.subs(subs)
 lambda_u1d = sp.lambdify(list(eqs[0].free_symbols), eqs[0], "numpy")
 lambda_v1d = sp.lambdify(list(eqs[1].free_symbols), eqs[1], "numpy")
 
-
-def derivative(df, key):
-    d = np.diff(df[key]) / np.diff(df.index)
-    d = np.concatenate((d, [d[-1]]))
-    return d
 
 
 def add_thrust(

@@ -23,7 +23,7 @@ from .reference_frames import lambda_x_0, lambda_y_0, lambda_v1d, lambda_u1d
 from vessel_manoeuvring_models.substitute_dynamic_symbols import run
 from datetime import date
 from scipy.interpolate import interp1d
-
+from phd.helpers import derivative
 
 def load(
     time_series_raw: dict,
@@ -99,12 +99,6 @@ def load(
 
     time_series_meta_data = pd.DataFrame(_)
     return time_series, time_series_meta_data, units_all
-
-
-def derivative(df, key):
-    d = np.diff(df[key]) / np.diff(df.index)
-    d = np.concatenate((d, [d[-1]]))
-    return d
 
 
 regexp = re.compile(r"\((.*)\)")
@@ -219,11 +213,32 @@ def _load(
     units["aws"] = "m/s"
     units["awa"] = "rad"
     units["r"] = "rad/s"
+    
+    ## Excessive acceleration spikes removal:
+    mask = ((data['u1d'].abs() < 0.25) & 
+        (data['v1d'].abs() < 0.75) & 
+        (data['r1d'].abs() < 0.35)  
+        )
+    
+    removes = data.loc[~mask].copy()
+    data = data.loc[mask].copy()
+    remove_percentage = int(np.round(100*(len(removes)/len(mask))))
+    log.warning(f"{remove_percentage}% of the data was removed with excessive acceleration spikes removal")
+    
+    ## Recover mission strings from removed samples and put it on the nearest remaining sample:
+    mask = pd.notnull(removes['mission'])
+    removed_missions = removes.loc[mask]
+    for index, row in removed_missions.iterrows():
+        new_index = (pd.Series(data.index, index=data.index) - index).abs().idxmin()
+        if pd.isnull(data.loc[new_index,'mission']):
+            data.loc[new_index,'mission'] = row['mission']
+        else:
+            data.loc[new_index,'mission'] += f",{row['mission']}"
 
     return data, units
 
 
-def derived_channels(data: pd.DataFrame, accelerometer_position) -> pd.DataFrame:
+def derived_channels(data: pd.DataFrame, accelerometer_position=None, wind=True, accelerometers=True) -> pd.DataFrame:
     dxdt = derivative(data, "x0")
     dydt = derivative(data, "y0")
     psi = data["psi"]
@@ -238,8 +253,12 @@ def derived_channels(data: pd.DataFrame, accelerometer_position) -> pd.DataFrame
     data["v1d"] = derivative(data, "v")
     data["r1d"] = derivative(data, "r")
 
-    estimate_apparent_wind(data=data)
-    calculated_signals(data=data, accelerometer_position=accelerometer_position)
+    if wind:
+        estimate_apparent_wind(data=data)
+    
+    if accelerometers:
+        assert not accelerometer_position is None, "You must define accelerometer_position"
+        calculated_signals(data=data, accelerometer_position=accelerometer_position)
 
 
 def remove_GPS_pattern(time_series: dict, accelerometer_position) -> pd.DataFrame:
