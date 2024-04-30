@@ -21,3 +21,23 @@ kvlcc2_hsva.parameters:
     Nrdot: -0.0006500000000000001  # Taken from Stern (2011) recalculated to PrimeI. Stern, F., K. Agdraup, S. Y. Kim, A. C. Hochbaum, K. P. Rhee, F. Quadvlieg, P. Perdon, T. Hino, R. Broglia, and J. Gorski. ‘Experience from SIMMAN 2008—The First Workshop on Verification and Validation of Ship Maneuvering Simulation Methods’. Journal of Ship Research 55, no. 02 (1 June 2011): 135–47. https://doi.org/10.5957/jsr.2011.55.2.135.
     Yvdot: -0.014495 # (Yasukawa 2015)
     Xudot: 0.00143 # (Yasukawa 2015)
+
+7m.parameters:
+  default:
+    C_L_tune: 1.0
+    C_D_tune: 1.0
+    C_D0_tune: 1.0
+    kappa_v: 0.95
+    kappa_r: 0.95
+    kappa_v_gamma_g: 0.0
+    kappa_r_gamma_g: 0.0
+    gamma_0_port: 0.042446
+    gamma_0_stbd: -0.042446
+    #a_H: 0.07  # hull rudder interaction
+    #kappa: 0.62  # (Balancing the Y_D and N_D at drift angle)
+    kappa_outer: 0.94
+    kappa_inner: 0.94
+    #kappa_gamma: 0
+    #l_R: -3.63544
+    #gamma_0_port: 0.042446
+    #gamma_0_stbd: -0.042446

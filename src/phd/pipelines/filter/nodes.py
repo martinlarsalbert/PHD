@@ -2,6 +2,7 @@
 This is a boilerplate pipeline 'filter'
 generated using Kedro 0.18.7
 """
+
 import pandas as pd
 from vessel_manoeuvring_models.models.modular_simulator import ModularVesselSimulator
 from vessel_manoeuvring_models.extended_kalman_vmm import ExtendedKalmanModular
@@ -11,6 +12,7 @@ from phd.pipelines.load_7m.nodes import calculated_signals, run_statistics
 from vessel_manoeuvring_models.data.lowpass_filter import lowpass_filter
 from numpy import cos as cos
 from numpy import sin as sin
+from vessel_manoeuvring_models.differentiation import derivative
 
 log = logging.getLogger(__name__)
 
@@ -117,10 +119,10 @@ def filter_many(
         if name in skip:
             log.info(f"Skipping the filtering for: {name}")
             continue
-        
-        mask = ((data.index>=cutting[name][0]) & (data.index<=cutting[name][1]))
+
+        mask = (data.index >= cutting[name][0]) & (data.index <= cutting[name][1])
         data = data.loc[mask].copy()
-        
+
         log.info(f"Filtering: {name}")
         ek_many[name], time_steps_many[name], df_kalman_many[name] = filter(
             data=data,
@@ -210,7 +212,7 @@ def filter(
 def smoother_many(
     ek: dict,
     datas: dict,
-    #time_steps: dict,
+    # time_steps: dict,
     covariance_matrixes: dict,
     accelerometer_position: dict,
     skip: dict,
@@ -224,34 +226,34 @@ def smoother_many(
         if name in skip:
             log.info(f"Skipping the smoothing for: {name}")
             continue
-        
-        #cutter = cutting[name]
-        #mask = ((data.index>=cutter[0]) & (data.index<=cutter[1]))
-        #data = data.loc[mask].copy()
-        
+
+        # cutter = cutting[name]
+        # mask = ((data.index>=cutter[0]) & (data.index<=cutter[1]))
+        # data = data.loc[mask].copy()
+
         log.info(f"Smoothing: {name}")
         ek_many[name], df_smooth_many[name] = smoother(
             ek=ek[name](),
             data=data,
-            #time_steps=time_steps[name],
+            # time_steps=time_steps[name],
             covariance_matrixes=covariance_matrixes[name](),
             accelerometer_position=accelerometer_position,
         )
 
-    #return ek_many, df_smooth_many
+    # return ek_many, df_smooth_many
     return df_smooth_many
 
 
 def smoother(
     ek: ExtendedKalmanModular,
     data: pd.DataFrame,
-    #time_steps,
+    # time_steps,
     covariance_matrixes: dict,
     accelerometer_position: dict,
 ):
     ## Update parameters
-    
-    #time_steps = ek.time_steps[0:len(data)]
+
+    # time_steps = ek.time_steps[0:len(data)]
     time_steps = ek.time_steps
 
     E = np.array(
@@ -338,10 +340,10 @@ def divide_into_tests_filtered(
                 meta_data["global time start"] : meta_data["global time end"]
             ].copy()
 
-            if len(test)==0:
+            if len(test) == 0:
                 log.info(f"Test:{id} ({meta_data['type']}) is outside of data")
                 continue
-            
+
             statistics = run_statistics(data=test, units=units)
             meta_data.update(statistics)
             _.append(meta_data)
@@ -353,13 +355,6 @@ def divide_into_tests_filtered(
     time_series_meta_data = pd.DataFrame(_)
 
     return tests, time_series_meta_data
-
-
-def derivative(df, key):
-    #d = np.diff(df[key]) / np.diff(df.index)
-    #d = np.concatenate((d, [d[-1]]))
-    d = np.gradient(df[key],df.index)
-    return d
 
 
 def lowpass(
@@ -420,6 +415,3 @@ def lowpass(
     df_lowpass["r1d"] = r_ = derivative(df_lowpass, "r")
 
     return df_lowpass
-    
-    
-    

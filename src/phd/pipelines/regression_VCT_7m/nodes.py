@@ -115,63 +115,15 @@ def select(df_VCT_all_raw: dict) -> pd.DataFrame:
 def add_extra_circle_drift(df_VCT: pd.DataFrame) -> pd.DataFrame:
     log.info("Add extra Circle + Drift")
 
-    df_VCT = add_extra_points_with_multiple_test_types(
-        df_VCT=df_VCT,
-        new_test_type="Circle + Drift",
-        old_test_type="Circle",
-        by=["V_round", "r_round"],
-    )
-    df_VCT = add_extra_points_with_multiple_test_types(
-        df_VCT=df_VCT,
-        new_test_type="Circle + Drift",
-        old_test_type="Drift angle",
-        by=["V_round", "beta_round"],
-    )
-    df_VCT.fillna(0, inplace=True)
+    mask = df_VCT['test type'].isin([
+    'Cirlce',
+    'Drift angle',
+    'Circle + Drift',
+    ])
 
-    df_VCT = mirror_circle_drift(df_VCT=df_VCT)
-
-    return df_VCT
-
-def add_extra_points_with_multiple_test_types(
-    df_VCT: pd.DataFrame,
-    new_test_type="Circle + Drift",
-    old_test_type="Circle",
-    by=["V_round", "r_round"],
-):
-    df_VCT_extra = df_VCT.copy()
-    df_VCT_extra["V_round"] = df_VCT_extra["V"].round(decimals=2)
-    df_VCT_extra["r_round"] = df_VCT_extra["r"].round(decimals=3)
-    df_VCT_extra["beta_round"] = df_VCT_extra["beta"].round(decimals=3)
-
-    df = df_VCT_extra.groupby("test type").get_group(new_test_type)
-    groups = df.groupby(by=by)
-
-    key = by[1]
-    for (V, r), group in groups:
-        mask = (df_VCT_extra["test type"] == old_test_type) & (
-            df_VCT_extra["V_round"] == V
-        )
-        df_circle = df_VCT_extra.loc[mask]
-        rs = list(set(df_circle[key]) & set(df[key]))
-        mask = df_circle[key].isin(rs)
-        df_extra = df_circle.loc[mask].copy()
-        if len(df_extra) > 0:
-            df_extra["test type"] = new_test_type
-            print(f"adding: {old_test_type}")
-            df_VCT_extra = pd.concat(
-                (df_VCT_extra, df_extra), axis=0, ignore_index=True
-            )
-
-    return df_VCT_extra
-
-def mirror_circle_drift(df_VCT) -> pd.DataFrame:
-    log.info("Mirror the Circle + Drift")
-
-    df = df_VCT.groupby(by="test type").get_group("Circle + Drift")
-
-    # mask = ((df['beta'].abs() > 0) & (df['r'].abs() > 0))
-    df_mirror = df.copy()
+    df_raw = df_VCT.loc[mask]
+    
+    df_mirror = df_raw.copy()
     keys_fy = [key for key in df_mirror.columns if "fy" in key or "Y_" in key]
     keys_mz = [key for key in df_mirror.columns if "mz" in key or "N_" in key]
     keys_other = [
@@ -181,7 +133,9 @@ def mirror_circle_drift(df_VCT) -> pd.DataFrame:
     ]
     keys = keys_other + keys_fy + keys_mz
     df_mirror[keys] *= -1
-
+    mask = df_mirror.duplicated(['beta','r'])
+    df_mirror = df_mirror.loc[~mask].copy()
+    
     # swap port/stbd:
     df_mirror_swap = df_mirror.copy()
     columns_port = [column for column in df_VCT.columns if "_port" in column]
@@ -193,13 +147,13 @@ def mirror_circle_drift(df_VCT) -> pd.DataFrame:
     df_mirror_swap[columns_stbd] = df_mirror[columns_port]
 
     df_mirror_swap["mirror"] = True
-
+    
     df_VCT = pd.concat((df_VCT, df_mirror_swap), axis=0, ignore_index=True)
     df_VCT["mirror"] = df_VCT["mirror"].fillna(False)
-
+    
     return df_VCT
 
-def prime(df_VCT: pd.DataFrame, models: dict= None, model=None) -> pd.DataFrame:
+def prime(df_VCT: pd.DataFrame, models: dict= None, model=None, fullscale=True) -> pd.DataFrame:
     log.info("Scaling VCT results to prime scale")
     
     if model is None:
@@ -209,13 +163,21 @@ def prime(df_VCT: pd.DataFrame, models: dict= None, model=None) -> pd.DataFrame:
     # df_VCT_u0["u"] -= U0_ * np.sqrt(model.ship_parameters["scale_factor"])
     df_VCT_u0["u"] -= model.U0
     
-    prime_system_ship = PrimeSystem(
-        L=model.ship_parameters["L"] * model.ship_parameters["scale_factor"], rho=df_VCT.iloc[0]["rho"]
-    )
-
+    if fullscale:
+        prime_system_ship = PrimeSystem(
+            L=model.ship_parameters["L"] * model.ship_parameters["scale_factor"], rho=df_VCT.iloc[0]["rho"]
+        )
+    else:
+        prime_system_ship = PrimeSystem(
+            L=model.ship_parameters["L"], rho=df_VCT.iloc[0]["rho"]
+        )
+    
+    
     df_VCT_prime = prime_system_ship.prime(
-        df_VCT_u0, U=df_VCT_u0["U"], only_with_defined_units=True
+           df_VCT_u0, U=df_VCT_u0["U"], only_with_defined_units=True
     )
+    
+    
     return df_VCT_prime
 
 def scale(df_VCT: pd.DataFrame, ship_data: dict) -> pd.DataFrame:
@@ -279,7 +241,7 @@ def _regress_hull_VCT(
     from .regression_pipeline import pipeline, pipeline_RHI
 
     # First manual regression on the rudder parameters
-    #model = manual_regression(model=model)
+    model = manual_regression(model=model)
 
     log.info(
         "Optimization of rudder coefficients that are not so easy to regress with linear regression:"
@@ -352,7 +314,7 @@ def regress_VCT(
     pipeline: dict,
     exclude_parameters: dict = {},
 ):
-    from phd.pipelines.regression_VCT.regression_pipeline import fit
+    from .regression_pipeline import fit
 
     df_VCT["U"] = df_VCT["V"]
 
@@ -382,7 +344,7 @@ def regress_VCT(
         if not zero in df_VCT:
             df_VCT[zero] = 0
 
-    df_VCT_prime = prime(df_VCT=df_VCT, model=model)
+    df_VCT_prime = prime(df_VCT=df_VCT, model=model, fullscale=False)
     
     ## Regression:
     regression_pipeline = pipeline(df_VCT_prime=df_VCT_prime, model=model)
@@ -402,3 +364,35 @@ def regress_VCT(
             raise ValueError(key)
 
     return model, models
+
+def manual_regression(model: ModularVesselSimulator) -> ModularVesselSimulator:
+    """Manual regression based on visual inspection."""
+
+    covered = model.ship_parameters["D"] / model.ship_parameters["b_R"] * 0.65
+    model.ship_parameters["A_R_C"] = model.ship_parameters["A_R"] * covered
+    model.ship_parameters["A_R_U"] = model.ship_parameters["A_R"] * (1 - covered)
+    # model.parameters['kappa_outer']=0.94
+    # model.parameters['kappa_inner']=0.94
+    model.parameters["kappa_v"] = 0.94
+    model.parameters["kappa_r"] = 0.94
+    model.parameters["kappa_v_gamma_g"] = 0
+    model.parameters["kappa_r_gamma_g"] = 0
+    # model.parameters['kappa_gamma']=0.0
+
+    # model.parameters['l_R']=1.27*model.ship_parameters['x_r']
+    c_ = (model.ship_parameters["c_t"] + model.ship_parameters["c_r"]) / 2
+    model.ship_parameters["c_t"] = 1.30 * 0.1529126213592233
+    model.ship_parameters["c_r"] = c_ * 2 - model.ship_parameters["c_t"]
+
+    gamma_0_ = 0.044
+    model.parameters["gamma_0_port"] = gamma_0_
+    model.parameters["gamma_0_stbd"] = -gamma_0_
+
+    model.parameters["C_D_tune"] = 1.25
+    model.parameters["C_D0_tune"] = 4.8
+    
+    model.parameters['delta_lim'] = np.deg2rad(15)
+    model.parameters['s'] = -10
+    model.ship_parameters['w_f']=0.297
+
+    return model

@@ -316,10 +316,14 @@ def fit(
         data = regression["data"]
         assert len(data) > 0
         key = eq_to_matrix.acceleration_equation.lhs.name
+        
+        ship_parameters = model.ship_parameters.copy()
+        ship_parameters.pop('rho')
+        
         X, y = eq_to_matrix.calculate_features_and_label(
-            data=data, y=data[key], parameters=model.ship_parameters
+            data=data, y=data[key], parameters=ship_parameters
         )
-
+        
         if const:
             X["const"] = 1
 

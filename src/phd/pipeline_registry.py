@@ -1,4 +1,5 @@
 """Project pipelines."""
+
 from typing import Dict
 
 from kedro.framework.project import find_pipelines
@@ -16,6 +17,7 @@ from .pipelines import (
     resistance_MDL,
     added_mass_from_inverse_dynamics,
     regression_VCT_7m,
+    captive,
 )
 
 
@@ -27,10 +29,10 @@ def register_pipelines() -> Dict[str, Pipeline]:
     """
     # pipelines = find_pipelines()
     pipelines = {}
-    
+
     ## wPCC
     pipelines["models"] = pipeline(models.create_pipeline(), namespace="wPCC")
-    
+
     pipelines["regression_VCT"] = pipeline(
         regression_VCT.create_pipeline(), namespace="wPCC"
     )
@@ -58,16 +60,28 @@ def register_pipelines() -> Dict[str, Pipeline]:
     )
 
     ## KVLCC2
-    pipelines["models_kvlcc2"] = pipeline(models.create_pipeline(), namespace="kvlcc2_hsva")
-    
+    pipelines["models_kvlcc2"] = pipeline(
+        models.create_pipeline(), namespace="kvlcc2_hsva"
+    )
+
     ## 7m
     pipelines["load_7m"] = load_7m.create_pipeline()
-    pipelines["models_7m"] = pipeline(models_7m.create_pipeline())
+
+    # pipelines["models_7m"] = pipeline(models_7m.create_pipeline())  # (Scaling MDL model to 7m scale)
+    pipelines["models_7m"] = pipeline(models.create_pipeline(), namespace="7m")
+
     pipelines["filter_7m"] = pipeline(filter.create_pipeline(), namespace="7m")
     pipelines["regression_VCT_7m"] = pipeline(
         regression_VCT_7m.create_pipeline(), namespace="7m"
-    )    
-    
-    #-------------------
+    )
+
+    ## TT (captive)
+    pipelines["captive"] = pipeline(
+        captive.create_pipeline(),
+        inputs={"ship_data": "wPCC.ship_data"},
+        namespace="TT",
+    )
+
+    # -------------------
     pipelines["__default__"] = sum(pipelines.values())
     return pipelines

@@ -80,6 +80,39 @@
   type: yaml.YAMLDataSet
   filepath: data/01_raw/{namespace}/ship_data.yml
 
+### Captive ###
+"{namespace}.captive_raw":
+  type: pandas.CSVDataSet
+  filepath: data/01_raw/{namespace}/captive.csv
+  load_args:
+    index_col: 0
+  save_args:
+    index: True
+
+"{namespace}.df_CMT":
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/{namespace}/df_CMT.csv
+  load_args:
+    index_col: 0
+  save_args:
+    index: True
+
+"{namespace}.df_CMT_prime":
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/{namespace}/df_CMT_prime.csv
+  load_args:
+    index_col: 0
+  save_args:
+    index: True
+
+"{namespace}.df_CMT_prime_corrected":
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/{namespace}/df_CMT_prime_corrected.csv
+  load_args:
+    index_col: 0
+  save_args:
+    index: True
+
 ### Wind data ###
 "{namespace}.wind_data":
   type: pandas.CSVDataSet

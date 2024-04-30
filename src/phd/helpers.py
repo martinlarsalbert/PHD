@@ -3,6 +3,7 @@ import numpy as np
 from vessel_manoeuvring_models.angles import mean_angle
 from numpy import sqrt, sin, cos, arctan2, pi
 import inspect
+from vessel_manoeuvring_models.differentiation import derivative
 
 angle_columns = [
     "psi",
@@ -98,9 +99,3 @@ def identity_decorator(wrapped):
 
     wrapper.__signature__ = inspect.signature(wrapped)  # the magic is here!
     return wrapper
-
-def derivative(df, key):
-    #d = np.diff(df[key]) / np.diff(df.index)
-    #d = np.concatenate((d, [d[-1]]))
-    d = np.gradient(df[key],df.index)
-    return d
