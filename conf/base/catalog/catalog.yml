@@ -32,6 +32,17 @@
       index: True
   filename_suffix: .csv
 
+"{namespace}.df_MOTIONS":
+  type: PartitionedDataSet
+  path: data/01_raw/{namespace}/df_MOTIONS
+  dataset: 
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
+
 "{namespace}.df_VCT_raw":
   type: pandas.CSVDataSet
   filepath: data/02_intermediate/{namespace}/df_VCT_raw.csv
@@ -145,6 +156,7 @@
     save_args:
       index: True
   filename_suffix: .csv
+ 
 
 "{namespace}.time_series_rev":
   type: PartitionedDataSet

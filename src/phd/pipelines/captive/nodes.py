@@ -119,6 +119,7 @@ def fit_and_correct_one_model_one_speed(
     data_predict=None,
     alpha=0.05,
     symmetry=True,
+    full_output=False,
 ):
 
     dofs = ["Y_H", "N_H"]
@@ -223,4 +224,7 @@ def fit_and_correct_one_model_one_speed(
 
     df_predict["beta_deg"] = np.rad2deg(df_predict["beta"])
 
-    return df_CMT_corrected
+    if full_output:
+        return df_CMT_corrected, df_predict
+    else:    
+        return df_CMT_corrected
