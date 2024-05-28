@@ -31,7 +31,7 @@ plt.rcParams["ytick.labelsize"] = textsize
 latex_textheight = 7.59108
 latex_textwidth = 5.39749
 plt.rcParams["figure.figsize"] = (latex_textwidth, 0.4 * latex_textheight)
-plt.rcParams["lines.linewidth"] = 0.75
+plt.rcParams["lines.linewidth"] = 0.4
 plt.rcParams["lines.markersize"] = 4
 plt.rcParams["grid.linewidth"] = 0.1
 

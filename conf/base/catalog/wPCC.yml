@@ -102,6 +102,17 @@ wPCC.ek_smooth:
     type: ek_dataset.ExtendedKalmanDataSet
   filename_suffix: .pkl
 
+wPCC.ekf:
+  type: EKF_dataset.ExtendedKalmanFilterDataSet
+  filepath: data/03_primary/ekf/wPCC.pkl
+
+wPCC.filtered_result:
+  type: PartitionedDataSet
+  path: data/04_feature/filtered_result/wPCC
+  dataset:
+    type: filter_result_dataset.FilterResultDataSet
+  filename_suffix: .pkl
+
 wPCC.tests_ek_smooth_joined:
   type: pandas.CSVDataSet
   filepath: data/05_model_input/tests_ek_smooth_joined.csv

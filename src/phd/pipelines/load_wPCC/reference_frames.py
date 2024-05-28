@@ -4,7 +4,7 @@ from sympy import Eq, symbols
 from sympy.physics.vector import ReferenceFrame, Point
 from vessel_manoeuvring_models.substitute_dynamic_symbols import run, lambdify
 from vessel_manoeuvring_models.symbols import *
-from vessel_manoeuvring_models.substitute_dynamic_symbols import equation_to_python_method, expression_to_python_method
+from vessel_manoeuvring_models.substitute_dynamic_symbols import equation_to_python_method, expression_to_python_method, eq_dottify
 
 theta, phi, psi, V = me.dynamicsymbols("theta,phi,psi,V")
 x_0, y_0 = me.dynamicsymbols("x_0 y_0")
@@ -82,7 +82,7 @@ phi_,theta_,psi_ = sp.symbols(r'\phi,\theta,\psi')
 p1d,q1d = sp.symbols(r'\dot{p},\dot{q}')
 
 # Removing dynamic symbols:
-subs={
+subs_removing_dynamic_symbols={
     phi.diff().diff(): p1d,
     theta.diff().diff(): q1d,
     psi.diff().diff(): r1d,
@@ -103,7 +103,7 @@ subs={
     v:v_,
     r:r_,
 }
-expression = acceleration_g.subs(subs)
+expression = acceleration_g.subs(subs_removing_dynamic_symbols)
 x2d_P,y2d_P,z2d_P = symbols(r"\ddot{x}_{P},\ddot{y}_{P},\ddot{z}_{P}")
 
 # Accelerations in x,y,z direction at a point P (accelerometer)
@@ -201,3 +201,4 @@ subs={
 lambda_u1d_from_accelerometer = expression_to_python_method(eq_accelerometer_to_origo.rhs[0].subs(subs), function_name='u1d_from_accelerometer')
 lambda_v1d_from_accelerometer = expression_to_python_method(eq_accelerometer_to_origo.rhs[1].subs(subs), function_name='v1d_from_accelerometer')
 lambda_r1d_from_accelerometer = expression_to_python_method(eq_accelerometer_to_origo.rhs[2].subs(subs), function_name='r1d_from_accelerometer')
+

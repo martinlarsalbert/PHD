@@ -5,14 +5,17 @@ generated using Kedro 0.18.7
 
 from kedro.pipeline import Pipeline, node, pipeline
 from .nodes import (
-    guess_covariance_matrixes_many,
+    #guess_covariance_matrixes_many,
     initial_state_many,
-    filter_many1,
-    filter_many2,
-    smoother_many,
-    get_tests_ek,
-    get_tests_ek_smooth,
+    filter_many,
+    results_to_dataframe,
+    smoother,
+    #filter_many2,
+    #smoother_many,
+    #get_tests_ek,
+    #et_tests_ek_smooth,
     join_tests,
+    create_kalman_filter
 )
 
 
@@ -20,117 +23,61 @@ def create_pipeline(**kwargs) -> Pipeline:
     return pipeline(
         [
             node(
-                func=guess_covariance_matrixes_many,
-                inputs=["params:ek_covariance_input", "tests"],
-                outputs="covariance_matrixes",
-                name="guess_covariance_matrixes_node",
+                func=create_kalman_filter,
+                inputs=["models_rudder_VCT"],
+                outputs="ekf",
+                name="create_kalman_filter_node",
                 tags=["ek", "filter"],
             ),
             node(
-                func=guess_covariance_matrixes_many,
-                inputs=["params:ek_covariance_input2", "tests"],
-                outputs="covariance_matrixes2",
-                name="guess_covariance_matrixes_node2",
-                tags=["ek2", "filter2"],
-            ),
-            node(
                 func=initial_state_many,
-                inputs=["tests"],  # (data has the raw positions)
+                inputs=["tests","ekf1"],  # (data has the raw positions)
                 outputs="x0",
                 name="initial_state_node",
                 tags=["ek", "filter"],
             ),
-            ## First filtering:
             node(
-                func=filter_many1,
+                func=filter_many,
                 inputs=[
                     "tests",
-                    "models_rudder_VCT",
-                    #"models_VCT",
-                    #"models",
-                    "covariance_matrixes",
+                    "ekf",                
                     "x0",
-                    "params:filter_model_name",
-                    "params:accelerometer_position",
                     "params:skip",
                 ],
-                # outputs=[
-                #    "ek_filtered",
-                #    "time_steps",
-                #    "tests_ek",
-                # ],
-                outputs="ek_filtered",
+                outputs="filtered_result",
                 name="filter_node",
                 tags=["ek", "filter"],
             ),
+            
             node(
-                func=get_tests_ek,
-                inputs=["ek_filtered"],
+                func=results_to_dataframe,
+                inputs=[
+                    "filtered_result",
+                ],
                 outputs="tests_ek",
-                name="get_tests_ek",
+                name="results_to_dataframe",
+                tags=["ek", "filter"],
             ),
+            
+            node(
+                func=smoother,
+                inputs=[
+                    "ekf",
+                    "filtered_result",
+                ],
+                outputs="tests_ek_smooth",
+                name="smoother",
+                tags=["ek", "filter"],
+            ),
+            
+            
             node(
                 func=join_tests,
                 inputs=["tests_ek", "params:skip"],
                 outputs="tests_ek_joined",
                 name="join_tests_ek",
             ),
-            ## 2nd filtering:
-            node(
-                func=filter_many2,
-                inputs=[
-                    "tests_ek",
-                    "models_ID_hull_rudder",  # Now use this model instead
-                    #"models_VCT",
-                    #"models",
-                    "covariance_matrixes2",
-                    "x0",
-                    "params:filter_model_name",
-                    "params:accelerometer_position",
-                    "params:skip",
-                ],
-                # outputs=[
-                #    "ek_filtered",
-                #    "time_steps",
-                #    "tests_ek",
-                # ],
-                outputs="ek_filtered2",
-                name="filter_node2",
-                tags=["ek2", "filter2"],
-            ),
-            node(
-                func=get_tests_ek,
-                inputs=["ek_filtered2"],
-                outputs="tests_ek2",
-                name="get_tests_ek2",
-            ),
-            node(
-                func=join_tests,
-                inputs=["tests_ek2", "params:skip"],
-                outputs="tests_ek_joined2",
-                name="join_tests_ek2",
-            ),
-            node(
-                func=smoother_many,
-                inputs=[
-                    "ek_filtered",
-                    # "tests",  # (data has the raw positions)
-                    # "time_steps",
-                    # "covariance_matrixes",
-                    "params:accelerometer_position",
-                    "params:skip",
-                ],
-                # outputs=["ek_smooth", "tests_ek_smooth"],
-                outputs="ek_smooth",
-                name="smoother_node",
-                tags=["ek", "filter"],
-            ),
-            node(
-                func=get_tests_ek_smooth,
-                inputs=["ek_smooth"],
-                outputs="tests_ek_smooth",
-                name="get_tests_ek_smooth",
-            ),
+            
             node(
                 func=join_tests,
                 inputs=["tests_ek_smooth", "params:skip"],
@@ -139,3 +86,64 @@ def create_pipeline(**kwargs) -> Pipeline:
             ),
         ]
     )
+
+def filter_pipeline(n:int, models:str):
+    
+    return [
+            node(
+                func=create_kalman_filter,
+                inputs=[models],
+                outputs=f"ekf{n}",
+                name=f"create_kalman_filter_node{n}",
+                tags=["ek", "filter"],
+            ),
+            
+            node(
+                func=filter_many,
+                inputs=[
+                    "tests",
+                    f"ekf{n}",                
+                    "x0",
+                    "params:skip",
+                ],
+                outputs=f"filtered_result{n}",
+                name=f"filter_node{n}",
+                tags=["ek", "filter"],
+            ),
+            
+            node(
+                func=results_to_dataframe,
+                inputs=[
+                    f"filtered_result{n}",
+                ],
+                outputs=f"tests_ek{n}",
+                name=f"results_to_dataframe{n}",
+                tags=["ek", "filter"],
+            ),
+            
+            node(
+                func=smoother,
+                inputs=[
+                    f"ekf{n}",
+                    f"filtered_result{n}",
+                ],
+                outputs=f"tests_ek_smooth{n}",
+                name=f"smoother{n}",
+                tags=["ek", "filter"],
+            ),
+            
+            
+            node(
+                func=join_tests,
+                inputs=[f"tests_ek{n}", "params:skip"],
+                outputs=f"tests_ek_joined{n}",
+                name=f"join_tests_ek{n}",
+            ),
+            
+            node(
+                func=join_tests,
+                inputs=[f"tests_ek_smooth{n}", "params:skip"],
+                outputs=f"tests_ek_smooth_joined{n}",
+                name=f"join_tests_ek_smooth{n}",
+            ),
+        ]

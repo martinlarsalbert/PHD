@@ -138,6 +138,18 @@ def _load(
     data["twa"] = 0
     data["tws"] = 0
 
+    data['phi'] = data['roll']
+    data["p"] = derivative(data, "phi")
+    data["p1d"] = derivative(data, "p")
+    
+    data['theta'] = data['pitch']
+    data["q"] = derivative(data, "theta")
+    data["q1d"] = derivative(data, "q")
+
+    data['thrust_port'] = data['Prop/PS/Thrust']
+    data['thrust_stbd'] = data['Prop/SB/Thrust']
+    data['g'] = 9.81
+    
     return data
 
 
@@ -244,6 +256,9 @@ def preprocess(data_MDL, ship_data: dict):
     if "Prop/PS/Thrust" in data_MDL:
         data_MDL["thrust_port"] = data_MDL["Prop/PS/Thrust"]
         data_MDL["thrust_stbd"] = data_MDL["Prop/SB/Thrust"]
+        data_MDL['thrust'] = data_MDL["thrust_port"] + data_MDL["thrust_stbd"]
+        
+    if "thrust_port" in data_MDL:
         data_MDL['thrust'] = data_MDL["thrust_port"] + data_MDL["thrust_stbd"]
     
     data_MDL['psi_deg'] = np.rad2deg(data_MDL['psi'])

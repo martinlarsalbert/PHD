@@ -139,7 +139,8 @@ def plot_missions(
         missions_string = "".join(
             f"\n {mission}\n\n" for mission in trip["mission"].dropna().unique()
         )
-        popup = f"{trip_no} \n {missions_string}"
+        time = trip.iloc[0]['time']
+        popup = f"{trip_no}\n time:{time}\n {missions_string}"
         line = folium.PolyLine(
             points,
             opacity=1.0,
@@ -154,7 +155,7 @@ def plot_missions(
     mask = df["mission"].notnull()
     for index, row in df.loc[mask].iterrows():
 
-        mission = row["mission"]
+        mission = f"Time:{index} \n{row['mission']}"
 
         icon = folium.Icon(color="lightblue", icon="glyphicon-edit")
         if "ZigZag: start" in mission:

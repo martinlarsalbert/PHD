@@ -300,10 +300,16 @@ def estimate_propeller_speed_many(
 def estimate_propeller_speed(
     data: pd.DataFrame, models: dict, filter_model_name: str
 ) -> pd.DataFrame:
-    if not filter_model_name in models:
-        raise ValueError(f"model: {filter_model_name} does not exist.")
-
-    model = models[filter_model_name]()
+    
+    if isinstance(models, dict):
+        if not filter_model_name in models:
+            raise ValueError(f"model: {filter_model_name} does not exist.")
+        
+        model = models[filter_model_name]()
+    else:
+        model = models
+    
+    
     assert isinstance(model, ModularVesselSimulator)
 
     # data["rev"] = 10  # Very simple estimation... ;)

@@ -6,9 +6,8 @@ generated using Kedro 0.18.7
 This is a boilerplate pipeline 'filter'
 generated using Kedro 0.18.7
 """
+from vessel_manoeuvring_models.symbols import *
 import pandas as pd
-from vessel_manoeuvring_models.models.modular_simulator import ModularVesselSimulator
-from vessel_manoeuvring_models.extended_kalman_vmm import ExtendedKalmanModular
 import logging
 import numpy as np
 from vessel_manoeuvring_models.data.lowpass_filter import lowpass_filter
@@ -17,367 +16,194 @@ from numpy import sin as sin
 from vessel_manoeuvring_models.angles import smallest_signed_angle
 from phd.helpers import identity_decorator
 from phd.helpers import derivative
+from vessel_manoeuvring_models.EKF_VMM_1d import ExtendedKalmanFilterVMMWith6Accelerometers
+from vessel_manoeuvring_models.KF_multiple_sensors import FilterResult
 
 log = logging.getLogger(__name__)
 from pyfiglet import figlet_format
 
-def guess_covariance_matrixes_many(ek_covariance_input: dict, datas: dict) -> dict:
-    covariance_matrixes_many = {}
-    for name, loader in datas.items():
-        data = loader()
-        covariance_matrixes = guess_covariance_matrixes(
-            ek_covariance_input=ek_covariance_input, data=data
-        )
-        covariance_matrixes_many[name] = covariance_matrixes
-
-    return covariance_matrixes_many
-
-
-def guess_covariance_matrixes(ek_covariance_input: dict, data: pd.DataFrame) -> dict:
-    process_variance = ek_covariance_input["process_variance"]
-    variance_u = process_variance["u"]
-    variance_v = process_variance["v"]
-    variance_r = process_variance["r"]
-
-    h = np.mean(np.diff(data.index))
-
-    Qd = np.diag([variance_u, variance_v, variance_r]) * h  # process variances: u,v,r
-
-    measurement_error_max = ek_covariance_input["measurement_error_max"]
-    error_max_pos = measurement_error_max["positions"]
-    sigma_pos = error_max_pos / 3
-    variance_pos = sigma_pos**2
-
-    error_max_psi = np.deg2rad(measurement_error_max["psi"])
-    sigma_psi = error_max_psi / 3
-    variance_psi = sigma_psi**2
-
-    diag = [variance_pos, variance_pos, variance_psi]
-
-    if "r" in measurement_error_max:
-        # Yaw rate is also a measurement!
-        error_max_r = measurement_error_max["r"]
-        sigma_r = error_max_r / 3
-        variance_r = sigma_r**2
-        diag.append(variance_r)
-
-    Rd = np.diag(diag)
-
-    P_prd = np.diag(
-        [
-            variance_pos,
-            variance_pos,
-            variance_psi,
-            variance_u * h,
-            variance_v * h,
-            variance_r * h,
-        ]
-    )
-
-    covariance_matrixes = {
-        "P_prd": P_prd.tolist(),
-        "Qd": Qd.tolist(),
-        "Rd": Rd.tolist(),
+def create_kalman_filter(models:dict)->ExtendedKalmanFilterVMMWith6Accelerometers:
+    
+    model = models['Abkowitz']()
+    
+    model.ship_parameters['point1'] = {
+    'x_P': 1.625,
+    'y_P': 0.025,
+    'z_P': -0.564,
     }
 
-    return covariance_matrixes
+    model.ship_parameters['point2'] = {
+        'x_P': -1.9,
+        'y_P': 0.43,
+        'z_P': -0.564,
+    }
+    
+    h2_ = sp.ImmutableDenseMatrix([x_0,y_0,psi,
+                              #u,v,r,
+                              u1d,v1d,r1d
+                             ])
+    X = sp.MutableDenseMatrix([x_0,y_0,psi,u,v,r,u1d,v1d,r1d])  # state vector,
+    H2_ = h2_.jacobian(X)    
+    H2 = lambdify(H2_)()
 
+    B = np.array([[]])  # No inputs
+
+    var_x=np.sqrt(0.05)
+    var_y=10*np.sqrt(0.05)
+    var_psi=10*np.sqrt(np.deg2rad(0.5))
+
+    dt=1/100
+    Q2 = 2000*np.diag([0,0,0,0,0,0,var_x**2*dt, var_y**2*dt, var_psi**2*dt])
+
+    diagonal_position = 100*np.array([var_x**2, var_y**2, var_psi**2])
+    diagonal_acceleration = 10000000*np.array([var_x**2*dt**2, var_y**2*dt**2, 1/100*var_psi**2*dt**2,])
+    diagonal = np.concatenate((diagonal_position,diagonal_acceleration))
+    R2 = np.diag(diagonal) 
+    
+    ekf = ExtendedKalmanFilterVMMWith6Accelerometers(model=model, B=B, H=H2, Q=Q2, R=R2,
+                         state_columns=['x0','y0','psi','u','v','r','u1d','v1d','r1d'], measurement_columns=['x0', 'y0', 'psi','u1d','v1d','r1d'], 
+                         control_columns=['delta','delta1d','thrust_port','thrust_stbd','thrust_port1d','thrust_stbd1d','phi','theta','g',
+                                          'Hull/Acc/X1',
+                                          'Hull/Acc/Y1',
+                                          'Hull/Acc/Y2',
+                                          'Hull/Acc/Z1',
+                                          'Hull/Acc/Z2',
+                                          'Hull/Acc/Z3',
+
+                                         ], input_columns=[],
+                              )
+    
+    return ekf
+    
 
 def initial_state_many(
-    datas: dict, state_columns=["x0", "y0", "psi", "u", "v", "r"]
+    datas: dict, ekf:ExtendedKalmanFilterVMMWith6Accelerometers
 ) -> np.ndarray:
     x0_many = {}
     for name, loader in datas.items():
         data = loader()
-        x0 = initial_state(data=data, state_columns=state_columns)
+        x0 = initial_state(data=data, ekf=ekf)
         x0_many[name] = x0
 
     return x0_many
 
 
 def initial_state(
-    data: pd.DataFrame, state_columns=["x0", "y0", "psi", "u", "v", "r"]
+    data: pd.DataFrame, ekf:ExtendedKalmanFilterVMMWith6Accelerometers
 ) -> np.ndarray:
-    # x0 = data.iloc[0][state_columns].values
-    x0 = data.iloc[0:5][state_columns].mean()
+    #x0 = data.iloc[0][ekf.state_columns]
+    #x0 = data.iloc[0:50][ekf.state_columns].mean()
+    
+    x0_position = data.iloc[0][ekf.state_columns[0:3]]
+    x0_velocity = data.iloc[0:50][ekf.state_columns[3:6]].mean()
+    x0_acceleration = data.iloc[0:50][ekf.state_columns[6:]].mean()
 
+    x0_velocity['v'] = 0
+    x0_velocity['r'] = 0
+
+    x0_acceleration['u1d'] = 0
+    x0_acceleration['v1d'] = 0
+    x0_acceleration['r1d'] = 0
+
+    x0 = pd.Series(np.concatenate((x0_position.values,x0_velocity.values,x0_acceleration.values)), index=ekf.state_columns)
+    
+    
     return {key: float(value) for key, value in x0.items()}
-
-def filter_many1(
-    datas: dict,
-    models: dict,
-    covariance_matrixes: dict,
-    x0: dict,
-    filter_model_name: str,
-    accelerometer_position: dict,
-    skip: dict,
-    ) -> dict:
-    log.info(figlet_format("1st", font="starwars"))
-    return filter_many(datas=datas,models=models,covariance_matrixes=covariance_matrixes, x0=x0, filter_model_name=filter_model_name, accelerometer_position=accelerometer_position, skip=skip)
-
-def filter_many2(
-    datas: dict,
-    models: dict,
-    covariance_matrixes: dict,
-    x0: dict,
-    filter_model_name: str,
-    accelerometer_position: dict,
-    skip: dict,
-    ) -> dict:
-    log.info(figlet_format("2nd", font="starwars"))
-    return filter_many(datas=datas,models=models,covariance_matrixes=covariance_matrixes, x0=x0, filter_model_name=filter_model_name, accelerometer_position=accelerometer_position, skip=skip)
-
 
 def filter_many(
     datas: dict,
-    models: dict,
-    covariance_matrixes: dict,
+    ekf: ExtendedKalmanFilterVMMWith6Accelerometers,
     x0: dict,
-    filter_model_name: str,
-    accelerometer_position: dict,
     skip: dict,
 ) -> dict:
-    ek_many = {}
-    time_steps_many = {}
-    df_kalman_many = {}
     functions = {}
     
     skip = [str(name) for name in skip]
 
-    if not filter_model_name in models:
-        raise ValueError(f"model: {filter_model_name} does not exist.")
-
-    model = models[filter_model_name]()
     for name, loader in datas.items():
         if name in skip:
             log.info(f"Skipping the filtering for: {name}")
             continue
 
         log.info(f"Filtering: {name}")
-        # ek_many[name], time_steps_many[name], df_kalman_many[name] = filter(
         functions[name] = filter_lazy(
             loader=loader,
-            model=model,
-            covariance_matrixes=covariance_matrixes[name],
+            ekf=ekf,
             x0=x0[name],
-            filter_model_name=filter_model_name,
-            accelerometer_position=accelerometer_position,
+            name=name
         )
-
-    # return ek_many, time_steps_many, df_kalman_many
     return functions
-
 
 def filter_lazy(
     loader,
-    model: ModularVesselSimulator,
-    covariance_matrixes: dict,
+    ekf,
     x0: list,
-    filter_model_name: str,
-    accelerometer_position: dict,
+    name:str
 ):
     def wrapper():
-        return filter(
+        try:
+            return filter(
             loader=loader,
-            model=model,
-            covariance_matrixes=covariance_matrixes(),
+            ekf=ekf,
             x0=x0(),
-            filter_model_name=filter_model_name,
-            accelerometer_position=accelerometer_position,
-        )
+            )
+        except Exception as e:
+            raise ValueError(f"Failed on: {name}")
 
     return wrapper
-
 
 def filter(
     loader,
-    model: ModularVesselSimulator,
-    covariance_matrixes: dict,
-    x0: list,
-    filter_model_name: str,
-    accelerometer_position: dict,
+    ekf: ExtendedKalmanFilterVMMWith6Accelerometers,
+    x0: dict,
 ) -> pd.DataFrame:
     data = loader()
     
-    data['thrust_port'] = data['Prop/PS/Thrust']
-    data['thrust_stbd'] = data['Prop/SB/Thrust']
+    # Calculate time derivatives of control variables:
+    data['delta1d_'] = derivative(data,'delta')
+    rudder_rate = np.deg2rad(2.32)*np.sqrt(ekf.model.ship_parameters['scale_factor'])
+    data['delta1d'] = np.round(data['delta1d_']/rudder_rate,0)*rudder_rate
+
+    dt = np.mean(data.index.diff()[1:])
+    fs = 1/dt
+    data['thrust_port_filtered'] = lowpass_filter(data['thrust_port'], cutoff=10, fs=fs, order=1)
+    data['thrust_stbd_filtered'] = lowpass_filter(data['thrust_stbd'], cutoff=10, fs=fs, order=1)
+    data['thrust_port1d'] = derivative(data,'thrust_port_filtered')
+    data['thrust_stbd1d'] = derivative(data,'thrust_stbd_filtered')
     
-    log.info(f"Kalman filter with predictor:{filter_model_name}")
+    P_0 = np.zeros((ekf.n,ekf.n))
+    x0 = pd.Series(x0)[ekf.state_columns].values.reshape(ekf.n,1)
+    result = ekf.filter(data=data, P_0=P_0, x0=x0)
     
-    assert isinstance(model, ModularVesselSimulator)
+    return result
 
-    for name, subsystem in model.subsystems.items():
-        if not hasattr(subsystem, "partial_derivatives"):
-            log.info(
-                f"The {name} system misses partial derivatives for the jacobi matrix. Creating new ones...(takes a while)"
-            )
-            subsystem.create_partial_derivatives()
+def results_to_dataframe(filtered_results:dict)-> dict:
+    dataframes={}
+    for name, loader in filtered_results.items():
+        result = loader()
+        dataframes[name] = result.df
+        
+    return dataframes
 
-    if not hasattr(subsystem, "lambda_jacobian"):
-        f"The model misses the jacobi matrix. Creating a new one...(takes a while)"
-        model.create_predictor_and_jacobian()
-
-    Cd = np.array(
-        [
-            [1, 0, 0, 0, 0, 0],
-            [0, 1, 0, 0, 0, 0],
-            [0, 0, 1, 0, 0, 0],
-        ]
-    )
-
-    E = np.array(
-        [
-            [0, 0, 0],
-            [0, 0, 0],
-            [0, 0, 0],
-            [1, 0, 0],
-            [0, 1, 0],
-            [0, 0, 1],
-        ],
-    )
-
-    ek = ExtendedKalmanModular(model=model)
-    x0_ = pd.Series(x0)[["x0", "y0", "psi", "u", "v", "r"]].values
-    log.info("Running Kalman filter")
-
-    ## remove possible NaNs from inputs and measurements:
-    mask = data[model.control_keys + model.states_str].notnull().all(axis=1)
-    data_ = data.loc[mask]
-    assert len(data_) > 0, "Too many NaN values in inputs and measurements"
-
-    time_steps = ek.filter(
-        data=data_,
-        **covariance_matrixes,
-        E=E,
-        Cd=Cd,
-        input_columns=model.control_keys,
-        x0_=x0_,
-        measurement_columns=["x0", "y0", "psi"],
-        do_checks=False,
-    )
-
-    # df = ek.df_kalman.copy()
-    # calculated_signals(
-    #    df, accelerometer_position=accelerometer_position
-    # )  # Update beta, V, true wind speed etc.
-
-    # return ek, time_steps, df
-    return ek
-
-
-def smoother_many(
-    ek_loaders: dict,
-    # datas: dict,
-    # time_steps: dict,
-    # covariance_matrixes: dict,
-    accelerometer_position: dict,
-    skip: dict,
-):
-    ek_many = {}
-    df_smooth_many = {}
-    skip = [str(name) for name in skip]
-    for name, loader in ek_loaders.items():
-        if name in skip:
-            log.info(f"Skipping the smoothing for: {name}")
-            continue
-
-        log.info(f"Smoothing: {name}")
-        ek_many[name] = smoother_lazy(
-            loader=loader,
-            # data=data,
-            # time_steps=ek.time_steps,
-            # covariance_matrixes=covariance_matrixes[name],
-            accelerometer_position=accelerometer_position,
-        )
-
-    return ek_many
-
-
+def smoother(ekf:ExtendedKalmanFilterVMMWith6Accelerometers, filtered_results:dict)-> dict:
+    
+    smoothened_results = {}
+    for name, loader in filtered_results.items():
+        smoothened_results[name] = smoother_lazy(loader=loader, ekf=ekf)
+        
+    return smoothened_results
+    
 def smoother_lazy(
     loader,
-    # covariance_matrixes: dict,
-    accelerometer_position: dict,
+    ekf,
 ):
     def wrapper():
-        return smoother(
-            loader=loader,
-            # covariance_matrixes=covariance_matrixes,
-            accelerometer_position=accelerometer_position,
-        )
+        results = loader()
+        results_smoother =  ekf.smoother(results=results)
+        df_smoothened = results_smoother.df
+        return df_smoothened
 
     return wrapper
-
-
-def smoother(
-    loader,
-    # covariance_matrixes: dict,
-    accelerometer_position: dict,
-):
-    ek = loader()
-    ## Update parameters
-
-    # E = np.array(
-    #    [
-    #        [0, 0, 0],
-    #        [0, 0, 0],
-    #        [0, 0, 0],
-    #        [1, 0, 0],
-    #        [0, 1, 0],
-    #        [0, 0, 1],
-    #    ],
-    # )
-    #
-    # ek.Qd = np.array(covariance_matrixes["Qd"])
-    # ek.E = E
-
-    ek.smoother(time_steps=ek.time_steps)
-    # ek.data = data
-
-    # df = ek.df_smooth.copy()
-    # if "thrust" in data:
-    #    df["thrust"] = data["thrust"].values
-
-    # calculated_signals(
-    #    df, accelerometer_position=accelerometer_position
-    # )  # Update beta, V, true wind speed etc.
-
-    return ek
-
-
-def get_tests_ek(ek_filtered_loaders: dict):
-    functions = {}
-    for key, loader in ek_filtered_loaders.items():
-        functions[key] = get_tests_ek_lazy(loader=loader, kalman=True)
-
-    return functions
-
-
-def get_tests_ek_smooth(ek_filtered_loaders: dict):
-    functions = {}
-    for key, loader in ek_filtered_loaders.items():
-        functions[key] = get_tests_ek_lazy(loader=loader, kalman=False)
-
-    return functions
-
-
-def get_tests_ek_lazy(loader, kalman=True):
-    def wrapper():
-        return get_tests_ek_(loader, kalman=kalman)
-
-    return wrapper
-
-
-def get_tests_ek_(loader, kalman=True):
-    ek_filtered = loader()
-    if kalman:
-        return ek_filtered.df_kalman
-    else:
-        return ek_filtered.df_smooth
-
-    calculated_signals(df)
-
-
-
 
 def lowpass(df: pd.DataFrame, cutoff: float = 1.0, order=1) -> pd.DataFrame:
     """Lowpass filter and calculate velocities and accelerations with numeric differentiation

@@ -64,12 +64,19 @@ def gather_data(tests_ek_smooth_joined: pd.DataFrame) -> pd.DataFrame:
 
     data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
     data["beta"] = -np.arctan2(data["v"], data["u"])
-    data["rev"] = data[["Prop/PS/Rpm", "Prop/SB/Rpm"]].mean(axis=1)
+    if "Prop/PS/Rpm" in data:
+        data["rev"] = data[["Prop/PS/Rpm", "Prop/SB/Rpm"]].mean(axis=1)
+    
     data["twa"] = 0
     data["tws"] = 0
 
-    data["thrust_port"] = data["Prop/PS/Thrust"]
-    data["thrust_stbd"] = data["Prop/SB/Thrust"]
+    if not "thrust_port" in data:
+        data["thrust_port"] = data["Prop/PS/Thrust"]
+    
+    if not "thrust_stbd" in data:
+        data["thrust_stbd"] = data["Prop/SB/Thrust"]
+        
+    data['thrust'] = data["thrust_port"] + data["thrust_stbd"]
 
     return data
 
