@@ -107,7 +107,7 @@ def regress_hull_inverse_dynamics(
             exclude_parameters=exclude_parameters,
             full_output=True,
         )
-
+        
         for key, fit in fits.items():
             log.info(key)
             log.info(fit.summary2())
@@ -137,9 +137,10 @@ def _regress_hull_inverse_dynamics(
     eq_f_Y_H = sp.Eq(f_Y_H, sp.solve(model.Y_eq, f_Y_H)[0])
     eq_f_N_H = sp.Eq(f_N_H, sp.solve(model.N_eq, f_N_H)[0])
 
-    log.info(sp.pprint(eq_f_X_H))
-    log.info(sp.pprint(eq_f_Y_H))
-    log.info(sp.pprint(eq_f_N_H))
+    if not full_output:
+        log.info(sp.pprint(eq_f_X_H))
+        log.info(sp.pprint(eq_f_Y_H))
+        log.info(sp.pprint(eq_f_N_H))
 
     data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
     if "Prop/SB/Rpm" in data and "Prop/PS/Rpm" in data:
@@ -240,7 +241,9 @@ def _regress_hull_inverse_dynamics(
     fits = {}
     for eq_to_matrix in [eq_to_matrix_X_H, eq_to_matrix_Y_H, eq_to_matrix_N_H]:
         key = eq_to_matrix.acceleration_equation.lhs.name
-        log.info(f"Regressing:{key}")
+        if not full_output:
+            log.info(f"Regressing:{key}")
+        
         X, y = eq_to_matrix.calculate_features_and_label(
             data=data_prime, y=data_prime[key]
         )
@@ -400,7 +403,9 @@ def _regress_inverse_dynamics(
     fits = {}
     for eq_to_matrix in [eq_to_matrix_X_D, eq_to_matrix_Y_D, eq_to_matrix_N_D]:
         key = eq_to_matrix.acceleration_equation.lhs.name
-        log.info(f"Regressing:{key}")
+        if not full_output:
+            log.info(f"Regressing:{key}")
+        
         try:
             X, y = eq_to_matrix.calculate_features_and_label(
                 data=data_prime,
@@ -411,9 +416,13 @@ def _regress_inverse_dynamics(
             raise ValueError(f"Failed on equation:{eq_to_matrix.acceleration_equation}")
             
         ols = sm.OLS(y, X)
-        fits[key] = ols_fit = ols.fit()
+        ols_fit = ols.fit()
+        ols_fit.X=X
+        ols_fit.y=y
+        fits[key] = ols_fit
         new_parameters.update(ols_fit.params)
-        log.info(ols_fit.summary().as_text())
+        if not full_output:
+            log.info(ols_fit.summary().as_text())
 
     model.parameters.update(new_parameters)
     model.parameters.update(exclude_parameters)

@@ -40,6 +40,7 @@ plt.rcParams["font.family"] = "serif"
 
 paper_path = r"/home/maa/dev/PHD/docs/System-identification-for-a-physically-correct-ship-manoeuvring-model-in-wind-conditions"
 
+equations={}
 
 def file_name_with_nb_ref(file_name: str) -> str:
     """It is good to keep a reference to the notebook that created a figure.
@@ -89,6 +90,8 @@ def scale_figure(fig, scale=1, scale_x=1, scale_y=1):
 
 
 def save_eq(eq: sp.Eq, file_name: str = None, subs={}, replace_latex={}):
+    equations[eq.lhs] = {'equation':eq,'file_name':file_name}
+        
     display(HTML(file_name_with_nb_ref(file_name=file_name)))
     eq_latex = to_latex(eq=eq, subs=subs)
 

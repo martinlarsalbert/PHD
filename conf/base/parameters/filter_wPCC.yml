@@ -16,7 +16,12 @@ wPCC:
             positions: 0.01
             psi: 0.25  # [deg]
     #filter_model_name: semiempirical_covered
-    filter_model_name: Abkowitz
+    filter_model_name1: Abkowitz
+    filter_model_name2: Abkowitz
+    filter_model_name3: Abkowitz
+    SNR1: 0.1
+    SNR2: 1
+    SNR3: 10
     skip:
     - 22862                                                                                                                                                                                              nodes.py:124
     - 22863

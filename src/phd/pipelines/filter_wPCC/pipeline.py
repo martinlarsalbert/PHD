@@ -20,79 +20,31 @@ from .nodes import (
 
 
 def create_pipeline(**kwargs) -> Pipeline:
-    return pipeline(
-        [
-            node(
-                func=create_kalman_filter,
-                inputs=["models_rudder_VCT"],
-                outputs="ekf",
-                name="create_kalman_filter_node",
-                tags=["ek", "filter"],
-            ),
+    
+    nodes = []
+    N = 3
+    for n in range(1,N+1):
+        nodes+=filter_pipeline(n=n, models="models_rudder_VCT", filter_model_name=f"params:filter_model_name{n}", SNR=f"params:SNR{n}")
+    
+    nodes+=[
+            
             node(
                 func=initial_state_many,
                 inputs=["tests","ekf1"],  # (data has the raw positions)
                 outputs="x0",
                 name="initial_state_node",
                 tags=["ek", "filter"],
-            ),
-            node(
-                func=filter_many,
-                inputs=[
-                    "tests",
-                    "ekf",                
-                    "x0",
-                    "params:skip",
-                ],
-                outputs="filtered_result",
-                name="filter_node",
-                tags=["ek", "filter"],
-            ),
-            
-            node(
-                func=results_to_dataframe,
-                inputs=[
-                    "filtered_result",
-                ],
-                outputs="tests_ek",
-                name="results_to_dataframe",
-                tags=["ek", "filter"],
-            ),
-            
-            node(
-                func=smoother,
-                inputs=[
-                    "ekf",
-                    "filtered_result",
-                ],
-                outputs="tests_ek_smooth",
-                name="smoother",
-                tags=["ek", "filter"],
-            ),
-            
-            
-            node(
-                func=join_tests,
-                inputs=["tests_ek", "params:skip"],
-                outputs="tests_ek_joined",
-                name="join_tests_ek",
-            ),
-            
-            node(
-                func=join_tests,
-                inputs=["tests_ek_smooth", "params:skip"],
-                outputs="tests_ek_smooth_joined",
-                name="join_tests_ek_smooth",
-            ),
+            ),     
         ]
-    )
+    
+    return pipeline(nodes)
 
-def filter_pipeline(n:int, models:str):
+def filter_pipeline(n:int, models:str, filter_model_name:str, SNR:str):
     
     return [
             node(
                 func=create_kalman_filter,
-                inputs=[models],
+                inputs=[models, filter_model_name, SNR],
                 outputs=f"ekf{n}",
                 name=f"create_kalman_filter_node{n}",
                 tags=["ek", "filter"],
@@ -127,8 +79,18 @@ def filter_pipeline(n:int, models:str):
                     f"ekf{n}",
                     f"filtered_result{n}",
                 ],
-                outputs=f"tests_ek_smooth{n}",
+                outputs=f"smoother_result{n}",
                 name=f"smoother{n}",
+                tags=["ek", "filter"],
+            ),
+            
+            node(
+                func=results_to_dataframe,
+                inputs=[
+                    f"smoother_result{n}",
+                ],
+                outputs=f"tests_ek_smooth{n}",
+                name=f"smoother_result_to_dataframe{n}",
                 tags=["ek", "filter"],
             ),
             

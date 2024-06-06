@@ -42,7 +42,7 @@ xs = {
     "Rudder angle CT": "delta_deg",
     "Drift angle": "beta_deg",
     "Circle": "r",
-    "Circle + rudder angle": "delta",
+    "Circle + rudder angle": "r*delta",
     "Circle + Drift": "v*r",
     "Rudder and drift angle": "beta*delta",
     "Heel + Drift": "phi",
@@ -180,6 +180,7 @@ def create_tab(
 
     df["v*r"] = df["v"] * df["r"]
     df["beta*delta"] = df["beta"] * df["delta"]
+    df["r*delta"] = df["r"] * df["delta"]
 
     df["beta_deg"] = np.rad2deg(df["beta"])
     df["delta_deg"] = np.rad2deg(df["delta"])

@@ -327,9 +327,9 @@
     type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
   filename_suffix: .pkl
 
-"{namespace}.models_ID_hull":
+"{namespace}.models_ID_hull1":
   type: PartitionedDataSet
-  path: data/06_models/{namespace}/models_ID_hull
+  path: data/06_models/{namespace}/models_ID_hull1
   dataset:
     type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
   filename_suffix: .pkl
@@ -341,9 +341,16 @@
     type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
   filename_suffix: .pkl
 
-"{namespace}.models_ID_hull_rudder":
+"{namespace}.models_ID_hull3":
   type: PartitionedDataSet
-  path: data/06_models/{namespace}/models_ID_hull_rudder
+  path: data/06_models/{namespace}/models_ID_hull3
+  dataset:
+    type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
+  filename_suffix: .pkl
+
+"{namespace}.models_ID_hull_rudder1":
+  type: PartitionedDataSet
+  path: data/06_models/{namespace}/models_ID_hull_rudder1
   dataset:
     type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
   filename_suffix: .pkl
@@ -351,6 +358,13 @@
 "{namespace}.models_ID_hull_rudder2":
   type: PartitionedDataSet
   path: data/06_models/{namespace}/models_ID_hull_rudder2
+  dataset:
+    type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
+  filename_suffix: .pkl
+
+"{namespace}.models_ID_hull_rudder3":
+  type: PartitionedDataSet
+  path: data/06_models/{namespace}/models_ID_hull_rudder3
   dataset:
     type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
   filename_suffix: .pkl

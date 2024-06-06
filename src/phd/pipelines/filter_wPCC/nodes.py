@@ -22,20 +22,21 @@ from vessel_manoeuvring_models.KF_multiple_sensors import FilterResult
 log = logging.getLogger(__name__)
 from pyfiglet import figlet_format
 
-def create_kalman_filter(models:dict)->ExtendedKalmanFilterVMMWith6Accelerometers:
+def create_kalman_filter(models:dict, model_name:str, SNR:float)->ExtendedKalmanFilterVMMWith6Accelerometers:
     
-    model = models['Abkowitz']()
+    model = models[model_name]()
     
+    bl_to_wl = model.ship_parameters['T']
     model.ship_parameters['point1'] = {
     'x_P': 1.625,
     'y_P': 0.025,
-    'z_P': -0.564,
+    'z_P': -0.564+bl_to_wl,
     }
 
     model.ship_parameters['point2'] = {
         'x_P': -1.9,
         'y_P': 0.43,
-        'z_P': -0.564,
+        'z_P': -0.564+bl_to_wl,
     }
     
     h2_ = sp.ImmutableDenseMatrix([x_0,y_0,psi,
@@ -48,17 +49,32 @@ def create_kalman_filter(models:dict)->ExtendedKalmanFilterVMMWith6Accelerometer
 
     B = np.array([[]])  # No inputs
 
-    var_x=np.sqrt(0.05)
-    var_y=10*np.sqrt(0.05)
-    var_psi=10*np.sqrt(np.deg2rad(0.5))
 
-    dt=1/100
-    Q2 = 2000*np.diag([0,0,0,0,0,0,var_x**2*dt, var_y**2*dt, var_psi**2*dt])
+    Q_sigma_x = 0.05
+    Q_sigma_y = Q_sigma_x
+    Q_sigma_psi = np.deg2rad(1)
 
-    diagonal_position = 100*np.array([var_x**2, var_y**2, var_psi**2])
-    diagonal_acceleration = 10000000*np.array([var_x**2*dt**2, var_y**2*dt**2, 1/100*var_psi**2*dt**2,])
-    diagonal = np.concatenate((diagonal_position,diagonal_acceleration))
-    R2 = np.diag(diagonal) 
+    Q_sigma_u = 0.05
+    Q_sigma_v = 0.01
+    Q_sigma_r = np.deg2rad(1)
+
+    g_=9.81
+    Q_sigma_u1d = g_/10
+    Q_sigma_v1d = Q_sigma_u1d
+    Q_sigma_r1d = np.deg2rad(1)
+
+    Q2_diagonal = [Q_sigma_x**2, Q_sigma_y**2, Q_sigma_psi**2,
+                  Q_sigma_u, Q_sigma_v, Q_sigma_r,
+                  Q_sigma_u1d, Q_sigma_v1d, Q_sigma_r1d,
+                  ]
+
+
+    Q2 = np.diag(Q2_diagonal)
+    
+    log.info(f"Signal noise ratio (SNR):{SNR}")
+    diagonal_ = np.array(Q2_diagonal)/SNR
+    diagonal = np.concatenate((diagonal_[0:3],diagonal_[6:9]))
+    R2 = np.diag(diagonal)
     
     ekf = ExtendedKalmanFilterVMMWith6Accelerometers(model=model, B=B, H=H2, Q=Q2, R=R2,
                          state_columns=['x0','y0','psi','u','v','r','u1d','v1d','r1d'], measurement_columns=['x0', 'y0', 'psi','u1d','v1d','r1d'], 
@@ -200,8 +216,9 @@ def smoother_lazy(
     def wrapper():
         results = loader()
         results_smoother =  ekf.smoother(results=results)
-        df_smoothened = results_smoother.df
-        return df_smoothened
+        #df_smoothened = results_smoother.df
+        #return df_smoothened
+        return results_smoother
 
     return wrapper
 

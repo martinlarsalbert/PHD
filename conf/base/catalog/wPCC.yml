@@ -48,9 +48,9 @@ wPCC.test_ek_smooth_meta_data:
 
 
 
-wPCC.tests_ek:
+wPCC.tests_ek1:
   type: PartitionedDataSet
-  path: data/03_primary/tests_preprocessed/wPCC/ek
+  path: data/03_primary/tests_preprocessed/wPCC/ek1
   dataset:
     type: pandas.CSVDataSet
     load_args:
@@ -70,9 +70,9 @@ wPCC.tests_ek2:
       index: True
   filename_suffix: .csv
 
-"{namespace}.tests_ek_smooth":
+wPCC.tests_ek3:
   type: PartitionedDataSet
-  path: data/03_primary/tests_preprocessed/{namespace}/ek_smooth
+  path: data/03_primary/tests_preprocessed/wPCC/ek3
   dataset:
     type: pandas.CSVDataSet
     load_args:
@@ -81,41 +81,96 @@ wPCC.tests_ek2:
       index: True
   filename_suffix: .csv
 
-wPCC.ek_filtered:
+"{namespace}.tests_ek_smooth1":
   type: PartitionedDataSet
-  path: data/03_primary/ek_filtered/wPCC
+  path: data/03_primary/tests_preprocessed/{namespace}/ek_smooth1
   dataset:
-    type: ek_dataset.ExtendedKalmanDataSet
-  filename_suffix: .pkl
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
 
-wPCC.ek_filtered2:
+"{namespace}.tests_ek_smooth2":
   type: PartitionedDataSet
-  path: data/03_primary/ek_filtered2/wPCC
+  path: data/03_primary/tests_preprocessed/{namespace}/ek_smooth2
   dataset:
-    type: ek_dataset.ExtendedKalmanDataSet
-  filename_suffix: .pkl
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
 
-wPCC.ek_smooth:
+"{namespace}.tests_ek_smooth3":
   type: PartitionedDataSet
-  path: data/03_primary/ek_smooth/wPCC
+  path: data/03_primary/tests_preprocessed/{namespace}/ek_smooth3
   dataset:
-    type: ek_dataset.ExtendedKalmanDataSet
-  filename_suffix: .pkl
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
 
-wPCC.ekf:
+wPCC.ekf1:
   type: EKF_dataset.ExtendedKalmanFilterDataSet
-  filepath: data/03_primary/ekf/wPCC.pkl
+  filepath: data/03_primary/ekf1/wPCC.pkl
 
-wPCC.filtered_result:
+wPCC.ekf2:
+  type: EKF_dataset.ExtendedKalmanFilterDataSet
+  filepath: data/03_primary/ekf2/wPCC.pkl
+
+wPCC.ekf3:
+  type: EKF_dataset.ExtendedKalmanFilterDataSet
+  filepath: data/03_primary/ekf3/wPCC.pkl
+
+wPCC.filtered_result1:
   type: PartitionedDataSet
-  path: data/04_feature/filtered_result/wPCC
+  path: data/04_feature/filtered_result1/wPCC
   dataset:
     type: filter_result_dataset.FilterResultDataSet
   filename_suffix: .pkl
 
-wPCC.tests_ek_smooth_joined:
+wPCC.filtered_result2:
+  type: PartitionedDataSet
+  path: data/04_feature/filtered_result2/wPCC
+  dataset:
+    type: filter_result_dataset.FilterResultDataSet
+  filename_suffix: .pkl
+
+wPCC.filtered_result3:
+  type: PartitionedDataSet
+  path: data/04_feature/filtered_result3/wPCC
+  dataset:
+    type: filter_result_dataset.FilterResultDataSet
+  filename_suffix: .pkl
+
+wPCC.smoother_result1:
+  type: PartitionedDataSet
+  path: data/04_feature/smoother_result1/wPCC
+  dataset:
+    type: filter_result_dataset.FilterResultDataSet
+  filename_suffix: .pkl
+
+wPCC.smoother_result2:
+  type: PartitionedDataSet
+  path: data/04_feature/filtered_result2/wPCC
+  dataset:
+    type: filter_result_dataset.FilterResultDataSet
+  filename_suffix: .pkl
+
+wPCC.smoother_result3:
+  type: PartitionedDataSet
+  path: data/04_feature/filtered_result3/wPCC
+  dataset:
+    type: filter_result_dataset.FilterResultDataSet
+  filename_suffix: .pkl
+
+wPCC.tests_ek_smooth_joined1:
   type: pandas.CSVDataSet
-  filepath: data/05_model_input/tests_ek_smooth_joined.csv
+  filepath: data/05_model_input/tests_ek_smooth_joined1.csv
   load_args:
     index_col: 0
     encoding: 'utf-8'
@@ -123,9 +178,29 @@ wPCC.tests_ek_smooth_joined:
     index: True
     encoding: 'utf-8'
 
-wPCC.tests_ek_joined:
+wPCC.tests_ek_smooth_joined2:
   type: pandas.CSVDataSet
-  filepath: data/05_model_input/tests_ek_joined.csv
+  filepath: data/05_model_input/tests_ek_smooth_joined2.csv
+  load_args:
+    index_col: 0
+    encoding: 'utf-8'
+  save_args:
+    index: True
+    encoding: 'utf-8'
+
+wPCC.tests_ek_smooth_joined3:
+  type: pandas.CSVDataSet
+  filepath: data/05_model_input/tests_ek_smooth_joined3.csv
+  load_args:
+    index_col: 0
+    encoding: 'utf-8'
+  save_args:
+    index: True
+    encoding: 'utf-8'
+
+wPCC.tests_ek_joined1:
+  type: pandas.CSVDataSet
+  filepath: data/05_model_input/tests_ek_joined1.csv
   load_args:
     index_col: 0
     encoding: 'utf-8'
@@ -143,6 +218,16 @@ wPCC.tests_ek_joined2:
     index: True
     encoding: 'utf-8'
 
+wPCC.tests_ek_joined3:
+  type: pandas.CSVDataSet
+  filepath: data/05_model_input/tests_ek_joined3.csv
+  load_args:
+    index_col: 0
+    encoding: 'utf-8'
+  save_args:
+    index: True
+    encoding: 'utf-8'
+
 wPCC.covariance_matrixes:
   type: PartitionedDataSet
   path: data/03_primary/covariance_matrixes/wPCC
@@ -153,6 +238,13 @@ wPCC.covariance_matrixes:
 wPCC.covariance_matrixes2:
   type: PartitionedDataSet
   path: data/03_primary/covariance_matrixes2/wPCC
+  dataset:
+    type: yaml.YAMLDataSet
+  filename_suffix: .yml
+
+wPCC.covariance_matrixes3:
+  type: PartitionedDataSet
+  path: data/03_primary/covariance_matrixes3/wPCC
   dataset:
     type: yaml.YAMLDataSet
   filename_suffix: .yml
