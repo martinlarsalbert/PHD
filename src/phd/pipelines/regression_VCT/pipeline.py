@@ -73,7 +73,7 @@ def create_pipeline(**kwargs) -> Pipeline:
             ),
             node(
                 func=adopting_to_MDL,
-                inputs=["models_VCT", "resistance_MDL", "tests_ek"],
+                inputs=["models_VCT", "resistance_MDL"],
                 outputs="models_VCT_MDL",
                 name="adopting_to_MDL",
                 tags=["generate_model", "regression_VCT", "adopting_to_MDL"],
@@ -85,11 +85,11 @@ def create_pipeline(**kwargs) -> Pipeline:
                 name="adopting_rudder_VCT_to_MDL",
                 tags=["generate_model", "regression_VCT", "adopting_to_MDL"],
             ),
-            node(
-                func=shape_optimization,
-                inputs=["models_VCT", "resistance_MDL", "tests_ek_smooth_joined"],
-                outputs="models_VCT_MDL_optimize",
-                name="shape_optimization",
-            ),
+            #node(
+            #    func=shape_optimization,
+            #    inputs=["models_VCT", "resistance_MDL", "tests_ek_smooth_joined"],
+            #    outputs="models_VCT_MDL_optimize",
+            #    name="shape_optimization",
+            #),
         ]
     )

@@ -38,7 +38,9 @@ plt.rcParams["grid.linewidth"] = 0.1
 # plt.rcParams["text.usetex"] = True
 plt.rcParams["font.family"] = "serif"
 
-paper_path = r"/home/maa/dev/PHD/docs/System-identification-for-a-physically-correct-ship-manoeuvring-model-in-wind-conditions"
+paper_name = 'System-identification-for-a-physically-correct-ship-manoeuvring-model-in-wind-conditions'
+paper_path = os.path.join(os.path.split(os.path.dirname(__file__))[0], paper_name)
+print(f"Saving to paper:{paper_path}")
 
 equations={}
 

@@ -60,17 +60,17 @@ def load_VCT(df_VCT_all_raw: dict) -> dict:
     # )
     #
     ### Additional:
-    df_VCT_MDL_additional = df_VCT_all_raw["V2_3_R2_MDL_additional.df_VCT"]()
-    df_VCT_MDL_additional["fx_rudders"] = (
-        df_VCT_MDL_additional["fx_rudder_port"] + df_VCT_MDL_additional["fx_rudder_stb"]
-    )
-    df_VCT_MDL_additional["fy_rudders"] = (
-        df_VCT_MDL_additional["fy_rudder_port"] + df_VCT_MDL_additional["fy_rudder_stb"]
-    )
-    df_VCT_MDL_additional["mz_rudders"] = (
-        df_VCT_MDL_additional["mz_rudder_port"] + df_VCT_MDL_additional["mz_rudder_stb"]
-    )
-    df_VCT_all_raw["V2_3_R2_MDL_additional.df_VCT"] = df_VCT_MDL_additional
+    #df_VCT_MDL_additional = df_VCT_all_raw["V2_3_R2_MDL_additional.df_VCT"]()
+    #df_VCT_MDL_additional["fx_rudders"] = (
+    #    df_VCT_MDL_additional["fx_rudder_port"] + df_VCT_MDL_additional["fx_rudder_stb"]
+    #)
+    #df_VCT_MDL_additional["fy_rudders"] = (
+    #    df_VCT_MDL_additional["fy_rudder_port"] + df_VCT_MDL_additional["fy_rudder_stb"]
+    #)
+    #df_VCT_MDL_additional["mz_rudders"] = (
+    #    df_VCT_MDL_additional["mz_rudder_port"] + df_VCT_MDL_additional["mz_rudder_stb"]
+    #)
+    #df_VCT_all_raw["V2_3_R2_MDL_additional.df_VCT"] = df_VCT_MDL_additional
 
     ## M5139-02-A_MS:
     df_VCT_MDL_M5139 = df_VCT_all_raw["M5139-02-A_MS.df_VCT"]()
@@ -86,17 +86,17 @@ def load_VCT(df_VCT_all_raw: dict) -> dict:
     # df_mirror = mirror_x_z(df_VCT_MDL_M5139.copy())
     df_VCT_all_raw["M5139-02-A_MS.df_VCT"] = df_VCT_MDL_M5139
 
-    df = df_VCT_all_raw["M5139-02-A_straightening_MS.df_VCT"]()  # (model scale)
-    df.rename(columns=renames, inplace=True)
-    df_VCT_all_raw["M5139-02-A_straightening_MS.df_VCT"] = df
-
-    df = df_VCT_all_raw["M5139-02-A_straightening.df_VCT"]()  # (full scale)
-    df.rename(columns=renames, inplace=True)
-    df_VCT_all_raw["M5139-02-A_straightening.df_VCT"] = df
-
-    df = df_VCT_all_raw["V2_3_R2_power.df_VCT"]()  # (full scale)
-    df.rename(columns=renames, inplace=True)
-    df_VCT_all_raw["V2_3_R2_power.df_VCT"] = df
+    #df = df_VCT_all_raw["M5139-02-A_straightening_MS.df_VCT"]()  # (model scale)
+    #df.rename(columns=renames, inplace=True)
+    #df_VCT_all_raw["M5139-02-A_straightening_MS.df_VCT"] = df
+#
+    #df = df_VCT_all_raw["M5139-02-A_straightening.df_VCT"]()  # (full scale)
+    #df.rename(columns=renames, inplace=True)
+    #df_VCT_all_raw["M5139-02-A_straightening.df_VCT"] = df
+#
+    #df = df_VCT_all_raw["V2_3_R2_power.df_VCT"]()  # (full scale)
+    #df.rename(columns=renames, inplace=True)
+    #df_VCT_all_raw["V2_3_R2_power.df_VCT"] = df
 
     for key, df in df_VCT_all_raw.items():
         if not isinstance(df, pd.DataFrame):
@@ -670,11 +670,8 @@ def regress_VCT(
 
 
 def adopting_to_MDL(
-    models_VCT: dict, resistance_MDL: pd.DataFrame, tests_ek: dict
-) -> dict:
+    models_VCT: dict, resistance_MDL: pd.DataFrame) -> dict:
     log.info(figlet_format("Adopting to MDL", font="starwars"))
-
-    data_MDL_many = gather_data(tests_ek=tests_ek)
 
     models = {}
     for name, loader in models_VCT.items():

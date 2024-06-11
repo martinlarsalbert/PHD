@@ -4,6 +4,7 @@ channels:
   - defaults
 dependencies:
   - python==3.10
+  - pip
   - kedro==0.18.14
   - pandas
   - matplotlib
@@ -14,9 +15,10 @@ dependencies:
   - dill
   - plotly_express
   - jupyterlab
-  - geopandas
+#  - geopandas
   - arviz
   - seaborn
   - pip:
-    - vessel-manoeuvring-models==0.0.18
+    - vessel-manoeuvring-models==0.0.22
     - pyfiglet
+    - ipynbname
