@@ -1,0 +1,12 @@
+{
+    "description": "Complete analysis and paper generation for: System identification of a physics-informed ship model for better predictions in wind conditions",
+    "license": "MIT",
+    "title": "Code for paper System identification of a physics-informed ship model for better predictions in wind conditions",
+    "upload_type": "software",
+    "creators": [
+        {
+            "name": "Martin Alexandersson"
+        }
+    ],
+    "access_right": "open"
+}

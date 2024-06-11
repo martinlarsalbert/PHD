@@ -160,3 +160,4 @@ venv.bak/
 **/_build/*
 src/phd/Making-Cool-Maps-In-Python/templates/the_map.html
 docs/paper/equations/mathematical_model_kinetics.AR_g_semiempirical
+/.conda
