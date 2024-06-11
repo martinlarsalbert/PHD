@@ -1,3 +1,4 @@
+[![DOI](https://zenodo.org/badge/598519858.svg)](https://zenodo.org/doi/10.5281/zenodo.11577427)
 # System identification of a physics-informed ship model for better predictions in wind conditions
 This repository contains research and experiments for the paper: *System identification of a physics-informed ship model for better predictions in wind conditions*.
 The LaTeX for the actual paper is stored [here](https://github.com/martinlarsalbert/System-identification-for-a-physically-correct-ship-manoeuvring-model-in-wind-conditions_martin).
