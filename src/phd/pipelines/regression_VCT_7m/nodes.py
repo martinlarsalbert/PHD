@@ -177,6 +177,7 @@ def prime(df_VCT: pd.DataFrame, models: dict= None, model=None, fullscale=True) 
            df_VCT_u0, U=df_VCT_u0["U"], only_with_defined_units=True
     )
     
+    df_VCT_prime['speed_kts'] = df_VCT['V']*3.6/1.852
     
     return df_VCT_prime
 
