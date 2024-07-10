@@ -19,7 +19,7 @@ def update_model(model, x, parameters):
     return changes
 
 
-def calculate(model: ModularVesselSimulator, data: pd.DataFrame, x, parameters: list):
+def calculate(model: ModularVesselSimulator, data: pd.DataFrame, x, parameters: list, precalculate_subsystems:list):
     control = data[model.control_keys]
     states = data[["x0", "y0", "psi", "u", "v", "r"]]
 
@@ -27,15 +27,23 @@ def calculate(model: ModularVesselSimulator, data: pd.DataFrame, x, parameters: 
 
     ## Calculate only rudder forces:
     calculation = {}
-    calculation = model.subsystems["rudder_port"].calculate_forces(
-        states_dict=states, control=control, calculation=calculation
-    )
-    calculation = model.subsystems["rudder_stbd"].calculate_forces(
-        states_dict=states, control=control, calculation=calculation
-    )
+    #calculation = model.subsystems["rudder_port"].calculate_forces(
+    #    states_dict=states, control=control, calculation=calculation
+    #)
+    #calculation = model.subsystems["rudder_stbd"].calculate_forces(
+    #    states_dict=states, control=control, calculation=calculation
+    #)
+    #calculation = model.subsystems["rudders"].calculate_forces(
+    #    states_dict=states, control=control, calculation=calculation
+    #)
+    for precalculate_subsystem in precalculate_subsystems:
+        calculation = model.subsystems[precalculate_subsystem].calculate_forces(
+            states_dict=states, control=control, calculation=calculation)
+    
     calculation = model.subsystems["rudders"].calculate_forces(
         states_dict=states, control=control, calculation=calculation
     )
+        
     df_force_predicted = pd.DataFrame(calculation)
     # df_force_predicted = pd.DataFrame(
     #    model.calculate_forces(states_dict=states, control=control)
@@ -51,8 +59,9 @@ def predict_residual(
     data: pd.DataFrame,
     parameters: list,
     residual_keys=["N_R", "Y_R"],
+    precalculate_subsystems=[],
 ):
-    df_force_predicted = calculate(model=model, data=data, x=x, parameters=parameters)
+    df_force_predicted = calculate(model=model, data=data, x=x, parameters=parameters, precalculate_subsystems=precalculate_subsystems)
 
     # 1)
 
@@ -72,7 +81,7 @@ def fit(
     parameters: list,
     residual_keys=["N_R", "Y_R"],
 ):
-    model = model.copy()
+    #model = model.copy()
 
     if not "rev" in data:
         data["rev"] = data[["Prop/SB/Rpm", "Prop/PS/Rpm"]].mean(axis=1)
@@ -85,11 +94,16 @@ def fit(
 
     # df_force = model.forces_from_motions(data=data)
 
+    #To slice the calculation up till the rudders system:
+    precalculate_subsystems=model.find_providing_subsystems_recursive(model.subsystems['rudders'])
+    precalculate_subsystems = list(np.flipud(precalculate_subsystems))  # calculation order...
+    
     kwargs = {
         "model": model,
         "data": data,
         "parameters": parameters,
         "residual_keys": residual_keys,
+        "precalculate_subsystems":precalculate_subsystems,
     }
 
     x0 = [

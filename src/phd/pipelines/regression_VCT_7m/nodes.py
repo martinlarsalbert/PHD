@@ -279,16 +279,29 @@ def _regress_hull_VCT(
     calculation = {}
     control = df_VCT[model.control_keys]
     states = df_VCT[model.states_str]
-    calculation = model.subsystems["rudder_port"].calculate_forces(
-        states_dict=states, control=control, calculation=calculation
-    )
-    calculation = model.subsystems["rudder_stbd"].calculate_forces(
-        states_dict=states, control=control, calculation=calculation
-    )
-    calculation = model.subsystems["rudders"].calculate_forces(
-        states_dict=states, control=control, calculation=calculation
-    )
+    
+    #To slice the calculation up till the rudders system:
+    precalculate_subsystems=model.find_providing_subsystems_recursive(model.subsystems['rudders'])
+    precalculate_subsystems = list(np.flipud(precalculate_subsystems))  # calculation order...
+    precalculate_subsystems.append('rudders')
+    
+    for precalculate_subsystem in precalculate_subsystems:
+        calculation = model.subsystems[precalculate_subsystem].calculate_forces(
+            states_dict=states, control=control, calculation=calculation)
+    
+    #calculation = model.subsystems["rudder_port"].calculate_forces(
+    #    states_dict=states, control=control, calculation=calculation
+    #)
+    #calculation = model.subsystems["rudder_stbd"].calculate_forces(
+    #    states_dict=states, control=control, calculation=calculation
+    #)
+    #calculation = model.subsystems["rudders"].calculate_forces(
+    #    states_dict=states, control=control, calculation=calculation
+    #)
+    
     df_force_predicted = pd.DataFrame(calculation)
+    
+    
     df_VCT["Y_H"] -= model.parameters["a_H"] * df_force_predicted["Y_R"]
     df_VCT["N_H"] -= model.parameters["x_H"] * df_force_predicted["N_R"]
     # df_VCT["Y_H"] -= model.parameters["a_H"] * df_VCT["Y_R"]

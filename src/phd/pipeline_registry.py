@@ -68,7 +68,7 @@ def register_pipelines() -> Dict[str, Pipeline]:
     pipelines["load_7m"] = load_7m.create_pipeline()
 
     # pipelines["models_7m"] = pipeline(models_7m.create_pipeline())  # (Scaling MDL model to 7m scale)
-    pipelines["models_7m"] = pipeline(models.create_pipeline(), namespace="7m")
+    pipelines["models_7m"] = pipeline(models_7m.create_pipeline(), namespace="7m")
 
     pipelines["filter_7m"] = pipeline(filter.create_pipeline(), namespace="7m")
     pipelines["regression_VCT_7m"] = pipeline(
