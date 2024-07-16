@@ -17,7 +17,7 @@ def create_pipeline(**kwargs) -> Pipeline:
     nodes = [
         node(
             func=base_models,
-            inputs=["ship_data", "params:parameters", "wind_data"],
+            inputs=["ship_data", "params:parameters", "wind_data", "open_water_characteristics"],
             outputs="base_models",
             name="base_models",
             tags=["generate_model"]

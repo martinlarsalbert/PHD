@@ -22,6 +22,9 @@ from phd.pipelines.models import optimize_l_R_shape
 from sklearn.metrics import r2_score
 from vessel_manoeuvring_models.parameters import df_parameters
 import phd.pipelines.regression_VCT.optimize
+from vessel_manoeuvring_models.sympy_helpers import eq_move_to_LHS, eq_remove
+from vessel_manoeuvring_models.substitute_dynamic_symbols import get_function_subs
+from sympy import Eq,symbols
 
 p = df_parameters["symbol"]
 
@@ -198,9 +201,10 @@ def scale(df_VCT: pd.DataFrame, ship_data: dict) -> pd.DataFrame:
     )
 
     return df_VCT_scaled
+    
 
 def regress_hull_VCT(
-    base_models: dict,
+    models: dict,
     df_VCT: pd.DataFrame,
     exclude_parameters: dict = {},
 ):
@@ -216,12 +220,12 @@ def regress_hull_VCT(
 
     models = {}
 
-    for name, loader in base_models.items():
-        base_model = loader()
+    for name, loader in models.items():
+        model = loader()
 
         log.info(f"regressing VCT hull forces for:{name}")
         model, fits = _regress_hull_VCT(
-            model=base_model,
+            model=model,
             df_VCT=df_VCT,
             full_output=True,
             exclude_parameters=exclude_parameters,
@@ -409,4 +413,135 @@ def manual_regression(model: ModularVesselSimulator) -> ModularVesselSimulator:
     model.parameters['s'] = -10
     model.ship_parameters['w_f']=0.297
 
+    return model
+
+def scale_resistance(ship_data:dict, df_resistance_TT:pd.DataFrame)->pd.DataFrame:
+    alpha_TT = 25
+    df_resistance_TT['U'] = df_resistance_TT['VS [kn]']*1.852/3.6/np.sqrt(alpha_TT)
+    df_resistance_TT['X_D'] = -df_resistance_TT['RTm [N]']
+    df_resistance_TT['u'] = df_resistance_TT['U']
+    
+    ## Scale to 7m
+    L = ship_data['L']
+    scale_factor = ship_data['scale_factor']
+    prime_system = PrimeSystem(L, rho=1000)
+        
+    L_TT = L*scale_factor/alpha_TT
+    prime_system_TT = PrimeSystem(L_TT, rho=1000)
+    
+    df_resistance_prime = prime_system_TT.prime(df_resistance_TT, U=df_resistance_TT['U'], only_with_defined_units=True)
+    df_resistance_SI = prime_system.unprime(df_resistance_prime, U=df_resistance_TT['U']*np.sqrt(alpha_TT)/np.sqrt(scale_factor), only_with_defined_units=True)
+    
+    return df_resistance_SI
+
+def wave_generation_correction(models:dict, df_resistance_SI:pd.DataFrame, exclude_parameters={})-> dict:
+    
+    corrected_models = {}
+    
+    log.info("From the TT captive tests and the MOTIONS calculations it has been concluded that the VCT underpredicts the forces in the drift angles. This methods applied a correction on the hydrodynamic derivatives.")
+    
+    for name, loader in models.items():
+        model = loader()
+        
+        model = _wave_generation_correction(model=model, df_resistance_SI=df_resistance_SI, exclude_parameters=exclude_parameters)
+        
+        corrected_models[name] = model
+        
+    return corrected_models
+
+def _wave_generation_correction(model:ModularVesselSimulator, df_resistance_SI:pd.DataFrame, exclude_parameters={})-> ModularVesselSimulator:
+    """From the TT captive tests and the MOTIONS calculations it has been concluded that the VCT underpredicts the forces in the drift angles.
+    This methods applied a correction on the hydrodynamic derivatives.    
+
+    Args:
+        model (ModularVesselSimulator): _description_
+
+    Returns:
+        ModularVesselSimulator: _description_
+    """
+    
+    factor = 1.30
+    model.parameters['Yv']*=factor
+    model.parameters['Yvvv']*=factor
+    
+    factor = 1.05
+    model.parameters['Nv']*=factor
+    model.parameters['Nvvv']*=factor
+    
+    ## Adding the wave resistance from the TT test...
+    model = _TT_resistance(model=model, df_resistance_SI=df_resistance_SI, exclude_parameters=exclude_parameters)
+    
+    return model
+    
+
+def _TT_resistance(model:ModularVesselSimulator, df_resistance_SI:pd.DataFrame, exclude_parameters={})->ModularVesselSimulator:
+    
+    model_no_prop = model.copy()  # Model without propeller...
+    ## Remove the propeller:
+    model_no_prop.subsystems.pop('propeller_port')
+    model_no_prop.subsystems.pop('propeller_stbd')
+    model_no_prop.subsystems.pop('propellers')
+    model_no_prop.control_keys+=['thrust_port','thrust_stbd']
+
+    df_resistance_SI[model_no_prop.states_str] = 0
+    df_resistance_SI[model_no_prop.control_keys] = 0  # thrust_port/stbd = 0 --> V=(1-w)*u
+    df_resistance_SI['u'] = df_resistance_SI['U']
+
+
+    ## Define the regression:
+    X_D_eq = model_no_prop.X_D_eq.subs(get_function_subs(model_no_prop.X_D_eq))
+    
+    X_P, X_RHI, X_W = symbols("X_P, X_RHI, X_W")
+    eq_precalulate_X = eq_remove(eq_move_to_LHS(eq=X_D_eq, symbol=X_R), [X_P,X_RHI,X_W])
+    log.info(f"Regression: {eq_precalulate_X}")
+    
+    precalculated_subsystems=model_no_prop.find_precalculated_subsystems(eq=eq_precalulate_X)
+    
+    log.info(f"precalculating: {precalculated_subsystems}")
+    df_calculation = model_no_prop.precalculate_subsystems(data=df_resistance_SI, precalculated_subsystems=precalculated_subsystems)
+    
+    data_with_precalculation = pd.concat((df_resistance_SI,df_calculation), axis=1)
+    
+    eq_regression_RHS = model_no_prop.expand_subsystemequations(eq_precalulate_X.rhs)
+    eq_regression_RHS = eq_regression_RHS.subs([
+        (v,0),
+        (r,0),
+    ]
+    )
+    
+    eq_regression_LHS = eq_precalulate_X.lhs
+    eq_regression = Eq(eq_regression_LHS, eq_regression_RHS)
+
+    dof = 'X'
+    label = symbols(f"{dof}_label")
+    eq_regression_subs = Eq(label,eq_regression.rhs)
+
+    label_name = str(eq_regression_subs.lhs)
+    data_with_precalculation[label_name] = run(lambdify(eq_regression.lhs), data_with_precalculation)
+    
+    
+    eq_to_matrix = DiffEqToMatrix(
+        eq_regression_subs,
+        label=label,
+        base_features=[
+            u,
+        ],
+        exclude_parameters=exclude_parameters,
+    )
+    
+    label_name = str(eq_to_matrix.label)
+    
+    units = {label_name:"force",}
+    data_with_precalculation_prime = model.prime(data_with_precalculation, units=units)
+    
+    ols_fit = eq_to_matrix.fit(data=data_with_precalculation_prime,
+                y=data_with_precalculation_prime[label_name],
+                parameters=model.ship_parameters,
+                simplify_names=True,                
+                )
+    
+    log.info(ols_fit.summary2())
+    
+    model.parameters.update(ols_fit.params)
+    
     return model

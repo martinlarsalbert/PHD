@@ -5,10 +5,21 @@ from vessel_manoeuvring_models.substitute_dynamic_symbols import get_function_su
 import numpy as np
 from matplotlib.ticker import StrMethodFormatter
 
-def predict(model: ModularVesselSimulator, data: pd.DataFrame) -> pd.DataFrame:
+def predict(model: ModularVesselSimulator, data: pd.DataFrame, main_equation_excludes=[]) -> pd.DataFrame:
+    """
+
+    Args:
+        model (ModularVesselSimulator): _description_
+        data (pd.DataFrame): _description_
+        main_equation_excludes (list, optional): [''X_W', 'Y_W', 'N_W'] will exclude the wind system from the main equation . Defaults to [].
+
+    Returns:
+        pd.DataFrame: _description_
+    """
+    
     df_force_predicted = pd.DataFrame(
         model.calculate_forces(
-            data[model.states_str], control=data[model.control_keys]
+            data[model.states_str], control=data[model.control_keys], main_equation_excludes=main_equation_excludes,
         ),
         index=data.index,
     )
@@ -147,7 +158,7 @@ def plot_force_components(model, data, window=None):
     return fig
 
 
-def get_delta_corners(data, limit_factor=0.99):
+def get_delta_corners(data, limit_factor=0.95):
     mask = (
         (data["delta"] > limit_factor * data["delta"].max())
         | (data["delta"] < limit_factor * data["delta"].min())
@@ -157,9 +168,17 @@ def get_delta_corners(data, limit_factor=0.99):
     starts = data.loc[mask_start]
 
     mask_end = ~mask[1:] & mask[0:-1]
-    mask_end = np.concatenate(([False], mask_end))
+    mask_end = np.concatenate((mask_end,[False]))
+
     ends = data.loc[mask_end]
-    corners = pd.concat((starts, ends), axis=0).sort_index()
+    
+    delta0 = data.iloc[0]['delta']
+    start_time = ((data.loc[-1:starts.index[0]]['delta'] - delta0).abs() > (1-limit_factor) * data["delta"].max()).idxmax()
+    i = data.index.get_loc(start_time)
+    start_time=data.index[i-1]
+    start = data.loc[[start_time]]
+    
+    corners = pd.concat((start, starts, ends), axis=0).sort_index()
     return starts, ends, corners
 
 
@@ -176,7 +195,8 @@ def plot_compare_model_forces(
                 "lw": 1.0,
                 "label": "Experiment",
             },
-    }
+    },
+    delta_corners=True,
 ):
        
     
@@ -195,14 +215,18 @@ def plot_compare_model_forces(
     
     ax = axes[0]
 
-    starts, ends, corners = get_delta_corners(data=data)
+    
 
     style='--'
     data.plot(y="beta", style=style,color="red", label=r'$\beta$', ax=ax)
     data.plot(y="delta",  style=style,color="g", label=r'$\delta$', ax=ax)
     ax.set_xlim(data.index[0], data.index[-1])
     ax.legend(loc="upper left")
-    ax.set_xticks(corners.index)
+    
+    if delta_corners:
+        starts, ends, corners = get_delta_corners(data=data)
+        ax.set_xticks(corners.index)
+    
     ax.set_xticklabels([])
     ax.set_yticklabels([])
     # ax.grid(False)
@@ -231,7 +255,10 @@ def plot_compare_model_forces(
         ax.get_legend().set_visible(False)
         ax.get_legend().set_visible(False)
         ax.set_xlim(data.index[0], data.index[-1])
-        ax.set_xticks(corners.index)
+        
+        if delta_corners:
+            ax.set_xticks(corners.index)
+    
         ax.set_xticklabels([])
 
     axes[1].legend()

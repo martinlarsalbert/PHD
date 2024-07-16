@@ -51,11 +51,12 @@ def load(captive: pd.DataFrame, ship_data: dict) -> pd.DataFrame:
         & (captive["beta"].abs() >= 0)
         & (captive["phi"] == 0)
         & (captive["V"] > 0.5)
+        & (captive['r'] == 0)
         & pd.notnull((captive["V"]))
     )
     captive.loc[mask, "test type"] = "Drift angle"
 
-    captive.drop(index="40199079006k_06", inplace=True)
+    #captive.drop(index="40199079006k_06", inplace=True)
 
     return captive
 

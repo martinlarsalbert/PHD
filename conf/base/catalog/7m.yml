@@ -134,17 +134,17 @@ HMD_PCTC.wind_data:
     index: True
     encoding: 'utf-8'
 
-7m.resistance:
-  type: pandas.CSVDataSet
-  filepath: data/01_raw/7m/resistance.csv
-  load_args:
-    index_col: 0
-    encoding: 'utf-8'
-    dtype:
-      id: int
-  save_args:
-    index: True
-    encoding: 'utf-8'
+#7m.resistance:
+#  type: pandas.CSVDataSet
+#  filepath: data/01_raw/7m/resistance.csv
+#  load_args:
+#    index_col: 0
+#    encoding: 'utf-8'
+#    dtype:
+#      id: int
+#  save_args:
+#    index: True
+#    encoding: 'utf-8'
 
 7m.df_CMT_prime_corrected:
   type: pandas.CSVDataSet
@@ -153,3 +153,7 @@ HMD_PCTC.wind_data:
     index_col: 0
   save_args:
     index: True
+
+7m.TT_resistance:
+  type: pandas.CSVDataSet
+  filepath: data/01_raw/7m/TT_resistance.csv

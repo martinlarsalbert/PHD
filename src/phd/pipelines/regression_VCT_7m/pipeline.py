@@ -13,6 +13,8 @@ from .nodes import (
     #limit_states_for_regression,
     regress_hull_VCT,
     #regress_hull_rudder_VCT,
+    wave_generation_correction,
+    scale_resistance,
 )
 
 
@@ -49,7 +51,7 @@ def create_pipeline(**kwargs) -> Pipeline:
             ),
             node(
                 func=prime,
-                inputs=["df_VCT","models_VCT"],
+                inputs=["df_VCT","base_models"],
                 outputs="df_VCT_prime",
                 name="prime_VCT_node",
                 tags=['load_VCT','regression_VCT'],
@@ -68,8 +70,23 @@ def create_pipeline(**kwargs) -> Pipeline:
                 inputs=["base_models", "df_VCT_scaled","params:VCT_exclude_parameters"],
                 outputs="models_VCT",
                 name="regress_hull_VCT",
+                tags=["generate_model", "regression_VCT", "regression"]
+            ),
+            node(
+                func=scale_resistance,
+                inputs=["ship_data", "TT_resistance"],
+                outputs="resistance",
+                name="scale_resistance",
                 tags=["generate_model", "regression_VCT"]
             ),
+            node(
+                func=wave_generation_correction,
+                inputs=["models_VCT", "resistance","params:VCT_exclude_parameters"],
+                outputs="models_VCT_wave_generation",
+                name="wave_generation_correction",
+                tags=["generate_model", "regression_VCT", "regression"]
+            ),
+            
             
         ]
     )

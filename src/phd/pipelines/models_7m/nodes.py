@@ -47,7 +47,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def base_models(ship_data: dict, parameters: dict, wind_data:pd.DataFrame) -> dict:
+def base_models(ship_data: dict, parameters: dict, wind_data:pd.DataFrame, open_water_characteristics:pd.DataFrame) -> dict:
     models = {}
 
     name = "semiempirical_covered"
@@ -56,6 +56,8 @@ def base_models(ship_data: dict, parameters: dict, wind_data:pd.DataFrame) -> di
     
     log.info("Regressing wind tunnel data")
     model.regress_wind_tunnel_test(wind_data=wind_data)
+    
+    model.regress_open_water_characteristics(open_water_characteristics=open_water_characteristics)
     
     if "rudder_port" in model.subsystems:
         delattr(

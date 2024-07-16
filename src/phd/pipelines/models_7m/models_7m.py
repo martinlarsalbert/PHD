@@ -37,7 +37,7 @@ from vessel_manoeuvring_models.models.semiempirical_covered_system import (
 from vessel_manoeuvring_models.models.MMG_wake_system import MMGWakeSystem
 from vessel_manoeuvring_models.models.abkowitz_rudder_system import AbkowitzRudderSystem
 from vessel_manoeuvring_models.models.simple_rudder_system import SimpleRudderSystem
-from .subsystems import add_wind_force_system as add_wind
+from .subsystems import add_wind_force_system_simple as add_wind
 from vessel_manoeuvring_models.prime_system import PrimeSystem
 from vessel_manoeuvring_models.models.diff_eq_to_matrix import DiffEqToMatrix
 import statsmodels.api as sm
@@ -489,6 +489,20 @@ class ModelSemiempiricalCovered(ModelTowedSemiempiricalCovered):
         params_wind = {key: value / 2 for key, value in params_wind.items()}  # Note 1/2
         self.parameters.update(params_wind)
 
+    def regress_open_water_characteristics(self, open_water_characteristics:pd.DataFrame):
+        
+        log.info("Regressing the open water characteristics")
+        
+        from vessel_manoeuvring_models.models.propeller import eq_K_T
+        
+        open_water_characteristics['J'] = open_water_characteristics.index
+        
+        to_matrix = DiffEqToMatrix(eq_K_T,label=K_T, base_features=[J],)
+        ols_fit = to_matrix.fit(data=open_water_characteristics, y=open_water_characteristics['Kt'], simplify_names=False)
+        log.info(ols_fit.summary2())
+        self.parameters.update(ols_fit.params)
+        
+        
         
 
 class ModelWithPropellerRace(ModelTowed):
