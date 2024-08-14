@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from vessel_manoeuvring_models.substitute_dynamic_symbols import get_function_subs
 import numpy as np
 from matplotlib.ticker import StrMethodFormatter
+from vessel_manoeuvring_models.angles import smallest_signed_angle
 
 def predict(model: ModularVesselSimulator, data: pd.DataFrame, main_equation_excludes=[]) -> pd.DataFrame:
     """
@@ -347,3 +348,31 @@ def same_ylims(axes):
     new_ylims = (np.min(ylims[:,0]),np.max(ylims[:,1]),)
     for ax in axes:
         ax.set_ylim(new_ylims)
+        
+def preprocess(data):
+
+    # Cut from the start:
+    starts, ends, corners = get_delta_corners(data)
+    data = data.loc[corners.index[0]:].copy()
+    data.index-=data.index[0]
+    data.index.name='time'
+    
+    delta0 = (data['delta'].max() + data['delta'].min())/2
+    #data['delta']-=delta0
+    data['-delta_deg'] = -np.rad2deg(data['delta'])
+    
+    psi0 = data.iloc[0]['psi'].copy()
+    data['psi']-=psi0
+    data['twa']-=psi0
+    data['awa']=smallest_signed_angle(data['awa'])
+    
+    data['x0']-=data['x0'].iloc[0]
+    data['y0']-=data['y0'].iloc[0]
+    x0 = data['x0'].copy()
+    y0 = data['y0'].copy()
+    data['x0'] = x0*np.cos(psi0) + y0*np.sin(psi0)
+    data['y0'] = -x0*np.sin(psi0) + y0*np.cos(psi0)
+    
+    data['psi_deg'] = np.rad2deg(smallest_signed_angle(data['psi']))
+
+    return data
