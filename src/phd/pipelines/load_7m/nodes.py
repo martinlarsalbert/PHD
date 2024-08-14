@@ -220,10 +220,31 @@ def _load(
         (data['r1d'].abs() < 0.35)  
         )
     
-    removes = data.loc[~mask].copy()
+    removes_acceleration = data.loc[~mask].copy()
     data = data.loc[mask].copy()
-    remove_percentage = int(np.round(100*(len(removes)/len(mask))))
-    log.warning(f"{remove_percentage}% of the data was removed with excessive acceleration spikes removal")
+    
+    ## Duplicated psi
+    #  I found that the heading $\psi$ is sometimes duplicated. 
+    #  Perhaps this has been added to fill missing data? However, this messes up the yaw rate, so it is better to remove these samples. 
+    #  But which one of the two neighbouring points with the same $\psi$ should be removed? 
+    #  I created an algorithm which choses the point for removal that will then result in the smoothest line.reset
+    mask = np.concatenate((data.iloc[0:-1]['psi'].values == data.iloc[1:]['psi'].values,[False]))
+    data_duplicated_psi = data.loc[mask].copy()
+    removes_psi_index = []
+    for _,duplicated_ in data_duplicated_psi.iterrows():
+        i = decide_removal(duplicated_, data=data)
+        removes_psi_index.append(data.iloc[i].name)    
+    removes_psi=data.loc[removes_psi_index].copy()
+    data = data.drop(index=removes_psi_index)    
+    
+    removes = pd.concat((removes_acceleration,removes_psi), axis=0).sort_index()
+    
+    remove_percentage_acceleration = int(np.round(100*(len(removes_acceleration)/len(data))))
+    log.warning(f"{remove_percentage_acceleration}% of the data was removed with excessive acceleration spikes removal")
+    
+    remove_percentage_psi = np.round(100*(len(removes_psi)/len(data)), decimals=2)
+    log.warning(f"{remove_percentage_psi}% of the data was removed because of duplicated psi")
+    
     
     ## Recover mission strings from removed samples and put it on the nearest remaining sample:
     mask = pd.notnull(removes['mission'])
@@ -235,8 +256,24 @@ def _load(
         else:
             data.loc[new_index,'mission'] += f",{row['mission']}"
 
+
+    
     return data, units
 
+def decide_removal(duplicated, data:pd.DataFrame):
+    
+    def slope(i1,i2):
+        return (data.iloc[i2]['psi']-data.iloc[i1]['psi'])/(data.iloc[i2].name-data.iloc[i1].name)
+
+    
+    i = data.index.get_loc(duplicated.name)
+    slope_diff_remove_i = abs(slope(i-1,i+1) - slope(i+1,i+2))
+    slope_diff_remove_i_pluss = abs(slope(i-1,i) - slope(i,i+2))
+
+    if slope_diff_remove_i < slope_diff_remove_i_pluss:
+        return i
+    else:
+        return i+1
 
 def derived_channels(data: pd.DataFrame, accelerometer_position=None, wind=True, accelerometers=True) -> pd.DataFrame:
     dxdt = derivative(data, "x0")
@@ -742,3 +779,4 @@ def scale_ship_data(ship_data_wPCC: dict, scale_factor: float, rho: float) -> di
     )
 
     return ship_data_7m
+
