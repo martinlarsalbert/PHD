@@ -9,6 +9,17 @@ wPCC.time_series_preprocessed.ek_smooth_CG:  # Expressed in CG (as was used in t
       index: True
   filename_suffix: .csv
 
+wPCC.tests_WL:
+  type: PartitionedDataSet
+  path: data/02_intermediate/wPCC/tests_WL
+  dataset:
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
+
 wPCC.tests:
   type: PartitionedDataSet
   path: data/02_intermediate/wPCC/tests
@@ -156,14 +167,14 @@ wPCC.smoother_result1:
 
 wPCC.smoother_result2:
   type: PartitionedDataSet
-  path: data/04_feature/filtered_result2/wPCC
+  path: data/04_feature/smoother_result2/wPCC
   dataset:
     type: filter_result_dataset.FilterResultDataSet
   filename_suffix: .pkl
 
 wPCC.smoother_result3:
   type: PartitionedDataSet
-  path: data/04_feature/filtered_result3/wPCC
+  path: data/04_feature/smoother_result3/wPCC
   dataset:
     type: filter_result_dataset.FilterResultDataSet
   filename_suffix: .pkl

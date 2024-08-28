@@ -114,6 +114,17 @@ def _load(
     ## estimating higher states with numerical differentiation:
     t = data.index
 
+    data = motions(data, replace_velocities=replace_velocities)
+
+    data = add_thrust(data, thrust_channels=thrust_channels, rev_channels=rev_channels)
+    data['thrust_port'] = data['Prop/PS/Thrust']
+    data['thrust_stbd'] = data['Prop/SB/Thrust']
+    data['g'] = 9.81
+    
+    return data
+
+def motions(data, replace_velocities=False)->pd.DataFrame:
+    
     dxdt = derivative(data, "x0")
     dydt = derivative(data, "y0")
     psi = data["psi"]
@@ -133,8 +144,7 @@ def _load(
 
     data["V"] = data["U"] = np.sqrt(data["u"] ** 2 + data["v"] ** 2)
     data["beta"] = -np.arctan2(data["v"], data["u"])
-    data = add_thrust(data, thrust_channels=thrust_channels, rev_channels=rev_channels)
-
+    
     data["twa"] = 0
     data["tws"] = 0
 
@@ -145,13 +155,8 @@ def _load(
     data['theta'] = data['pitch']
     data["q"] = derivative(data, "theta")
     data["q1d"] = derivative(data, "q")
-
-    data['thrust_port'] = data['Prop/PS/Thrust']
-    data['thrust_stbd'] = data['Prop/SB/Thrust']
-    data['g'] = 9.81
     
     return data
-
 
 def filter(df: pd.DataFrame, cutoff: float = 1.0, order=1) -> pd.DataFrame:
     """Lowpass filter and calculate velocities and accelerations with numeric differentiation
@@ -282,3 +287,32 @@ def zigzag_angle(data_MDL:pd.DataFrame):
     angle_sign = np.sign(data_MDL.iloc[0:10]['delta'].mean())
     angle = np.round(angle_sign*angle_abs)
     return angle
+
+def move_to_roll_centre(data_WL: dict,WL_to_roll_centre:float)->dict:
+        
+    datas = {}
+    for name, loader in data_WL.items():
+        datas[name] = load_lazy2(loader=loader, WL_to_roll_centre=WL_to_roll_centre)
+        
+    return datas
+
+def load_lazy2(
+    loader,
+    WL_to_roll_centre,
+):
+    def the_loader():
+        return _move_to_roll_centre(
+            loader=loader,
+            WL_to_roll_centre=WL_to_roll_centre,
+        )
+
+    return the_loader
+        
+def _move_to_roll_centre(loader,WL_to_roll_centre:float):
+    
+    data = loader()
+    data['y0']-=WL_to_roll_centre*np.sin(data['phi'])
+    data = motions(data, replace_velocities=True)
+    
+    return data
+    

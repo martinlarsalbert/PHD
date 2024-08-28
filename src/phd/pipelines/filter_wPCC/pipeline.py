@@ -22,9 +22,9 @@ from .nodes import (
 def create_pipeline(**kwargs) -> Pipeline:
     
     nodes = []
-    N = 3
+    N = 1
     for n in range(1,N+1):
-        nodes+=filter_pipeline(n=n, models="models_rudder_VCT", filter_model_name=f"params:filter_model_name{n}", SNR=f"params:SNR{n}")
+        nodes+=filter_pipeline(n=n, models="models_VCT", filter_model_name=f"params:filter_model_name{n}", SNR=f"params:SNR{n}")
     
     nodes+=[
             

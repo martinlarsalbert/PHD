@@ -16,6 +16,7 @@ from .nodes import (
     shape_optimization,
     adopting_hull_rudder_to_MDL,
     limit_states_for_regression,
+    adopting_nonlinear_to_MDL,
 )
 
 
@@ -65,6 +66,13 @@ def create_pipeline(**kwargs) -> Pipeline:
                 tags=["generate_model", "regression_VCT"]
             ),
             node(
+                func=regress_hull_VCT,
+                inputs=["base_models", "df_VCT_scaled","params:VCT_nonlinear_exclude_parameters"],
+                outputs="models_VCT_nonlinear",
+                name="regress_hull_VCT_nonlinear",
+                tags=["generate_model", "regression_VCT"]
+            ),
+            node(
                 func=regress_hull_rudder_VCT,
                 inputs=["base_models_simple", "df_VCT_scaled_limited", "params:VCT_exclude_parameters"],
                 outputs="models_rudder_VCT",
@@ -73,7 +81,7 @@ def create_pipeline(**kwargs) -> Pipeline:
             ),
             node(
                 func=adopting_to_MDL,
-                inputs=["models_VCT", "resistance_MDL", "tests_ek"],
+                inputs=["models_VCT", "resistance_MDL"],
                 outputs="models_VCT_MDL",
                 name="adopting_to_MDL",
                 tags=["generate_model", "regression_VCT", "adopting_to_MDL"],
@@ -86,10 +94,17 @@ def create_pipeline(**kwargs) -> Pipeline:
                 tags=["generate_model", "regression_VCT", "adopting_to_MDL"],
             ),
             node(
-                func=shape_optimization,
-                inputs=["models_VCT", "resistance_MDL", "tests_ek_smooth_joined"],
-                outputs="models_VCT_MDL_optimize",
-                name="shape_optimization",
+                func=adopting_nonlinear_to_MDL,
+                inputs=["models_VCT_nonlinear", "resistance_MDL"],
+                outputs="models_VCT_nonlinear_MDL",
+                name="adopting_nonlinear_to_MDL",
+                tags=["generate_model", "regression_VCT", "adopting_to_MDL"],
             ),
+            #node(
+            #    func=shape_optimization,
+            #    inputs=["models_VCT", "resistance_MDL", "tests_ek_smooth_joined3"],
+            #    outputs="models_VCT_MDL_optimize",
+            #    name="shape_optimization",
+            #),
         ]
     )

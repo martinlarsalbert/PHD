@@ -247,6 +247,10 @@ def _regress_hull_inverse_dynamics(
         X, y = eq_to_matrix.calculate_features_and_label(
             data=data_prime, y=data_prime[key]
         )
+        if len(X.columns)==0:
+            log.warning(f"No regressors found for {key}, excluding this equation!")
+            continue
+            
         ols = sm.OLS(y, X)
         models[key] = ols_fit = ols.fit()
         ols_fit.X = X

@@ -259,13 +259,17 @@ def plot_compare_model_forces(
         
         if delta_corners:
             ax.set_xticks(corners.index)
-    
-        ax.set_xticklabels([])
+            ax.set_xticklabels([])
 
+    for ax in axes[0:-1]:
+        ax.set_xticklabels([])
+        ax.set_xlabel("")
+    
     axes[1].legend()
     axes[-1].set_xlabel("Time [s]")
+        
     #axes[-1].set_xticklabels(np.round(axes[-1].get_xticks(), 0))
-    axes[-1].set_xticklabels([])
+    #axes[-1].set_xticklabels([])
     #axes[-1].set_major_formatter(StrMethodFormatter('{x:,.0f}'))
     
     ylims=[]

@@ -15,3 +15,5 @@ wPCC.accelerometer_position:
     x: -3.163333333333334 # (0.28 m forward from aft, assuming lpp=loa...)
     y: 0.33  # to starboard.
     z: -0.1  # Unsure about value
+
+wPCC.WL_to_roll_centre: -0.18025841446871002  # [m]

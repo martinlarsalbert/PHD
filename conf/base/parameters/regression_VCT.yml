@@ -29,6 +29,12 @@ wPCC.VCT_exclude_parameters:
     Yr: 0
     Yrrr: 0
 
+wPCC.VCT_nonlinear_exclude_parameters:
+    Y0: 0
+    N0: 0
+    Xthrustport : 0.883  # (1-tdf)
+    Xthruststbd : 0.883  # (1-tdf)
+
 7m.VCT_exclude_parameters:
     Y0: 0
     N0: 0

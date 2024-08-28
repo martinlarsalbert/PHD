@@ -69,9 +69,9 @@ def file_path_with_nb_ref(file_name: str, directory="figures") -> str:
     return os.path.join(directory_path, file_name_with_nb_ref(file_name=file_name))
 
 
-def save_fig(fig: Figure, file_name: str):
+def save_fig(fig: Figure, file_name: str, **kwargs):
     file_path = file_path_with_nb_ref(file_name=file_name, directory="figures")
-    fig.savefig(file_path)
+    fig.savefig(file_path, **kwargs)
 
 
 def scale_figure(fig, scale=1, scale_x=1, scale_y=1):

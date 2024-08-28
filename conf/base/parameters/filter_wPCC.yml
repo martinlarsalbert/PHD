@@ -15,28 +15,30 @@ wPCC:
         measurement_error_max:
             positions: 0.01
             psi: 0.25  # [deg]
-    #filter_model_name: semiempirical_covered
-    filter_model_name1: Abkowitz
-    filter_model_name2: Abkowitz
-    filter_model_name3: Abkowitz
+    #filter_model_name1: Abkowitz
+    #filter_model_name2: Abkowitz
+    #filter_model_name3: Abkowitz
+    filter_model_name1: semiempirical_covered
+    filter_model_name2: semiempirical_covered
+    filter_model_name3: semiempirical_covered
     SNR1: 0.1
     SNR2: 1
     SNR3: 10
     skip:
     - 22862                                                                                                                                                                                              nodes.py:124
     - 22863
-    - 22639
+    #- 22639
     - 22638
     - 22637
     - 22636
     - 22634
-    - 22635
+    #- 22635
     - 22633
     - 22632
     - 22631
     - 22605
     - 22606
-    - 22611
+    #- 22611
     - 22610
     - 22609
     - 22608
@@ -85,13 +87,13 @@ wPCC:
     - 22817 # Sailing
     - 22815 # Sailing
     - 22818 # Sailing
-    - 22774  # skipping the turning circle
+    #- 22774  # skipping the turning circle
     - 22776
-    - 22612
-    - 22613
-    - 22614
-    - 22615
-    - 22616
+    #- 22612
+    #- 22613
+    #- 22614
+    #- 22615
+    #- 22616
     - 22775
     - 22762
 #    - 22765

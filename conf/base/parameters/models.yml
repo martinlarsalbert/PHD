@@ -12,6 +12,9 @@ wPCC.parameters:
     l_R: -3.63544
     gamma_0_port: 0.042446
     gamma_0_stbd: -0.042446
+    Xudot: 0.000379  # These values were calculated with OCTOPUS office (see: 146.10_added_mass_wPCC.ipynb)
+    Yvdot: -0.003839
+    Nrdot: -0.000329
 
 kvlcc2_hsva.parameters:
   default:

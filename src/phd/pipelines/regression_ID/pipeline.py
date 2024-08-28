@@ -11,7 +11,8 @@ tags = ['inverse_dynamics_regression']
 def create_pipeline(**kwargs) -> Pipeline:
     
     nodes = []
-    N=3
+    #N=3
+    N=1
     for i in range(1,N+1):
         nodes+=create_regressions(i=i)
     

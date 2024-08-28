@@ -18,11 +18,106 @@ from phd.helpers import identity_decorator
 from phd.helpers import derivative
 from vessel_manoeuvring_models.EKF_VMM_1d import ExtendedKalmanFilterVMMWith6Accelerometers
 from vessel_manoeuvring_models.KF_multiple_sensors import FilterResult
+from vessel_manoeuvring_models.EKF_VMM import ExtendedKalmanFilterVMM
 
 log = logging.getLogger(__name__)
 from pyfiglet import figlet_format
 
-def create_kalman_filter(models:dict, model_name:str, SNR:float)->ExtendedKalmanFilterVMMWith6Accelerometers:
+def create_kalman_filter(models:dict, model_name:str, SNR=1)->ExtendedKalmanFilterVMMWith6Accelerometers:
+    
+    model = models[model_name]()
+    
+    h1_ = sp.ImmutableDenseMatrix([x_0,y_0,psi,
+                             ])
+    X_1 = sp.MutableDenseMatrix([x_0,y_0,psi,u,v,r])  # state vector,
+    H1_ = h1_.jacobian(X_1)    
+    H1 = lambdify(H1_)()
+    B = np.array([[]])  # No inputs
+    
+    max_x=0.05
+    max_y=0.05
+    max_psi=np.deg2rad(2.0)
+
+    sigma_x = max_x/3
+    sigma_y = max_y/3
+    sigma_psi = max_psi/3
+    
+    R1 = np.diag([sigma_x**2, sigma_y**2, sigma_psi**2])
+    
+    max_u = 0.05
+    max_v = 0.01
+    max_r = 0.01
+    sigma_u = max_u/3
+    sigma_v = max_v/3
+    sigma_r = max_r/3
+    
+    Q1 = 1/50*np.diag([0,0,0,sigma_u**2,sigma_v**2,sigma_r**2,])
+    
+    ekf = ExtendedKalmanFilterVMM(model=model, B=B, H=H1, Q=Q1, R=R1, input_columns=[], 
+                              control_columns=['delta',
+                                               'thrust_port', 
+                                               'thrust_stbd',
+                                               'phi',
+                                               'theta',
+                                               'g',
+                                               'Hull/Acc/X1',
+                                               'Hull/Acc/Y1',
+                                               'Hull/Acc/Y2',
+                                               'Hull/Acc/Z1',
+                                               'Hull/Acc/Z2',
+                                               'Hull/Acc/Z3',], 
+                               X=X_1)
+    
+    return ekf
+
+
+def create_kalman_filter_acc(models:dict, model_name:str, SNR=1)->ExtendedKalmanFilterVMMWith6Accelerometers:
+    
+    model = models[model_name]()
+    
+    bl_to_wl = model.ship_parameters['T']
+    model.ship_parameters['point1'] = {
+    'x_P': 1.625,
+    'y_P': 0.025,
+    'z_P': -0.564+bl_to_wl,
+    }
+
+    model.ship_parameters['point2'] = {
+        'x_P': -1.9,
+        'y_P': 0.43,
+        'z_P': -0.564+bl_to_wl,
+    }
+    
+    h2_ = sp.ImmutableDenseMatrix([x_0,y_0,psi,
+                              #u,v,r,
+                              u1d,v1d,r1d
+                             ])
+    X = sp.MutableDenseMatrix([x_0,y_0,psi,u,v,r,u1d,v1d,r1d])  # state vector,
+    H2_ = h2_.jacobian(X)    
+    H = lambdify(H2_)()
+
+    B = np.array([[]])  # No inputs
+
+    Q = 1/100*np.diag([0,0,0,0,0,0,0.1,0.1,0.005])
+    R = np.diag([0.025, 0.025, 0.00305, 9.81, 9.81, 0.175])
+    
+    
+    ekf = ExtendedKalmanFilterVMMWith6Accelerometers(model=model, B=B, H=H, Q=Q, R=R,
+                         state_columns=['x0','y0','psi','u','v','r','u1d','v1d','r1d'], measurement_columns=['x0', 'y0', 'psi','u1d','v1d','r1d'], 
+                         control_columns=['delta','delta1d','thrust_port','thrust_stbd','thrust_port1d','thrust_stbd1d','phi','theta','g',
+                                          'Hull/Acc/X1',
+                                          'Hull/Acc/Y1',
+                                          'Hull/Acc/Y2',
+                                          'Hull/Acc/Z1',
+                                          'Hull/Acc/Z2',
+                                          'Hull/Acc/Z3',
+
+                                         ], input_columns=[],
+                              )
+    
+    return ekf
+
+def create_kalman_filter_old(models:dict, model_name:str, SNR:float)->ExtendedKalmanFilterVMMWith6Accelerometers:
     
     model = models[model_name]()
     
@@ -89,8 +184,7 @@ def create_kalman_filter(models:dict, model_name:str, SNR:float)->ExtendedKalman
                                          ], input_columns=[],
                               )
     
-    return ekf
-    
+    return ekf  
 
 def initial_state_many(
     datas: dict, ekf:ExtendedKalmanFilterVMMWith6Accelerometers
@@ -117,11 +211,15 @@ def initial_state(
     x0_velocity['v'] = 0
     x0_velocity['r'] = 0
 
-    x0_acceleration['u1d'] = 0
-    x0_acceleration['v1d'] = 0
-    x0_acceleration['r1d'] = 0
+    if 'u1d' in ekf.state_columns:
+        x0_acceleration['u1d'] = 0
+        x0_acceleration['v1d'] = 0
+        x0_acceleration['r1d'] = 0
 
-    x0 = pd.Series(np.concatenate((x0_position.values,x0_velocity.values,x0_acceleration.values)), index=ekf.state_columns)
+        x0 = pd.Series(np.concatenate((x0_position.values,x0_velocity.values,x0_acceleration.values)), index=ekf.state_columns)
+    
+    else:
+        x0 = pd.Series(np.concatenate((x0_position.values,x0_velocity.values,)), index=ekf.state_columns)
     
     
     return {key: float(value) for key, value in x0.items()}
@@ -180,7 +278,7 @@ def filter(
     rudder_rate = np.deg2rad(2.32)*np.sqrt(ekf.model.ship_parameters['scale_factor'])
     data['delta1d'] = np.round(data['delta1d_']/rudder_rate,0)*rudder_rate
 
-    dt = np.mean(data.index.diff()[1:])
+    dt = np.mean(pd.Series(data.index).diff()[1:])
     fs = 1/dt
     data['thrust_port_filtered'] = lowpass_filter(data['thrust_port'], cutoff=10, fs=fs, order=1)
     data['thrust_stbd_filtered'] = lowpass_filter(data['thrust_stbd'], cutoff=10, fs=fs, order=1)

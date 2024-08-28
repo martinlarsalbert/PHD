@@ -6,7 +6,6 @@ generated using Kedro 0.18.7
 import pandas as pd
 from vessel_manoeuvring_models.models.modular_simulator import ModularVesselSimulator
 from vessel_manoeuvring_models.extended_kalman_vmm import ExtendedKalmanModular
-import logging
 import numpy as np
 from phd.pipelines.load_7m.nodes import calculated_signals, run_statistics
 from vessel_manoeuvring_models.data.lowpass_filter import lowpass_filter
@@ -14,6 +13,7 @@ from numpy import cos as cos
 from numpy import sin as sin
 from vessel_manoeuvring_models.differentiation import derivative
 
+import logging
 log = logging.getLogger(__name__)
 
 

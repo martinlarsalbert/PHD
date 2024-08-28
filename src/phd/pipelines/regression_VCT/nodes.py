@@ -320,6 +320,7 @@ def regress_hull_VCT(
     # |____________________________________|
     # """)
     log.info(figlet_format("Hull VCT", font="starwars"))
+    log.info(f"Exclude parameters: {exclude_parameters}")
 
     df_VCT = df_VCT.copy()
 
@@ -670,11 +671,33 @@ def regress_VCT(
 
 
 def adopting_to_MDL(
-    models_VCT: dict, resistance_MDL: pd.DataFrame, tests_ek: dict
+    models_VCT: dict, resistance_MDL: pd.DataFrame, #tests_ek: dict
 ) -> dict:
     log.info(figlet_format("Adopting to MDL", font="starwars"))
 
-    data_MDL_many = gather_data(tests_ek=tests_ek)
+    #data_MDL_many = gather_data(tests_ek=tests_ek)
+
+    models = {}
+    for name, loader in models_VCT.items():
+        model = loader()
+        add_MDL_resistance(model=model, resistance=resistance_MDL)
+
+        model.parameters["delta_alpha_s"] = 0  # Delayed stall
+        
+        #model.parameters['Nr']*=2
+        #model.parameters['Nrdot']*=0.25
+
+        models[name] = model
+
+    return models
+
+
+def adopting_nonlinear_to_MDL(
+    models_VCT: dict, resistance_MDL: pd.DataFrame, #tests_ek: dict
+) -> dict:
+    log.info(figlet_format("Adopting nonlinear to MDL", font="starwars"))
+
+    #data_MDL_many = gather_data(tests_ek=tests_ek)
 
     models = {}
     for name, loader in models_VCT.items():
@@ -683,40 +706,30 @@ def adopting_to_MDL(
 
         model.parameters["delta_alpha_s"] = 0  # Delayed stall
 
-        # factor = 0.80
-        # model.parameters["X0"] *= factor
-        # model.parameters["Xu"] *= factor
-
-        # model.parameters["kappa"] = 0.85
-        # model.parameters["l_R"] = 1.5 * model.parameters["l_R"]
-        # model.parameters['Yvdot']*=0.5
-
-        # model.parameters["Yvdot"] *= 0.55
-        # model.parameters["Nrdot"] *= 0.7
-
-        # model.parameters['l_R'] = -3.1115000000000004*1.2
-
-        #model.parameters["Nr"] *= 2.8
-        #model.parameters["Yv"] *= 1.65
+        model.parameters["s"] = 0
         
-        #model.parameters['Nr']=-0.001292	
-        #model.parameters['Nv']=-0.002960
-        #model.parameters['Yv']=-0.008505        
-        #model.parameters["Nrdot"]*=0.3
+        # CMT corrections (most likely wave generation):
+        factor = 1.30
+        model.parameters['Yv']*=factor
+        model.parameters['Yvvv']*=factor
 
-        #model = fit_Nrdot(model=model, data_MDL_many=data_MDL_many)
-        #model = fit_Yvdot(model=model, data_MDL_many=data_MDL_many)
+        factor = 1.05
+        model.parameters['Nv']*=factor
+        model.parameters['Nvvv']*=factor
         
-        #model.ship_parameters['x_R']=-2.45*1.5
-        #model.set_ship_parameters(model.ship_parameters)
+        # Rudder yawing moment:
+        model.ship_parameters['x_R']=1.15*-2.45  # This seems to be necessary to get the right yawing moment
+                
+        ## This correction was also necessary. (probably wave generation) (see: 148.01_selective_IDR.ipynb)
+        model.parameters['Nr']*=2.2536644742604537
+        model.parameters['Nrrr']*=1.1095856121752687
         
-        model.parameters['Nr']*=2
-        model.parameters['Nrdot']*=0.25
+        #model.parameters['Nr']*=2
+        #model.parameters['Nrdot']*=0.25
 
         models[name] = model
 
     return models
-
 
 def adopting_hull_rudder_to_MDL(
     models_rudder_VCT: dict, resistance_MDL: pd.DataFrame, models_VCT: dict
@@ -842,12 +855,18 @@ def gather_data(tests_ek: dict):
         data_MDL = tests_ek[f"{id}"]()
         data_MDL["V"] = data_MDL["U"] = np.sqrt(data_MDL["u"] ** 2 + data_MDL["v"] ** 2)
         data_MDL["beta"] = -np.arctan2(data_MDL["v"], data_MDL["u"])
-        data_MDL["rev"] = data_MDL[["Prop/PS/Rpm", "Prop/SB/Rpm"]].mean(axis=1)
+        
+        if "Prop/PS/Rpm" in data_MDL:
+            data_MDL["rev"] = data_MDL[["Prop/PS/Rpm", "Prop/SB/Rpm"]].mean(axis=1)
+        
         data_MDL["twa"] = 0
         data_MDL["tws"] = 0
         data_MDL["theta"] = 0
         data_MDL["q"] = 0
-        data_MDL["phi"] = data_MDL["roll"]
+        
+        if not 'phi' in data_MDL:
+            data_MDL["phi"] = data_MDL["roll"]
+        
         data_MDL["p"] = 0
         data_MDL["q1d"] = 0
         data_MDL["thrust_port"] = data_MDL["Prop/PS/Thrust"]
