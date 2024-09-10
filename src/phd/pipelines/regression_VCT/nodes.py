@@ -530,7 +530,7 @@ def manual_regression(model: ModularVesselSimulator) -> ModularVesselSimulator:
     model.parameters["C_D0_tune"] = 4.8
     
     model.parameters['delta_lim'] = np.deg2rad(15)
-    model.parameters['s'] = -10
+    model.parameters['s'] = 0
     model.ship_parameters['w_f']=0.297
 
     return model
@@ -1000,3 +1000,99 @@ def add_MDL_resistance(
     r2_SI = r2_score(y_true=df["X_H"], y_pred=predict(model, df)["X_H"])
     log.info(f"In SI units r2 is {r2_SI}")
     return model
+
+def get_eq_X_PMM(model:ModularVesselSimulator):
+    X_PMM = symbols("X_PMM")
+    eq = model.X_eq.subs(model.X_D_eq.rhs,model.X_D_eq.lhs)
+    eq_X_PMM = Eq(X_PMM,eq.rhs-eq.lhs)
+    return eq_X_PMM
+
+def get_eq_Y_PMM(model:ModularVesselSimulator):
+    Y_PMM = symbols("Y_PMM")
+    eq = model.Y_eq.subs(model.Y_D_eq.rhs,model.Y_D_eq.lhs)
+    eq_Y_PMM = Eq(Y_PMM,eq.rhs-eq.lhs)
+    return eq_Y_PMM
+
+def get_eq_N_PMM(model:ModularVesselSimulator):
+    N_PMM = symbols("N_PMM")
+    eq = model.N_eq.subs(model.N_D_eq.rhs,model.N_D_eq.lhs)
+    eq_N_PMM = Eq(N_PMM,eq.rhs-eq.lhs)
+    return eq_N_PMM
+
+
+def subtract_centrifugal_and_centrepetal_forces(df_VCT:pd.DataFrame, model:ModularVesselSimulator)->pd.DataFrame:
+    
+    X_PMM,Y_PMM,N_PMM = symbols("X_PMM,Y_PMM,N_PMM")
+    X_VCT,Y_VCT,N_VCT = symbols("X_VCT,Y_VCT,N_VCT")    
+    
+    eq_X_PMM = get_eq_X_PMM(model=model)
+    eq_Y_PMM = get_eq_Y_PMM(model=model)
+    eq_N_PMM = get_eq_N_PMM(model=model)
+    
+    subs_steady_state = {
+    X_PMM:X_VCT,
+    Y_PMM:Y_VCT,
+    N_PMM:N_VCT,
+    u1d:0,
+    v1d:0,
+    r1d:0,
+    m:0,
+    }
+
+    eq_X_VCT = eq_X_PMM.subs(subs_steady_state)
+    eq_Y_VCT = eq_Y_PMM.subs(subs_steady_state)
+    eq_N_VCT = eq_N_PMM.subs(subs_steady_state)
+    
+    eq_X_D = Eq(X_D_,sp.solve(eq_X_VCT, X_D_)[0])
+    eq_Y_D = Eq(Y_D_,sp.solve(eq_Y_VCT, Y_D_)[0])
+    eq_N_D = Eq(N_D_,sp.solve(eq_N_VCT, N_D_)[0])
+    
+    X_H_VCT,Y_H_VCT,N_H_VCT = symbols("X_H_VCT,Y_H_VCT,N_H_VCT")
+    subs_hull = {
+        X_D_:X_H,
+        X_VCT:X_H_VCT,
+
+        Y_D_:Y_H,
+        Y_VCT:Y_H_VCT,
+
+        N_D_:N_H,
+        N_VCT:N_H_VCT,
+
+    }
+    eq_X_H = eq_X_D.subs(subs_hull)
+    eq_Y_H = eq_Y_D.subs(subs_hull)
+    eq_N_H = eq_N_D.subs(subs_hull)
+    
+    subs = {value:key for key,value in p.items()}
+
+    lambda_X_D = lambdify(eq_X_D.rhs.subs(subs))
+    lambda_Y_D = lambdify(eq_Y_D.rhs.subs(subs))
+    lambda_N_D = lambdify(eq_N_D.rhs.subs(subs))
+
+    lambda_X_H = lambdify(eq_X_H.rhs.subs(subs))
+    lambda_Y_H = lambdify(eq_Y_H.rhs.subs(subs))
+    lambda_N_H = lambdify(eq_N_H.rhs.subs(subs))
+
+    lambda_X_VCT = lambdify(eq_X_VCT.rhs.subs(subs))
+    lambda_Y_VCT = lambdify(eq_Y_VCT.rhs.subs(subs))
+    lambda_N_VCT = lambdify(eq_N_VCT.rhs.subs(subs))
+    
+    df_VCT_viscous = df_VCT.copy()
+
+    df_VCT_viscous['X_VCT'] = df_VCT_viscous['X_D']
+    df_VCT_viscous['Y_VCT'] = df_VCT_viscous['Y_D']
+    df_VCT_viscous['N_VCT'] = df_VCT_viscous['N_D']
+
+    df_VCT_viscous['X_H_VCT'] = df_VCT_viscous['X_H']
+    df_VCT_viscous['Y_H_VCT'] = df_VCT_viscous['Y_H']
+    df_VCT_viscous['N_H_VCT'] = df_VCT_viscous['N_H']
+
+    df_VCT_viscous['X_H'] = run(lambda_X_H, inputs=df_VCT_viscous, **added_masses)
+    df_VCT_viscous['Y_H'] = run(lambda_Y_H, inputs=df_VCT_viscous, **added_masses)
+    df_VCT_viscous['N_H'] = run(lambda_N_H, inputs=df_VCT_viscous, **added_masses)
+
+    df_VCT_viscous['X_D'] = run(lambda_X_D, inputs=df_VCT_viscous, **added_masses)
+    df_VCT_viscous['Y_D'] = run(lambda_Y_D, inputs=df_VCT_viscous, **added_masses)
+    df_VCT_viscous['N_D'] = run(lambda_N_D, inputs=df_VCT_viscous, **added_masses)
+    
+    return df_VCT_viscous

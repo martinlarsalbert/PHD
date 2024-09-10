@@ -38,6 +38,8 @@ from vessel_manoeuvring_models.prime_system import PrimeSystem
 
 from .models_wPCC import ModelSemiempiricalCovered, ModelWithSimpleAbkowitzRudder, ModelMartinsSimple
 
+from .models_wPCC_nonlinear import ModelSemiempiricalCovered as ModelSemiempiricalCoveredInertia
+
 import logging
 
 log = logging.getLogger(__name__)
@@ -49,16 +51,13 @@ def base_models(ship_data: dict, parameters: dict) -> dict:
     name = "semiempirical_covered"
     log.info(f'Creating: "{name}"')
     model = ModelSemiempiricalCovered(ship_data=ship_data, create_jacobians=True)
-    
-    if "rudder_port" in model.subsystems:
-        delattr(
-            model.subsystems["rudder_port"], "lambdas"
-        )  # These do not work with pickle (for some reason)
-    
-    if "rudder_stbd" in model.subsystems:
-        delattr(model.subsystems["rudder_stbd"], "lambdas")
-
     models[name] = model
+
+    name = "semiempirical_covered_inertia"
+    log.info(f'Creating: "{name}"')
+    model = ModelSemiempiricalCoveredInertia(ship_data=ship_data, create_jacobians=True)
+    models[name] = model
+
 
     # Updating the parameters:
     for name, model in models.items():
@@ -66,6 +65,14 @@ def base_models(ship_data: dict, parameters: dict) -> dict:
         parameters_ = parameters["default"]
         log.info(f"Using default parameters:{parameters_}")
         model.parameters.update(parameters_)
+        
+        if "rudder_port" in model.subsystems:
+            delattr(
+            model.subsystems["rudder_port"], "lambdas"
+            )  # These do not work with pickle (for some reason)
+    
+        if "rudder_stbd" in model.subsystems:
+            delattr(model.subsystems["rudder_stbd"], "lambdas")
 
     return models
 
@@ -304,48 +311,7 @@ def vmm_martins_simple_thrust(
     return model
 
 
-def add_wind_force_system(
-    model: ModularVesselSimulator, wind_data_HMD: pd.DataFrame
-) -> ModularVesselSimulator:
-    model_wind = model.copy()
-    add_wind(model_wind)
-    model_wind = regress_wind_tunnel_test(model_wind, wind_data_HMD=wind_data_HMD)
-    return model_wind
 
-
-def regress_wind_tunnel_test(
-    vmm_model: ModularVesselSimulator, wind_data_HMD: pd.DataFrame
-) -> ModularVesselSimulator:
-    from vessel_manoeuvring_models.models.wind_force import (
-        eq_C_x,
-        eq_C_y,
-        eq_C_n,
-        C_x,
-        C_y,
-        C_n,
-    )
-
-    eq_to_matrix_C_x = DiffEqToMatrix(eq_C_x, label=C_x, base_features=[awa])
-    eq_to_matrix_C_y = DiffEqToMatrix(eq_C_y, label=C_y, base_features=[awa])
-    eq_to_matrix_C_n = DiffEqToMatrix(eq_C_n, label=C_n, base_features=[awa])
-
-    ## Regression:
-    params_wind = {}
-    for key, eq_to_matrix in zip(
-        ["cx", "cy", "cn"], [eq_to_matrix_C_x, eq_to_matrix_C_y, eq_to_matrix_C_n]
-    ):
-        X, y = eq_to_matrix.calculate_features_and_label(
-            data=wind_data_HMD, y=wind_data_HMD[key], simplify_names=False
-        )
-        ols = sm.OLS(y, X, hasconst=False)
-        ols_fit = ols.fit()
-        params_wind.update(ols_fit.params)
-
-    params_wind = {key: value / 2 for key, value in params_wind.items()}  # Note 1/2
-    model = vmm_model.copy()
-    model.parameters.update(params_wind)
-
-    return model
 
 
 def regress_VCT(

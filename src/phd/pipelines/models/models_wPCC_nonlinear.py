@@ -1,13 +1,6 @@
 import pandas as pd
 from vessel_manoeuvring_models.symbols import *
-from vessel_manoeuvring_models.nonlinear_vmm_equations import (
-    X_eom,
-    Y_eom,
-    N_eom,
-    fx_eq,
-    fy_eq,
-    mz_eq,
-)
+
 from vessel_manoeuvring_models.models.modular_simulator import (
     ModularVesselSimulator,
     function_eq,
@@ -38,10 +31,13 @@ from vessel_manoeuvring_models.models.abkowitz_rudder_system import AbkowitzRudd
 from vessel_manoeuvring_models.models.simple_rudder_system import SimpleRudderSystem
 from .subsystems import add_wind_force_system as add_wind
 from vessel_manoeuvring_models.prime_system import PrimeSystem
+from .models_wPCC import hull
 
 import logging
 
 log = logging.getLogger(__name__)
+
+from vessel_manoeuvring_models.models.fossen import eq_main_expanded_matrix
 
 
 class MainModel(ModularVesselSimulator):
@@ -54,7 +50,20 @@ class MainModel(ModularVesselSimulator):
             _description_
         """
         log.info("Creating the general model")
-
+        
+        #X_eq = sp.Eq(m * (u1d - r * v - x_G * r ** 2),
+        #     p.Xudot * u1d - p.Yvdot*v*r - p.Yrdot*r**2 + X_D)
+        #
+        #Y_eq = sp.Eq(m * (v1d + r * u + x_G * r1d),
+        #     p.Yvdot*v1d + p.Xudot*u*r + p.Yrdot*r1d + Y_D)
+        #
+        #N_eq = sp.Eq(I_z * r1d + m * x_G * (v1d + u * r),
+        #    p.Nrdot * r1d + (p.Yvdot-p.Xudot)*u*v + p.Yrdot*(v1d+u*r) + N_D)
+        
+        X_eq = sp.Eq(eq_main_expanded_matrix.lhs[0],eq_main_expanded_matrix.rhs[0])
+        Y_eq = sp.Eq(eq_main_expanded_matrix.lhs[1],eq_main_expanded_matrix.rhs[1])
+        N_eq = sp.Eq(eq_main_expanded_matrix.lhs[2],eq_main_expanded_matrix.rhs[2])
+        
         f_X_H = sp.Function("X_H")(u, v, r, delta)
         f_Y_H = sp.Function("Y_H")(u, v, r, delta)
         f_N_H = sp.Function("N_H")(u, v, r, delta)
@@ -78,22 +87,12 @@ class MainModel(ModularVesselSimulator):
         eq_X_force = sp.Eq(X_D, f_X_H + f_X_R + f_X_P + f_X_W + f_X_RHI)
         eq_Y_force = sp.Eq(Y_D, f_Y_H + f_Y_R + f_Y_P + f_Y_W + f_Y_RHI)
         eq_N_force = sp.Eq(N_D, f_N_H + f_N_R + f_N_P + f_N_W + f_N_RHI)
-
-        X_eq = X_eom.subs(X_force, eq_X_force.rhs)
-        Y_eq = Y_eom.subs(Y_force, eq_Y_force.rhs)
-        N_eq = N_eom.subs(N_force, eq_N_force.rhs)
-        subs = [
-            (p.Xvdot, 0),
-            (p.Xrdot, 0),
-            (p.Yudot, 0),
-            # (p.Yrdot,0),  # this is probably not true
-            (p.Nudot, 0),
-            # (p.Nvdot,0),# this is probably not true
-        ]
-        X_eq = X_eq.subs(subs)
-        Y_eq = Y_eq.subs(subs)
-        N_eq = N_eq.subs(subs)
-
+        
+        X_eq = X_eq.subs(X_D,eq_X_force.rhs)
+        Y_eq = Y_eq.subs(Y_D,eq_Y_force.rhs)
+        N_eq = N_eq.subs(N_D,eq_N_force.rhs)
+        
+        
         super().__init__(
             X_eq=X_eq,
             Y_eq=Y_eq,
@@ -104,7 +103,7 @@ class MainModel(ModularVesselSimulator):
             do_create_jacobian=create_jacobians,
         )
         self.create_jacobians = create_jacobians
-
+        
 
 class ModelTowed(MainModel):
     def __init__(self, ship_data: dict, create_jacobians=True):
@@ -441,248 +440,4 @@ class ModelSemiempiricalCovered(ModelTowedSemiempiricalCovered):
 
         ## Add rudder hull interaction subsystem:
         self.subsystems["rudder_hull_interaction"] = RudderHullInteractionSystem(
-            ship=self, create_jacobians=self.create_jacobians
-        )
-    
-
-class ModelWithPropellerRace(ModelTowed):
-    def setup_subsystems(self):
-        ## Add hull:
-        self.add_hull()
-
-        ## Add propeller:
-        self.add_propellers()
-
-        ## Add propeller races:
-        propeller_race_port = semiempirical_rudder_MAK.PropellerRace(
-            ship=self,
-            create_jacobians=self.create_jacobians,
-            suffix="port",
-        )
-        propeller_race_stbd = semiempirical_rudder_MAK.PropellerRace(
-            ship=self,
-            create_jacobians=self.create_jacobians,
-            suffix="stbd",
-        )
-        self.subsystems["propeller_race_port"] = propeller_race_port
-        self.subsystems["propeller_race_stbd"] = propeller_race_stbd
-
-        ## Add rudders:
-        self.add_rudders(in_propeller_race=True)
-
-        ## Add dummy wind system:
-        add_dummy_wind_force_system(model=self, create_jacobians=self.create_jacobians)
-
-        self.control_keys = ["delta", "thrust_port", "thrust_stbd"]
-
-
-class ModelWithSimpleRudder(ModelTowed):
-    def setup_subsystems(self):
-        ## Add hull:
-        self.add_hull()
-
-        ## Add propeller:
-        self.add_propellers()
-
-        ## Add rudders:
-        self.add_rudders(in_propeller_race=True)
-
-        ## Add dummy wind system:
-        add_dummy_wind_force_system(model=self, create_jacobians=self.create_jacobians)
-
-        if self.is_twin_screw:
-            self.control_keys = ["delta", "thrust_port", "thrust_stbd", "thrust"]
-        else:
-            self.control_keys = ["delta", "thrust"]
-
-    def add_rudders(self, in_propeller_race=True):
-        add_rudder_simple(model=self)
-
-        ## Add rudder hull interaction subsystem:
-        self.subsystems["rudder_hull_interaction"] = RudderHullInteractionDummySystem(
-            ship=self, create_jacobians=self.create_jacobians
-        )
-
-
-class ModelWithSimpleAbkowitzRudder(ModelWithSimpleRudder):
-    def add_rudders(self, in_propeller_race: bool):
-        if self.is_twin_screw:
-            self.add_rudders_twin_screw(in_propeller_race=in_propeller_race)
-        else:
-            self.add_rudders_single_screw(in_propeller_race=in_propeller_race)
-        
-    def add_rudders_twin_screw(self, in_propeller_race=True):
-        log.info("Twin screw ship")
-        self.subsystems["rudders"] = AbkowitzRudderSystem(
-            ship=self, create_jacobians=self.create_jacobians
-        )
-
-        ## Add rudder hull interaction subsystem:
-        self.subsystems["rudder_hull_interaction"] = RudderHullInteractionDummySystem(
-            ship=self, create_jacobians=self.create_jacobians
-        )
-        
-    def add_rudders_single_screw(self, in_propeller_race=True):
-        log.info("Single screw ship")
-        self.subsystems["rudders"] = AbkowitzRudderSystem(
-            ship=self, create_jacobians=self.create_jacobians
-        )
-
-        ## Add rudder hull interaction subsystem:
-        self.subsystems["rudder_hull_interaction"] = RudderHullInteractionDummySystem(
-            ship=self, create_jacobians=self.create_jacobians
-        )
-        
-class ModelMartinsSimple(ModelWithSimpleRudder):
-    """This is the model that was used in the Lic. Thesis.
-    """
-    def add_rudders(self, in_propeller_race=True):
-        self.subsystems["rudders"] = SimpleRudderSystem(
-            ship=self, create_jacobians=self.create_jacobians
-        )
-
-        ## Add rudder hull interaction subsystem:
-        self.subsystems["rudder_hull_interaction"] = RudderHullInteractionDummySystem(
-            ship=self, create_jacobians=self.create_jacobians
-        )
-        
-    def add_hull(self):
-        self.subsystems["hull"] = hull_simple(
-            model=self, create_jacobians=self.create_jacobians
-        )
-
-
-class ModelWithSimpleRudderQuadraticHull(ModelWithSimpleRudder):
-    def add_hull(self):
-        self.subsystems["hull"] = hull_quadratic(
-            model=self, create_jacobians=self.create_jacobians
-        )
-
-
-class ModelTowedSemiempiricalCoveredQuadraticHull(ModelTowedSemiempiricalCovered):
-    def add_hull(self):
-        self.subsystems["hull"] = hull_quadratic(
-            model=self, create_jacobians=self.create_jacobians
-        )
-
-
-class ModelSemiempiricalCoveredQuadraticHull(ModelSemiempiricalCovered):
-    def add_hull(self):
-        self.subsystems["hull"] = hull_quadratic(
-            model=self, create_jacobians=self.create_jacobians
-        )
-
-
-def hull(model: ModularVesselSimulator, create_jacobians=True):
-    eq_X_H = sp.Eq(
-        X_H,
-        p.X0 + p.Xu * u
-        # + p.Xuu * u**2
-        # + p.Xuuu * u**3
-        + p.Xvv * v**2 + p.Xrr * r**2 + p.Xvr * v * r
-        ## + p.Xthrust * thrust,
-        # + p.Xuvv * u * v**2 + p.Xurr * u * r**2 + p.Xuvr * u * v * r,
-    )
-    eq_Y_H = sp.Eq(
-        Y_H,
-        p.Yv * v + p.Yr * r
-        # + p.Yvr * v * r
-        + p.Yvvv * v**3 + p.Yvvr * v**2 * r + p.Yrrr * r**3 + p.Yvrr * v * r**2
-        # + p.Yuuv * u**2 * v
-        # + p.Yuur * u**2 * r
-        # + p.Yuv * u * v
-        # + p.Yur * u * r
-        ## + p.Ythrust * thrust
-        + p.Y0  # Very important!
-        # + p.Y0u * u + p.Y0uu * u**2,
-    )
-    eq_N_H = sp.Eq(
-        N_H,
-        p.Nv * v + p.Nr * r + p.Nvvv * v**3
-        # + p.Nvr * v * r
-        + p.Nvvr * v**2 * r
-        + p.Nrrr * r**3
-        + p.Nvrr * v * r**2  # This one is very important to not get the drift...
-        # + p.Nuuv * u**2 * v
-        # + p.Nuur * u**2 * r
-        # + p.Nuv * u * v
-        # + p.Nur * u * r
-        ## + p.Nthrust * thrust
-        + p.N0  # Very important !
-        # + p.N0u * u + p.N0uu * u**2,
-    )
-    equations_hull = [eq_X_H, eq_Y_H, eq_N_H]
-    hull = PrimeEquationSubSystem(
-        ship=model, equations=equations_hull, create_jacobians=create_jacobians
-    )
-    return hull
-
-
-def hull_quadratic(model: ModularVesselSimulator, create_jacobians=True):
-    eq_X_H = sp.Eq(
-        X_H,
-        p.X0 + p.Xu * u
-        # + p.Xuu * u**2
-        # + p.Xuuu * u**3
-        + p.Xvv * v**2 + p.Xrr * r**2 + p.Xvr * v * r
-        ## + p.Xthrust * thrust,
-        # + p.Xuvv * u * v**2 + p.Xurr * u * r**2 + p.Xuvr * u * v * r,
-    )
-    eq_Y_H = sp.Eq(
-        Y_H,
-        p.Yv * v + p.Yr * r
-        # + p.Yvr * v * r
-        + p.Yvv * v * sp.Abs(v)
-        + p.Yvvr * v**2 * r
-        + p.Yrr * r * sp.Abs(r)
-        + p.Yvrr * v * r**2
-        # + p.Yuuv * u**2 * v
-        # + p.Yuur * u**2 * r
-        # + p.Yuv * u * v
-        # + p.Yur * u * r
-        ## + p.Ythrust * thrust
-        + p.Y0  # Very important!
-        # + p.Y0u * u + p.Y0uu * u**2,
-    )
-    eq_N_H = sp.Eq(
-        N_H,
-        p.Nv * v + p.Nr * r + p.Nvv * v * sp.Abs(v)
-        # + p.Nvr * v * r
-        + p.Nvvr * sp.Abs(v) * r
-        + p.Nrr * r * sp.Abs(r)
-        + p.Nvrr * v * sp.Abs(r)  # This one is very important to not get the drift...
-        # + p.Nuuv * u**2 * v
-        # + p.Nuur * u**2 * r
-        # + p.Nuv * u * v
-        # + p.Nur * u * r
-        ## + p.Nthrust * thrust
-        + p.N0  # Very important !
-        # + p.N0u * u + p.N0uu * u**2,
-    )
-    equations_hull = [eq_X_H, eq_Y_H, eq_N_H]
-    hull = PrimeEquationSubSystem(
-        ship=model, equations=equations_hull, create_jacobians=create_jacobians
-    )
-    return hull
-
-def hull_simple(model: ModularVesselSimulator, create_jacobians=True):
-    eq_X_H = sp.Eq(
-        X_H,
-        p.Xu * u + p.Xuu * u ** 2
-        + p.Xrr * r ** 2 + p.Xvr * v * r
-    )
-    eq_Y_H = sp.Eq(
-        Y_H,
-        p.Yv * v + p.Yr * r + p.Yu * u
-        + p.Yur * u * r
-        )
-    eq_N_H = sp.Eq(
-        N_H,
-        p.Nv * v + p.Nr * r + p.Nu * u
-        + p.Nur * u * r
-    )
-    equations_hull = [eq_X_H, eq_Y_H, eq_N_H]
-    hull = PrimeEquationSubSystem(
-        ship=model, equations=equations_hull, create_jacobians=create_jacobians
-    )
-    return hull
+            ship=self, create_jacobians=self.create_jacobians)
