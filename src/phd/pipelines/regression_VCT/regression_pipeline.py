@@ -5,6 +5,8 @@ from vessel_manoeuvring_models.symbols import *
 from vessel_manoeuvring_models.models.diff_eq_to_matrix import DiffEqToMatrix
 import statsmodels.api as sm
 import logging
+from vessel_manoeuvring_models.substitute_dynamic_symbols import run
+
 
 log = logging.getLogger(__name__)
 
@@ -39,7 +41,7 @@ def pipeline_RHI(df_VCT_prime: pd.DataFrame, model: ModularVesselSimulator) -> d
 def pipeline(df_VCT_prime: pd.DataFrame, model: ModularVesselSimulator) -> dict:
     hull = model.subsystems["hull"]
     assert isinstance(hull, PrimeEquationSubSystem)
-
+        
     tests = df_VCT_prime.groupby(by="test type")
 
     # Adding the rudder hull interaction to the hull forces (otherwise they will be included both in the hull forces and the RHI forces):
