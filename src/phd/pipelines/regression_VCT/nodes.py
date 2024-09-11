@@ -370,12 +370,12 @@ def _regress_hull_VCT(
     # log.info("Regressing hull VCT")
     from .regression_pipeline import pipeline, pipeline_RHI
     
-    if try_to_remove_centripetal:
+    if try_to_remove_centripetal and hasattr(model,"eq_VCT_hull_X_H"):
         log.info("Substracting the centripetal and Coriolis forces from the VCT data")
-        log.info(model.eq_X_PMM)
-        log.info(model.eq_Y_PMM)
-        log.info(model.eq_N_PMM)   
-        
+        log.info(model.eq_VCT_hull_X_H)
+        log.info(model.eq_VCT_hull_Y_H)
+        log.info(model.eq_VCT_hull_N_H)   
+
         df_VCT = df_VCT.copy()
         df_VCT['X_H_VCT'] = df_VCT['X_H']
         df_VCT['Y_H_VCT'] = df_VCT['Y_H']
@@ -383,16 +383,18 @@ def _regress_hull_VCT(
         df_VCT['X_VCT'] = df_VCT['X_D']
         df_VCT['Y_VCT'] = df_VCT['Y_D']
         df_VCT['N_VCT'] = df_VCT['N_D']
-        
+
         added_masses_SI = calculate_added_masses_SI(model=model)
+
+        df_VCT['X_H'] = run(model.lambda_VCT_hull_X_H, inputs=df_VCT, **added_masses_SI)
+        df_VCT['Y_H'] = run(model.lambda_VCT_hull_Y_H, inputs=df_VCT, **added_masses_SI)
+        df_VCT['N_H'] = run(model.lambda_VCT_hull_N_H, inputs=df_VCT, **added_masses_SI)
+        df_VCT['X_D'] = run(model.lambda_VCT_X_D, inputs=df_VCT, **added_masses_SI)
+        df_VCT['Y_D'] = run(model.lambda_VCT_Y_D, inputs=df_VCT, **added_masses_SI)
+        df_VCT['N_D'] = run(model.lambda_VCT_N_D, inputs=df_VCT, **added_masses_SI)
+    else:
+        log.info("NOT! Substracting the centripetal and Coriolis forces from the VCT data")    
         
-        df_VCT['X_H'] = run(model.lambda_X_H_VCT, inputs=df_VCT, **added_masses_SI)
-        df_VCT['Y_H'] = run(model.lambda_Y_H_VCT, inputs=df_VCT, **added_masses_SI)
-        df_VCT['N_H'] = run(model.lambda_N_H_VCT, inputs=df_VCT, **added_masses_SI)
-        df_VCT['X_D'] = run(model.lambda_X_VCT, inputs=df_VCT, **added_masses_SI)
-        df_VCT['Y_D'] = run(model.lambda_Y_VCT, inputs=df_VCT, **added_masses_SI)
-        df_VCT['N_D'] = run(model.lambda_N_VCT, inputs=df_VCT, **added_masses_SI)
-    
 
     # First manual regression on the rudder parameters
     model = manual_regression(model=model)
