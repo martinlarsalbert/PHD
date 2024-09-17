@@ -32,9 +32,9 @@
       index: True
   filename_suffix: .csv
 
-"{namespace}.df_MOTIONS":
+"{namespace}.df_MOTIONS_all":
   type: PartitionedDataSet
-  path: data/01_raw/{namespace}/df_MOTIONS
+  path: data/01_raw/{namespace}/df_MOTIONS_all
   dataset: 
     type: pandas.CSVDataSet
     load_args:
@@ -82,6 +82,23 @@
     index_col: 0
   save_args:
     index: True
+
+"{namespace}.df_motions":
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/{namespace}/df_motions.csv
+  load_args:
+    index_col: 0
+  save_args:
+    index: True
+
+"{namespace}.df_motions_prime":
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/{namespace}/df_motions_prime.csv
+  load_args:
+    index_col: 0
+  save_args:
+    index: True
+
 
 "{namespace}.shipdict_base":
   type: vct_pipelines.ship_dict_dataset.ShipDictDataSet

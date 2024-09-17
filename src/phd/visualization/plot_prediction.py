@@ -5,8 +5,9 @@ from vessel_manoeuvring_models.substitute_dynamic_symbols import get_function_su
 import numpy as np
 from matplotlib.ticker import StrMethodFormatter
 from vessel_manoeuvring_models.angles import smallest_signed_angle
+from vessel_manoeuvring_models.substitute_dynamic_symbols import run
 
-def predict(model: ModularVesselSimulator, data: pd.DataFrame, main_equation_excludes=[]) -> pd.DataFrame:
+def predict(model: ModularVesselSimulator, data: pd.DataFrame, main_equation_excludes=[], VCT=True) -> pd.DataFrame:
     """
 
     Args:
@@ -28,6 +29,14 @@ def predict(model: ModularVesselSimulator, data: pd.DataFrame, main_equation_exc
     columns = list(set(data.columns) - set(df_force_predicted))
     df_force_predicted = pd.concat((data[columns], df_force_predicted), axis=1)
 
+    if VCT:
+        added_masses_SI = model.added_masses_SI.copy()
+        
+        df_force_predicted['X_VCT'] = run(model.lambda_VCT_X,inputs=df_force_predicted, **added_masses_SI)
+        df_force_predicted['Y_VCT'] = run(model.lambda_VCT_Y,inputs=df_force_predicted, **added_masses_SI)
+        df_force_predicted['N_VCT'] = run(model.lambda_VCT_N,inputs=df_force_predicted, **added_masses_SI)
+        
+    
     return df_force_predicted
 
 

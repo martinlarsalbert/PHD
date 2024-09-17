@@ -342,24 +342,6 @@ def regress_hull_VCT(
 
     return models
 
-
-def calculate_added_masses_SI(model)->dict:
-    
-    added_masses_prime = pd.Series(model.parameters)[['Xudot','Yvdot','Yrdot','Nvdot','Nrdot']]
-    denominators = df_parameters.loc[added_masses_prime.index,'denominator']
-    df_denominators = pd.DataFrame()
-    df_denominators['eq'] = denominators
-    df_denominators['lambda'] = df_denominators['eq'].apply(lambdify)
-    added_masses = {}
-
-    for key,value in added_masses_prime.items():
-
-        denominator = run(df_denominators.loc[key,'lambda'],**model.ship_parameters)
-        added_masses[key] = value*denominator
-        
-    return added_masses
-
-
 def _regress_hull_VCT(
     model: ModularVesselSimulator,
     df_VCT: pd.DataFrame,
@@ -384,7 +366,7 @@ def _regress_hull_VCT(
         df_VCT['Y_VCT'] = df_VCT['Y_D']
         df_VCT['N_VCT'] = df_VCT['N_D']
 
-        added_masses_SI = calculate_added_masses_SI(model=model)
+        added_masses_SI = model.added_masses_SI.copy()
 
         df_VCT['X_H'] = run(model.lambda_VCT_hull_X_H, inputs=df_VCT, **added_masses_SI)
         df_VCT['Y_H'] = run(model.lambda_VCT_hull_Y_H, inputs=df_VCT, **added_masses_SI)
