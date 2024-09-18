@@ -744,7 +744,7 @@ def adopting_nonlinear_to_MDL(
         model.parameters['Nvvv']*=factor
         
         # Rudder yawing moment:
-        model.ship_parameters['x_R']=1.15*-2.45  # This seems to be necessary to get the right yawing moment
+        #model.ship_parameters['x_R']=1.15*-2.45  # This seems to be necessary to get the right yawing moment
                 
         ## This correction was also necessary. (probably wave generation) (see: 148.01_selective_IDR.ipynb)
         model.parameters['Nr']*=2.2536644742604537

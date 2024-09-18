@@ -33,18 +33,18 @@ log = logging.getLogger(__name__)
 
 exclude_parameters_global = {
     # "a_H": 0.07,  # hull rudder interaction,
-    "Yrrr": 0,
-    "Nvvv": 0,
-    "Nvvr": 0,
-    "Nvrr": 0,
-    "Yvvr": 0,
-    "Yvrr": 0,
+    #"Yrrr": 0,
+    #"Nvvv": 0,
+    #"Nvvr": 0,
+    #"Nvrr": 0,
+    #"Yvvr": 0,
+    #"Yvrr": 0,
     "Yr":0,
-    "Yrrr":0,
-    "Yvvv":0,
+    #"Yrrr":0,
+    #"Yvvv":0,
     "Y0": 0,
     "N0": 0,
-    "Nrrr": 0,
+    #"Nrrr": 0,
 }
 
 
@@ -83,15 +83,18 @@ def gather_data(tests_ek_smooth_joined: pd.DataFrame) -> pd.DataFrame:
 
 def regress_hull_inverse_dynamics(
     base_models: dict,
-    tests_ek_smooth_joined: pd.DataFrame,
+    data: pd.DataFrame,
 ) -> dict:
     models = {}
 
     log.info(figlet_format("Semi-empirical ID", font="starwars"))
 
-    data = gather_data(tests_ek_smooth_joined=tests_ek_smooth_joined)
+    #data = gather_data(tests_ek_smooth_joined=tests_ek_smooth_joined)
 
+    log.info(f"Training data ids:{data['id'].unique()}")
+    
     for name, loader in base_models.items():
+        log.info(figlet_format(f"{name}", font="big"))
         base_model = loader()
         exclude_parameters = exclude_parameters_global.copy()
 
@@ -435,3 +438,22 @@ def _regress_inverse_dynamics(
         return model, fits
     else:
         return model
+
+def training_data(tests:dict, ids:list)->dict:
+    _ = []
+    t = 0
+    dt = 0.01
+    
+    for id in ids:
+        df_ = tests[str(id)]()
+        df_['id'] = id
+        df_.index+=t+dt
+        
+        if id == 22774:
+            df_ = df_.loc[df_.index[0]:df_.index[0]+70]
+
+        _.append(df_)
+        t=df_.index[-1]
+        
+    data = pd.concat(_, axis=0)
+    return data
