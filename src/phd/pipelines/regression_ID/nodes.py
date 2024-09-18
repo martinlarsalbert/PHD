@@ -31,23 +31,6 @@ from pyfiglet import figlet_format
 
 log = logging.getLogger(__name__)
 
-exclude_parameters_global = {
-    # "a_H": 0.07,  # hull rudder interaction,
-    #"Yrrr": 0,
-    #"Nvvv": 0,
-    #"Nvvr": 0,
-    #"Nvrr": 0,
-    #"Yvvr": 0,
-    #"Yvrr": 0,
-    "Yr":0,
-    #"Yrrr":0,
-    #"Yvvv":0,
-    "Y0": 0,
-    "N0": 0,
-    #"Nrrr": 0,
-}
-
-
 def gather_data(tests_ek_smooth_joined: pd.DataFrame) -> pd.DataFrame:
     ids = [
         22773,
@@ -84,6 +67,7 @@ def gather_data(tests_ek_smooth_joined: pd.DataFrame) -> pd.DataFrame:
 def regress_hull_inverse_dynamics(
     base_models: dict,
     data: pd.DataFrame,
+    exclude_parameters : dict
 ) -> dict:
     models = {}
 
@@ -96,7 +80,7 @@ def regress_hull_inverse_dynamics(
     for name, loader in base_models.items():
         log.info(figlet_format(f"{name}", font="big"))
         base_model = loader()
-        exclude_parameters = exclude_parameters_global.copy()
+        exclude_parameters = exclude_parameters.copy()
 
         ## Stealing the resistance
         exclude_parameters["X0"] = base_model.parameters["X0"]
@@ -269,6 +253,46 @@ def _regress_hull_inverse_dynamics(
     else:
         return model
 
+def regress_hull_partial_inverse_dynamics(
+    base_models: dict,
+    data: pd.DataFrame,
+    include_parameters : list
+) -> dict:
+    """Regress only some of the parameters
+
+    Args:
+        base_models (dict): _description_
+        data (pd.DataFrame): _description_
+        include_parameters (list): _description_
+
+    Returns:
+        dict: _description_
+    """
+    models = {}
+
+    log.info(figlet_format("Hull partial ID", font="starwars"))
+
+    #data = gather_data(tests_ek_smooth_joined=tests_ek_smooth_joined)
+
+    log.info(f"Training data ids:{data['id'].unique()}")
+    
+    for name, loader in base_models.items():
+        log.info(figlet_format(f"{name}", font="big"))
+        base_model = loader()
+        exclude_parameters = base_model.parameters.copy()
+
+        models[name], fits = _regress_hull_inverse_dynamics(
+            vmm_model=base_model,
+            data=data,
+            exclude_parameters=exclude_parameters,
+            full_output=True,
+        )
+        
+        for key, fit in fits.items():
+            log.info(key)
+            log.info(fit.summary2())
+
+    return models
 
 def regress_inverse_dynamics(
     base_models: dict, tests_ek_smooth_joined: pd.DataFrame, steal_models: dict

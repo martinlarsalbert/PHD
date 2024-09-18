@@ -28,3 +28,8 @@ wPCC.training_data_all_ids:
   - 22772
   - 22773
   - 22774
+
+wPCC.exclude_parameters_IDR:
+  #Yr : 0 
+  Y0 : 0
+  N0 : 0

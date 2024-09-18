@@ -48,9 +48,7 @@ def register_pipelines() -> Dict[str, Pipeline]:
     pipelines["load_wPCC"] = pipeline(
         pipe=load_wPCC.create_pipeline(), namespace="wPCC"
     )
-
-    # pipelines["filter"] = pipeline(pipe=filter.create_pipeline(), namespace="7m")
-
+    
     pipelines["filter_wPCC"] = pipeline(
         pipe=filter_wPCC.create_pipeline(), namespace="wPCC"
     )

@@ -23,7 +23,7 @@ def create_pipeline(**kwargs) -> Pipeline:
         node(
                 func=regress_hull_inverse_dynamics,
                 #inputs=["models_VCT_MDL", f"tests_ek_joined{i}"],
-                inputs=["models_VCT_nonlinear_MDL", f"training_data_small"],
+                inputs=["models_VCT_nonlinear_MDL", f"training_data_small", "params:exclude_parameters_IDR"],
                 outputs=f"models_ID_hull_small",
                 name=f"regress_hull_inverse_dynamics_small",
                 tags=tags,
@@ -40,7 +40,7 @@ def create_pipeline(**kwargs) -> Pipeline:
         node(
                 func=regress_hull_inverse_dynamics,
                 #inputs=["models_VCT_MDL", f"tests_ek_joined{i}"],
-                inputs=["models_VCT_nonlinear_MDL", f"training_data_medium"],
+                inputs=["models_VCT_nonlinear_MDL", f"training_data_medium", "params:exclude_parameters_IDR"],
                 outputs=f"models_ID_hull_medium",
                 name=f"regress_hull_inverse_dynamics_medium",
                 tags=tags,
@@ -57,9 +57,40 @@ def create_pipeline(**kwargs) -> Pipeline:
         node(
                 func=regress_hull_inverse_dynamics,
                 #inputs=["models_VCT_MDL", f"tests_ek_joined{i}"],
-                inputs=["models_VCT_nonlinear_MDL", f"training_data_all"],
+                inputs=["models_VCT_nonlinear_MDL", f"training_data_all", "params:exclude_parameters_IDR"],
                 outputs=f"models_ID_hull_all",
                 name=f"regress_hull_inverse_dynamics_all",
+                tags=tags,
+            ),
+        
+        ## Partial IDR        
+        # Small:
+        node(
+                func=regress_hull_inverse_dynamics,
+                #inputs=["models_VCT_MDL", f"tests_ek_joined{i}"],
+                inputs=["models_VCT_nonlinear_MDL", f"training_data_small", "params:exclude_parameters_partial_IDR"],
+                outputs=f"models_partial_ID_hull_small",
+                name=f"partial_hull_inverse_dynamics_small",
+                tags=tags,
+            ),
+        
+        # Medium
+        node(
+                func=regress_hull_inverse_dynamics,
+                #inputs=["models_VCT_MDL", f"tests_ek_joined{i}"],
+                inputs=["models_VCT_nonlinear_MDL", f"training_data_medium", "params:exclude_parameters_partial_IDR"],
+                outputs=f"models_partial_ID_hull_medium",
+                name=f"partial_hull_inverse_dynamics_medium",
+                tags=tags,
+            ),
+
+        # All
+        node(
+                func=regress_hull_inverse_dynamics,
+                #inputs=["models_VCT_MDL", f"tests_ek_joined{i}"],
+                inputs=["models_VCT_nonlinear_MDL", f"training_data_all", "params:exclude_parameters_partial_IDR"],
+                outputs=f"models_partial_ID_hull_all",
+                name=f"partial_hull_inverse_dynamics_all",
                 tags=tags,
             ),
 
