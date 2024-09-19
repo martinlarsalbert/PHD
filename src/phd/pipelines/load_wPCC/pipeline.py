@@ -19,7 +19,7 @@ def create_pipeline(**kwargs):
                 ],
                 outputs="tests_WL",
                 name="load_node",
-                tags=["filter"],
+                tags=["filter","load"],
             ),
             node(
                 func=move_to_roll_centre,
@@ -29,7 +29,7 @@ def create_pipeline(**kwargs):
                 ],
                 outputs="tests",
                 name="move_to_roll_centre",
-                tags=["filter"],
+                tags=["filter","load"],
             ),
             # node(
             #    func=filter,

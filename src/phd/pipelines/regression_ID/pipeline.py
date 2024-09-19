@@ -6,7 +6,7 @@ generated using Kedro 0.18.7
 from kedro.pipeline import Pipeline, node, pipeline
 from .nodes import regress_hull_inverse_dynamics, regress_inverse_dynamics, training_data
 
-tags = ['inverse_dynamics_regression']
+tags = ['inverse_dynamics_regression','regression_ID']
 
 def create_pipeline(**kwargs) -> Pipeline:
     

@@ -29,33 +29,9 @@ def register_pipelines() -> Dict[str, Pipeline]:
     """
     # pipelines = find_pipelines()
     pipelines = {}
-
-    ## wPCC
-    pipelines["models"] = pipeline(models.create_pipeline(), namespace="wPCC")
-
-    pipelines["regression_VCT"] = pipeline(
-        regression_VCT.create_pipeline(), namespace="wPCC"
-    )
-
-    pipelines["added_mass_from_inverse_dynamics"] = pipeline(
-        added_mass_from_inverse_dynamics.create_pipeline(), namespace="wPCC"
-    )
-
-    pipelines["regression_ID"] = pipeline(
-        regression_ID.create_pipeline(), namespace="wPCC"
-    )
-
-    pipelines["load_wPCC"] = pipeline(
-        pipe=load_wPCC.create_pipeline(), namespace="wPCC"
-    )
-    
-    pipelines["filter_wPCC"] = pipeline(
-        pipe=filter_wPCC.create_pipeline(), namespace="wPCC"
-    )
-
-    pipelines["resistance_MDL"] = pipeline(
-        resistance_MDL.create_pipeline(), namespace="wPCC"
-    )
+    ships=['wPCC','optiwise']
+    for ship_name in ships:
+        pipelines[ship_name] = ship_pipeline(ship_name=ship_name)
 
     ## KVLCC2
     pipelines["models_kvlcc2"] = pipeline(
@@ -83,3 +59,23 @@ def register_pipelines() -> Dict[str, Pipeline]:
     # -------------------
     pipelines["__default__"] = sum(pipelines.values())
     return pipelines
+
+def ship_pipeline(ship_name:str):
+    
+    ## ship pipeline (wPCC)
+    the_pipeline = (
+        pipeline(models.create_pipeline(), namespace=ship_name)
+
+        + pipeline(regression_VCT.create_pipeline(), namespace=ship_name)
+
+
+        + pipeline(regression_ID.create_pipeline(), namespace=ship_name)
+        
+        + pipeline(pipe=load_wPCC.create_pipeline(), namespace=ship_name)
+    
+        + pipeline(pipe=filter_wPCC.create_pipeline(), namespace=ship_name)
+
+        + pipeline(resistance_MDL.create_pipeline(), namespace=ship_name)
+    
+    )
+    return the_pipeline
