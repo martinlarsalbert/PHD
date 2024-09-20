@@ -42,9 +42,9 @@ xs = {
     "Rudder angle CT": "delta_deg",
     "Drift angle": "beta_deg",
     "Circle": "r",
-    "Circle + rudder angle": "r*delta",
-    "Circle + Drift": "v*r",
-    "Rudder and drift angle": "beta*delta",
+    "Circle + rudder angle": "delta_deg",
+    "Circle + Drift": "beta_deg",
+    "Rudder and drift angle": "delta",
     "Heel + Drift": "phi",
     "Heel and drift angle": "phi",
     "Heel": "phi",
@@ -148,7 +148,24 @@ def plot(
             alpha=1,
         )
 
-        for V, df in group.groupby("V_round"):
+        if test_type == "Thrust variation":
+            by = ["V_round","delta",]
+        elif test_type == "Circle + Drift":
+            by = ["V_round","r_round",]
+        elif test_type == "Circle + rudder angle":
+            by = ["V_round","r_round",]                        
+        elif test_type == "Rudder and drift angle":
+            by = ["V_round","beta_deg",]                        
+        else:
+            by = "V_round"
+        
+        
+        line_dash='solid'
+        if "is_VCT" in group:
+            if group.iloc[0]['is_VCT']:
+                line_dash='dashed'
+                
+        for V, df in group.groupby(by):
             vct_source = ColumnDataSource(df.sort_values(by=x))
             fig.line(
                 x,
@@ -156,6 +173,7 @@ def plot(
                 source=vct_source,
                 line_alpha=0.5,
                 legend_label=legend,
+                line_dash=line_dash,
             )
 
     fig.legend.click_policy = "hide"
@@ -185,6 +203,7 @@ def create_tab(
     df["beta_deg"] = np.rad2deg(df["beta"])
     df["delta_deg"] = np.rad2deg(df["delta"])
     df["V_round"] = df["V"].round(decimals=2)
+    df["r_round"] = df["r"].round(decimals=4)
 
     mapper = linear_cmap(
         field_name="V", palette=Spectral6, low=df["V"].min(), high=df["V"].max()
