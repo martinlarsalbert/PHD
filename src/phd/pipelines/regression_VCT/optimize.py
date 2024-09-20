@@ -40,9 +40,14 @@ def calculate(model: ModularVesselSimulator, data: pd.DataFrame, x, parameters: 
         calculation = model.subsystems[precalculate_subsystem].calculate_forces(
             states_dict=states, control=control, calculation=calculation)
     
-    calculation = model.subsystems["rudders"].calculate_forces(
+    if model.is_twin_screw:
+        calculation = model.subsystems["rudders"].calculate_forces(
         states_dict=states, control=control, calculation=calculation
-    )
+        )
+    else:
+        calculation = model.subsystems["rudder"].calculate_forces(
+        states_dict=states, control=control, calculation=calculation
+        )
         
     df_force_predicted = pd.DataFrame(calculation)
     # df_force_predicted = pd.DataFrame(
@@ -94,9 +99,13 @@ def fit(
 
     # df_force = model.forces_from_motions(data=data)
 
-    #To slice the calculation up till the rudders system:
-    precalculate_subsystems=model.find_providing_subsystems_recursive(model.subsystems['rudders'])
-    precalculate_subsystems = list(np.flipud(precalculate_subsystems))  # calculation order...
+    if model.is_twin_screw:
+        #To slice the calculation up till the rudders system:
+        precalculate_subsystems=model.find_providing_subsystems_recursive(model.subsystems['rudders'])
+        precalculate_subsystems = list(np.flipud(precalculate_subsystems))  # calculation order...
+    else:
+        precalculate_subsystems=model.find_providing_subsystems_recursive(model.subsystems['rudder'])
+        precalculate_subsystems = list(np.flipud(precalculate_subsystems))  # calculation order...
     
     kwargs = {
         "model": model,

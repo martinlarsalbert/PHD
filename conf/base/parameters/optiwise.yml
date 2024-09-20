@@ -1,0 +1,29 @@
+optiwise:
+  thrust_channels:
+    - Prop/PS/Thrust
+    - Prop/SB/Thrust
+  VCT_exclude_parameters: {}
+  #VCT_nonlinear_exclude_parameters: {}
+  skip: {}
+  tests: {}
+  VCT_selection: null 
+
+  parameters:
+    default:
+      #delta_lim: 1000000000000000 # Vert large value in CFD (no play between hull and rudder for large angles)
+      s: 0
+      C_2_beta_p_neg: 1.1
+      C_2_beta_p_pos: 1.6
+      C_1: 2.0
+      kappa_v: 0.6
+      kappa_v_gamma_g: 0
+      kappa_r: 0.8
+      kappa_r_gamma_g: 0
+      #Xudot: -0.000379  # These values were calculated with OCTOPUS office (see: 146.10_added_mass_wPCC.ipynb)
+      #Yvdot: -0.003839
+      #Nrdot: -0.000329
+      #Yrdot: -0.000173
+      #Nvdot: -0.000163
+  create_jacobians : False
+  optimize_rudder_inflow : True
+  optimize_rudder_drag: True

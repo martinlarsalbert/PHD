@@ -106,6 +106,32 @@ def load_VCT(df_VCT_all_raw: dict) -> dict:
 
     return df_VCT_all_raw
 
+def load(df_VCT_all_raw: dict) -> dict:
+    """_summary_
+
+    Parameters
+    ----------
+    df_VCT : dict
+        partitioned dataset with VCT results from different sources
+
+    Returns
+    -------
+    pd.DataFrame
+        concatinated selection of VCT data for this ship
+    """
+
+    df_VCT_all = {}
+    
+    def extra_columns_lazy(loader):
+        def dummy():
+            return extra_columns(loader())
+        return dummy
+    
+    for key, df in df_VCT_all_raw.items():
+        df_VCT_all[key] = extra_columns_lazy(df)  # Lazy loading
+
+    return df_VCT_all
+
 
 def scale(df_VCT: pd.DataFrame, ship_data: dict) -> pd.DataFrame:
     log.info("Scaling VCT results to model scale")
@@ -160,7 +186,7 @@ def extra_columns(df):
     return df
 
 
-def select(df_VCT_all_raw: dict) -> pd.DataFrame:
+def select(df_VCT_all_raw: dict, VCT_selection:list) -> pd.DataFrame:
     """_summary_
 
     Parameters
@@ -173,10 +199,11 @@ def select(df_VCT_all_raw: dict) -> pd.DataFrame:
     pd.DataFrame
         concatinated selection of VCT data for this ship
     """
-    selection = [
-        df_VCT_all_raw["M5139-02-A_MS.df_VCT"](),
-        #df_VCT_all_raw["V2_3_R2_MDL_additional.df_VCT"](),
-    ]
+    
+    if VCT_selection is None:
+        VCT_selection = df_VCT_all_raw.keys()
+    
+    selection = [df_VCT_all_raw[key]() for key in VCT_selection]
     df_VCT_raw = pd.concat(selection, axis=0)
     
     
@@ -312,6 +339,8 @@ def regress_hull_VCT(
     base_models: dict,
     df_VCT: pd.DataFrame,
     exclude_parameters: dict = {},
+    optimize_rudder_inflow = True,
+    optimize_rudder_drag = True,
 ):
     #    log.info("""
     # ____________________________________
@@ -335,6 +364,8 @@ def regress_hull_VCT(
             df_VCT=df_VCT,
             full_output=True,
             exclude_parameters=exclude_parameters,
+            optimize_rudder_inflow=optimize_rudder_inflow,
+            optimize_rudder_drag=optimize_rudder_drag,
         )
 
         models[name] = model
@@ -347,7 +378,9 @@ def _regress_hull_VCT(
     df_VCT: pd.DataFrame,
     full_output=False,
     exclude_parameters: dict = {},
-    try_to_remove_centripetal=True
+    try_to_remove_centripetal=True,
+    optimize_rudder_inflow=True,
+    optimize_rudder_drag=True,
 ):
     # log.info("Regressing hull VCT")
     from .regression_pipeline import pipeline, pipeline_RHI
@@ -379,54 +412,31 @@ def _regress_hull_VCT(
         
 
     # First manual regression on the rudder parameters
-    model = manual_regression(model=model)
+    #model = manual_regression(model=model)
 
-    # log.info("Precalculate the rudders, propellers and wind_force")
-    # calculation = {}
-    # model.parameters.update(exclude_parameters)
-    # for system_name, system in model.subsystems.items():
-    #    if system_name == "hull":
-    #        continue
-    #    try:
-    #        system.calculate_forces(
-    #            states_dict=df_VCT[model.states_str],
-    #            control=df_VCT[model.control_keys],
-    #            calculation=calculation,
-    #        )
-    #    except KeyError as e:
-    #        raise KeyError(f"Failed in subsystem:{system_name}")
-    # df_calculation = pd.DataFrame(calculation)
-
-    # df_calculation_prime = model.prime_system.prime(df_calculation[['Y_R','N_R']],U=df_VCT['V'])
-    # prime_system_ship = PrimeSystem(
-    #    L=model.ship_parameters["L"] * model.ship_parameters["scale_factor"],
-    #    rho=df_VCT.iloc[0]["rho"],
-    # )
-    # df_calculation_fullscale = prime_system_ship.unprime(df_calculation_prime, U=df_VCT['V'])
-    # for key,value in df_calculation.items():
-    #    if not key in df_VCT:
-    #        log.info(f"Adding calculated:{key}")
-    #    else:
-    #        log.info(f"Replacing with calculated:{key}")
-    #
-    #    df_VCT[key] = value
-
-    log.info(
+    if optimize_rudder_inflow:
+        log.info(
         "Optimization of rudder coefficients that are not so easy to regress with linear regression:"
-    )
-    parameters = ["kappa_v", "kappa_r", "kappa_v_gamma_g", "kappa_r_gamma_g"]
-    log.info(f"Optimizing parameters:{parameters}")
-    model, changes = phd.pipelines.regression_VCT.optimize.fit(
-        model=model, data=df_VCT, parameters=parameters
-    )
-    log.info(f"Optimized the following parameters to:{changes}")
+        )
+        
+        parameters = ["kappa_v", "kappa_r", "kappa_v_gamma_g", "kappa_r_gamma_g"]
+        log.info(f"Optimizing parameters:{parameters}")
+        model, changes = phd.pipelines.regression_VCT.optimize.fit(
+            model=model, data=df_VCT, parameters=parameters
+        )
+        log.info(f"Optimized the following parameters to:{changes}")
+    else:
+        log.info("Skipping rudder inflow optimization")
 
-    parameters = ["C_D_tune", "C_D0_tune"]
-    log.info(f"Optimizing parameters:{parameters}")
-    model, changes = phd.pipelines.regression_VCT.optimize.fit(
-        model=model, data=df_VCT, parameters=parameters, residual_keys=["X_R"]
-    )
-    log.info(f"Optimized the following parameters to:{changes}")
+    if optimize_rudder_drag:
+        parameters = ["C_D_tune", "C_D0_tune"]
+        log.info(f"Optimizing parameters:{parameters}")
+        model, changes = phd.pipelines.regression_VCT.optimize.fit(
+            model=model, data=df_VCT, parameters=parameters, residual_keys=["X_R"]
+        )
+        log.info(f"Optimized the following parameters to:{changes}")
+    else:
+        log.info("Skipping rudder drag optimization")
 
     model, fits_RHI = regress_VCT(
         model=model,
@@ -446,15 +456,31 @@ def _regress_hull_VCT(
     calculation = {}
     control = df_VCT[model.control_keys]
     states = df_VCT[model.states_str]
-    calculation = model.subsystems["rudder_port"].calculate_forces(
-        states_dict=states, control=control, calculation=calculation
-    )
-    calculation = model.subsystems["rudder_stbd"].calculate_forces(
-        states_dict=states, control=control, calculation=calculation
-    )
-    calculation = model.subsystems["rudders"].calculate_forces(
-        states_dict=states, control=control, calculation=calculation
-    )
+    
+    
+    if model.is_twin_screw:
+        #To slice the calculation up till the rudders system:
+        precalculate_subsystems=model.find_providing_subsystems_recursive(model.subsystems['rudders'])
+        precalculate_subsystems = list(np.flipud(precalculate_subsystems))  # calculation order...
+    else:
+        precalculate_subsystems=model.find_providing_subsystems_recursive(model.subsystems['rudder'])
+        precalculate_subsystems = list(np.flipud(precalculate_subsystems))  # calculation order...
+    
+    calculation = {}
+    for precalculate_subsystem in precalculate_subsystems:
+        calculation = model.subsystems[precalculate_subsystem].calculate_forces(
+            states_dict=states, control=control, calculation=calculation)
+        
+    
+    if model.is_twin_screw:
+        calculation = model.subsystems["rudders"].calculate_forces(
+            states_dict=states, control=control, calculation=calculation
+        )
+    else:
+        calculation = model.subsystems["rudder"].calculate_forces(
+            states_dict=states, control=control, calculation=calculation
+        )
+        
     df_force_predicted = pd.DataFrame(calculation)
     df_VCT["Y_H"] -= model.parameters["a_H"] * df_force_predicted["Y_R"]
     df_VCT["N_H"] -= model.parameters["x_H"] * df_force_predicted["N_R"]
@@ -557,8 +583,7 @@ def manual_regression(model: ModularVesselSimulator) -> ModularVesselSimulator:
     
     model.parameters['delta_lim'] = np.deg2rad(15)
     model.parameters['s'] = 0
-    model.ship_parameters['w_f']=0.297
-
+    
     return model
 
 

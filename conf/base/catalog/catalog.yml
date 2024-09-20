@@ -186,6 +186,16 @@
       index: True
   filename_suffix: .csv
 
+"{namespace}.tests":
+  type: PartitionedDataSet
+  path: data/02_intermediate/{namespace}/tests
+  dataset:
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
 
 "{namespace}.units":
   type: yaml.YAMLDataSet
@@ -223,61 +233,70 @@
       index: True
   filename_suffix: .csv
 
-"{namespace}.simulation_no_wind":
-  type: PartitionedDataSet
-  path: data/07_model_output/{namespace}/simulation/no_wind
-  dataset:
-    type: pandas.CSVDataSet
-    load_args:
-      index_col: 0
-    save_args:
-      index: True
-  filename_suffix: .csv
+#"{namespace}.simulation_no_wind":
+#  type: PartitionedDataSet
+#  path: data/07_model_output/{namespace}/simulation/no_wind
+#  dataset:
+#    type: pandas.CSVDataSet
+#    load_args:
+#      index_col: 0
+#    save_args:
+#      index: True
+#  filename_suffix: .csv
+#
+#"{namespace}.simulation_wind":
+#  type: PartitionedDataSet
+#  path: data/07_model_output/{namespace}/simulation/wind
+#  dataset:
+#    type: pandas.CSVDataSet
+#    load_args:
+#      index_col: 0
+#    save_args:
+#      index: True
+#  filename_suffix: .csv
+#
+#"{namespace}.modular.simulation_no_wind":
+#  type: PartitionedDataSet
+#  path: data/07_model_output/{namespace}/simulation/modular/no_wind
+#  dataset:
+#    type: pandas.CSVDataSet
+#    load_args:
+#      index_col: 0
+#    save_args:
+#      index: True
+#  filename_suffix: .csv
+#
+#"{namespace}.modular.simulation_wind":
+#  type: PartitionedDataSet
+#  path: data/07_model_output/{namespace}/simulation/modular/wind
+#  dataset:
+#    type: pandas.CSVDataSet
+#    load_args:
+#      index_col: 0
+#    save_args:
+#      index: True
+#  filename_suffix: .csv
+#
+#"{namespace}.simulation_MDL_vmm_abkowitz_diminished":
+#  type: PartitionedDataSet
+#  path: data/07_model_output/{namespace}/simulation/MDL_vmm_abkowitz_diminished
+#  dataset:
+#    type: pandas.CSVDataSet
+#    load_args:
+#      index_col: 0
+#    save_args:
+#      index: True
+#  filename_suffix: .csv
 
-"{namespace}.simulation_wind":
-  type: PartitionedDataSet
-  path: data/07_model_output/{namespace}/simulation/wind
-  dataset:
-    type: pandas.CSVDataSet
-    load_args:
-      index_col: 0
-    save_args:
-      index: True
-  filename_suffix: .csv
-
-"{namespace}.modular.simulation_no_wind":
-  type: PartitionedDataSet
-  path: data/07_model_output/{namespace}/simulation/modular/no_wind
-  dataset:
-    type: pandas.CSVDataSet
-    load_args:
-      index_col: 0
-    save_args:
-      index: True
-  filename_suffix: .csv
-
-"{namespace}.modular.simulation_wind":
-  type: PartitionedDataSet
-  path: data/07_model_output/{namespace}/simulation/modular/wind
-  dataset:
-    type: pandas.CSVDataSet
-    load_args:
-      index_col: 0
-    save_args:
-      index: True
-  filename_suffix: .csv
-
-"{namespace}.simulation_MDL_vmm_abkowitz_diminished":
-  type: PartitionedDataSet
-  path: data/07_model_output/{namespace}/simulation/MDL_vmm_abkowitz_diminished
-  dataset:
-    type: pandas.CSVDataSet
-    load_args:
-      index_col: 0
-    save_args:
-      index: True
-  filename_suffix: .csv
-
+"{namespace}.resistance_MDL":
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/{namespace}/resistance_MDL.csv
+  load_args:
+    index_col: 0
+    encoding: 'utf-8'
+  save_args:
+    index: True
+    encoding: 'utf-8'
 
 
 ## Models
@@ -329,12 +348,12 @@
     type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
   filename_suffix: .pkl
 
-"{namespace}.models_rudder_VCT":
-  type: PartitionedDataSet
-  path: data/06_models/{namespace}/models_rudder_VCT
-  dataset:
-    type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
-  filename_suffix: .pkl
+#"{namespace}.models_rudder_VCT":
+#  type: PartitionedDataSet
+#  path: data/06_models/{namespace}/models_rudder_VCT
+#  dataset:
+#    type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
+#  filename_suffix: .pkl
 
 
 "{namespace}.models_VCT_MDL":
@@ -351,19 +370,19 @@
     type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
   filename_suffix: .pkl
 
-"{namespace}.models_VCT_MDL_corrected_added_mass":
-  type: PartitionedDataSet
-  path: data/06_models/{namespace}/models_VCT_MDL_corrected_added_mass
-  dataset:
-    type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
-  filename_suffix: .pkl
-
-"{namespace}.models_VCT_MDL_optimize":
-  type: PartitionedDataSet
-  path: data/06_models/{namespace}/models_VCT_MDL_optimize
-  dataset:
-    type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
-  filename_suffix: .pkl
+#"{namespace}.models_VCT_MDL_corrected_added_mass":
+#  type: PartitionedDataSet
+#  path: data/06_models/{namespace}/models_VCT_MDL_corrected_added_mass
+#  dataset:
+#    type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
+#  filename_suffix: .pkl
+#
+#"{namespace}.models_VCT_MDL_optimize":
+#  type: PartitionedDataSet
+#  path: data/06_models/{namespace}/models_VCT_MDL_optimize
+#  dataset:
+#    type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
+#  filename_suffix: .pkl
 
 "{namespace}.models_ID_hull_small":
   type: PartitionedDataSet
@@ -395,15 +414,15 @@
   filename_suffix: .pkl
 
 ## Predict
-"{namespace}.force_prediction_scores":
-  type: pandas.CSVDataSet
-  filepath: data/08_reporting/{namespace}.force_prediction_scores.csv
-  load_args:
-    index_col: 0
-    encoding: 'utf-8'
-  save_args:
-    index: True
-    encoding: 'utf-8'
+#"{namespace}.force_prediction_scores":
+#  type: pandas.CSVDataSet
+#  filepath: data/08_reporting/{namespace}.force_prediction_scores.csv
+#  load_args:
+#    index_col: 0
+#    encoding: 'utf-8'
+#  save_args:
+#    index: True
+#    encoding: 'utf-8'
 
 "{namespace}.resistance":
   type: pandas.CSVDataSet

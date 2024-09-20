@@ -45,17 +45,17 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def base_models(ship_data: dict, parameters: dict) -> dict:
+def base_models(ship_data: dict, parameters: dict, create_jacobians) -> dict:
     models = {}
 
-    name = "semiempirical_covered"
-    log.info(f'Creating: "{name}"')
-    model = ModelSemiempiricalCovered(ship_data=ship_data, create_jacobians=True)
-    models[name] = model
+    #name = "semiempirical_covered"
+    #log.info(f'Creating: "{name}"')
+    #model = ModelSemiempiricalCovered(ship_data=ship_data, create_jacobians=create_jacobians)
+    #models[name] = model
 
     name = "semiempirical_covered_inertia"
     log.info(f'Creating: "{name}"')
-    model = ModelSemiempiricalCoveredInertia(ship_data=ship_data, create_jacobians=True)
+    model = ModelSemiempiricalCoveredInertia(ship_data=ship_data, create_jacobians=create_jacobians)
     models[name] = model
 
 

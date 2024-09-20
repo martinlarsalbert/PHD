@@ -28,12 +28,20 @@ wPCC.VCT_exclude_parameters:
     Nvrr: 0
     Yr: 0
     Yrrr: 0
+    gamma_0_port: 0.044
+    gamma_0_stbd: -0.044
+    
+
+wPCC.VCT_selection:
+    - M5139-02-A_MS.df_VCT
 
 wPCC.VCT_nonlinear_exclude_parameters:
     Y0: 0
     N0: 0
     Xthrustport : 0.883  # (1-tdf)
     Xthruststbd : 0.883  # (1-tdf)
+    gamma_0_port: 0.044
+    gamma_0_stbd: -0.044
 
 7m.VCT_exclude_parameters:
     Y0: 0

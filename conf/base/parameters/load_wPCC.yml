@@ -17,3 +17,4 @@ wPCC.accelerometer_position:
     z: -0.1  # Unsure about value
 
 wPCC.WL_to_roll_centre: -0.18025841446871002  # [m]
+

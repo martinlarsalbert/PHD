@@ -1,24 +1,24 @@
-"{namespace}.index_PMM":
-  type: pandas.CSVDataSet
-  filepath: data/01_raw/{namespace}/index_PMM.csv
-  load_args:
-    index_col: 0
-  save_args:
-    index: True
-
-"{namespace}.PMM":
-  type: PartitionedDataSet
-  path: data/01_raw/{namespace}/PMM
-  dataset: 
-    type: pandas.CSVDataSet
-    load_args:
-      sep: ' '
-  filename_suffix: .dat
-
-"{namespace}.open_water_characteristics":
-  type: pandas.CSVDataSet
-  filepath: data/01_raw/{namespace}/open_water_characteristics.csv
-  load_args:
-    index_col: 0
-  save_args:
-    index: True
+#"{namespace}.index_PMM":
+#  type: pandas.CSVDataSet
+#  filepath: data/01_raw/{namespace}/index_PMM.csv
+#  load_args:
+#    index_col: 0
+#  save_args:
+#    index: True
+#
+#"{namespace}.PMM":
+#  type: PartitionedDataSet
+#  path: data/01_raw/{namespace}/PMM
+#  dataset: 
+#    type: pandas.CSVDataSet
+#    load_args:
+#      sep: ' '
+#  filename_suffix: .dat
+#
+#"{namespace}.open_water_characteristics":
+#  type: pandas.CSVDataSet
+#  filepath: data/01_raw/{namespace}/open_water_characteristics.csv
+#  load_args:
+#    index_col: 0
+#  save_args:
+#    index: True

@@ -305,10 +305,13 @@ class ModelTowedSemiempiricalCovered(ModelTowed):
             "x_R": self.ship_parameters["x_r"],
             "y_R": 0,
             "z_R": 0,
-            "w_f": self.ship_parameters["w_p0"],
             "A_R_C": 0,  # No propeller to cover the rudder
             "A_R_U": self.ship_parameters["A_R"],  # ... everything is uncovered
         }
+        
+        if not self.find_symbol_in_subsystem_output(w_f):
+            self.ship_parameters["w_f"] = self.ship_parameters["w_p0"]
+        
         self.ship_parameters.update(rudder_particulars)
         rudder_parameters = {
             "nu": 1.18849e-06,
@@ -365,12 +368,16 @@ class ModelSemiempiricalCovered(ModelTowedSemiempiricalCovered):
             "x_R": self.ship_parameters["x_r"],
             "y_R": 0,
             "z_R": 0,
-            "w_f": self.ship_parameters["w_p0"],
             "A_R_C": self.ship_parameters["D"] * self.ship_parameters["c"],
             "A_R_U": (self.ship_parameters["b_R"] - self.ship_parameters["D"])
             * self.ship_parameters["c"],
         }
+        
+        if not self.find_symbol_in_subsystem_output(w_f):
+            self.ship_parameters["w_f"] = self.ship_parameters["w_p0"]
+                
         self.ship_parameters.update(rudder_particulars)
+        
         rudder_parameters = {
             "nu": 1.18849e-06,
             "e_0": 0.9,

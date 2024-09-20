@@ -20,17 +20,6 @@ wPCC.tests_WL:
       index: True
   filename_suffix: .csv
 
-wPCC.tests:
-  type: PartitionedDataSet
-  path: data/02_intermediate/wPCC/tests
-  dataset:
-    type: pandas.CSVDataSet
-    load_args:
-      index_col: 0
-    save_args:
-      index: True
-  filename_suffix: .csv
-
 wPCC.test_meta_data:
   type: pandas.CSVDataSet
   filepath: data/02_intermediate/wPCC/test_meta_data.csv
@@ -272,14 +261,6 @@ wPCC.x0:
 
 ## Other
 
-wPCC.resistance_MDL:
-  type: pandas.CSVDataSet
-  filepath: data/02_intermediate/resistance_MDL.csv
-  load_args:
-    index_col: 0
-    encoding: 'utf-8'
-  save_args:
-    index: True
-    encoding: 'utf-8'
+
 
 

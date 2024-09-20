@@ -29,18 +29,18 @@ def create_pipeline(**kwargs) -> Pipeline:
     nodes = [
         node(
             func=base_models,
-            inputs=["ship_data", "params:parameters"],
+            inputs=["ship_data", "params:parameters", "params:create_jacobians"],
             outputs="base_models",
             name="base_models",
             tags=["generate_model"]
         ),
-        node(
-            func=base_models_simple,
-            inputs=["ship_data", "params:parameters"],
-            outputs="base_models_simple",
-            name="base_models_simple",
-            tags=["generate_model"]
-        ),
+        #node(
+        #    func=base_models_simple,
+        #    inputs=["ship_data", "params:parameters"],
+        #    outputs="base_models_simple",
+        #    name="base_models_simple",
+        #    tags=["generate_model"]
+        #),
     ]
     return pipeline(nodes)
 

@@ -26,10 +26,11 @@ n_prop: 2
 tdf: 0.117   # Thrust deduction factor
 A_R: 0.030095732397021395  # Rudder area [m2]
 b_R: 0.17427184466019416   # Rudder height [m]
-c_r: 0.19247572815533978   # Rudder root chord [m]
-c_t: 0.1529126213592233    # Rudder tip chord [m]
-c: 0.17269417475728155     # Rudder chord [m]
+#c_r: 0.19247572815533978   # Rudder root chord [m]
+#c_t: 0.1529126213592233    # Rudder tip chord [m]
+#c: 0.17269417475728155     # Rudder chord [m]
 x_fan_fore: 1.2877184466019416  # Fan positions [m]
 x_fan_aft: -1.5381815533980583
 y_fan_aft: 0
 y_fan_fore: 0 
+w_f: 0.297

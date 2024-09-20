@@ -1,142 +1,37 @@
-## Time series
-7m.time_series_raw:
-  type: PartitionedDataSet
-  path: data/01_raw/7m/time_series_raw
-  dataset:
-    type: pandas.CSVDataSet
-    load_args:
-      index_col: 0
-    save_args:
-      index: True
-  filename_suffix: .csv
-
-# This is the first data from Ulysse, which had a slightly different format and also some interolaion errors of the angles.
-7m.time_series_raw_first_batch:
-  type: PartitionedDataSet
-  path: data/01_raw/7m/time_series_raw_first_batch
-  dataset:
-    type: pandas.CSVDataSet
-    load_args:
-      index_col: 0
-    save_args:
-      index: True
-  filename_suffix: .csv
-
-7m.missions:
-  type: PartitionedDataSet
-  path: data/01_raw/7m/missions
-  dataset:
-    type: text.TextDataSet
-  filename_suffix: .txt
-
-7m.tests:
-  type: PartitionedDataSet
-  path: data/02_intermediate/7m/tests
-  dataset:
-    type: pandas.CSVDataSet
-    load_args:
-      index_col: 0
-    save_args:
-      index: True
-  filename_suffix: .csv
-
-7m.test_meta_data:
-  type: pandas.CSVDataSet
-  filepath: data/02_intermediate/7m/test_meta_data.csv
-  load_args:
-    index_col: 0
-    encoding: 'utf-8'
-    dtype:
-      id: int
-  save_args:
-    index: True
-    encoding: 'utf-8'
-
-7m.covariance_matrixes:
-  type: PartitionedDataSet
-  path: data/03_primary/covariance_matrixes/7m
-  dataset:
-    type: yaml.YAMLDataSet
-  filename_suffix: .yml
-
-7m.covariance_matrixes2:
-  type: PartitionedDataSet
-  path: data/03_primary/covariance_matrixes2/7m
-  dataset:
-    type: yaml.YAMLDataSet
-  filename_suffix: .yml
-
-7m.x0:
-  type: PartitionedDataSet
-  path: data/03_primary/x0/7m
-  dataset:
-    type: yaml.YAMLDataSet
-  filename_suffix: .yml
-
-7m.test_ek_smooth_meta_data:
-  type: pandas.CSVDataSet
-  filepath: data/03_primary/tests_preprocessed/7m/test_ek_smooth_meta_data.csv
-  load_args:
-    index_col: 0
-    encoding: 'utf-8'
-    dtype:
-      id: int
-  save_args:
-    index: True
-    encoding: 'utf-8'
-
-7m.ek_filtered:
-  type: PartitionedDataSet
-  path: data/03_primary/ek_filtered/7m
-  dataset:
-    type: ek_dataset.ExtendedKalmanDataSet
-  filename_suffix: .pkl
-
-7m.ek_smooth:
-  type: PartitionedDataSet
-  path: data/03_primary/ek_smooth/7m
-  dataset:
-    type: ek_dataset.ExtendedKalmanDataSet
-  filename_suffix: .pkl
-
-
-7m.tests_ek:
-  type: PartitionedDataSet
-  path: data/03_primary/tests_preprocessed/7m/ek
-  dataset:
-    type: pandas.CSVDataSet
-    load_args:
-      index_col: 0
-    save_args:
-      index: True
-  filename_suffix: .csv
-
-7m.tests_ek_smooth:
-  type: PartitionedDataSet
-  path: data/03_primary/tests_preprocessed/7m/ek_smooth
-  dataset:
-    type: pandas.CSVDataSet
-    load_args:
-      index_col: 0
-    save_args:
-      index: True
-  filename_suffix: .csv
-
-HMD_PCTC.wind_data:
-  type: pandas.CSVDataSet
-  filepath: data/01_raw/7m/HMD_PCTC.wind_data.csv
-  load_args:
-    index_col: 0
-    encoding: 'utf-8'
-    dtype:
-      id: int
-  save_args:
-    index: True
-    encoding: 'utf-8'
-
-#7m.resistance:
+### Time series
+#7m.time_series_raw:
+#  type: PartitionedDataSet
+#  path: data/01_raw/7m/time_series_raw
+#  dataset:
+#    type: pandas.CSVDataSet
+#    load_args:
+#      index_col: 0
+#    save_args:
+#      index: True
+#  filename_suffix: .csv
+#
+## This is the first data from Ulysse, which had a slightly different format and also some interolaion errors of the angles.
+#7m.time_series_raw_first_batch:
+#  type: PartitionedDataSet
+#  path: data/01_raw/7m/time_series_raw_first_batch
+#  dataset:
+#    type: pandas.CSVDataSet
+#    load_args:
+#      index_col: 0
+#    save_args:
+#      index: True
+#  filename_suffix: .csv
+#
+#7m.missions:
+#  type: PartitionedDataSet
+#  path: data/01_raw/7m/missions
+#  dataset:
+#    type: text.TextDataSet
+#  filename_suffix: .txt
+#
+#7m.test_meta_data:
 #  type: pandas.CSVDataSet
-#  filepath: data/01_raw/7m/resistance.csv
+#  filepath: data/02_intermediate/7m/test_meta_data.csv
 #  load_args:
 #    index_col: 0
 #    encoding: 'utf-8'
@@ -145,15 +40,109 @@ HMD_PCTC.wind_data:
 #  save_args:
 #    index: True
 #    encoding: 'utf-8'
-
-7m.df_CMT_prime_corrected:
-  type: pandas.CSVDataSet
-  filepath: data/02_intermediate/7m/7m.df_CMT_prime_corrected.csv
-  load_args:
-    index_col: 0
-  save_args:
-    index: True
-
-7m.TT_resistance:
-  type: pandas.CSVDataSet
-  filepath: data/01_raw/7m/TT_resistance.csv
+#
+#7m.covariance_matrixes:
+#  type: PartitionedDataSet
+#  path: data/03_primary/covariance_matrixes/7m
+#  dataset:
+#    type: yaml.YAMLDataSet
+#  filename_suffix: .yml
+#
+#7m.covariance_matrixes2:
+#  type: PartitionedDataSet
+#  path: data/03_primary/covariance_matrixes2/7m
+#  dataset:
+#    type: yaml.YAMLDataSet
+#  filename_suffix: .yml
+#
+#7m.x0:
+#  type: PartitionedDataSet
+#  path: data/03_primary/x0/7m
+#  dataset:
+#    type: yaml.YAMLDataSet
+#  filename_suffix: .yml
+#
+#7m.test_ek_smooth_meta_data:
+#  type: pandas.CSVDataSet
+#  filepath: data/03_primary/tests_preprocessed/7m/test_ek_smooth_meta_data.csv
+#  load_args:
+#    index_col: 0
+#    encoding: 'utf-8'
+#    dtype:
+#      id: int
+#  save_args:
+#    index: True
+#    encoding: 'utf-8'
+#
+#7m.ek_filtered:
+#  type: PartitionedDataSet
+#  path: data/03_primary/ek_filtered/7m
+#  dataset:
+#    type: ek_dataset.ExtendedKalmanDataSet
+#  filename_suffix: .pkl
+#
+#7m.ek_smooth:
+#  type: PartitionedDataSet
+#  path: data/03_primary/ek_smooth/7m
+#  dataset:
+#    type: ek_dataset.ExtendedKalmanDataSet
+#  filename_suffix: .pkl
+#
+#
+#7m.tests_ek:
+#  type: PartitionedDataSet
+#  path: data/03_primary/tests_preprocessed/7m/ek
+#  dataset:
+#    type: pandas.CSVDataSet
+#    load_args:
+#      index_col: 0
+#    save_args:
+#      index: True
+#  filename_suffix: .csv
+#
+#7m.tests_ek_smooth:
+#  type: PartitionedDataSet
+#  path: data/03_primary/tests_preprocessed/7m/ek_smooth
+#  dataset:
+#    type: pandas.CSVDataSet
+#    load_args:
+#      index_col: 0
+#    save_args:
+#      index: True
+#  filename_suffix: .csv
+#
+#HMD_PCTC.wind_data:
+#  type: pandas.CSVDataSet
+#  filepath: data/01_raw/7m/HMD_PCTC.wind_data.csv
+#  load_args:
+#    index_col: 0
+#    encoding: 'utf-8'
+#    dtype:
+#      id: int
+#  save_args:
+#    index: True
+#    encoding: 'utf-8'
+#
+##7m.resistance:
+##  type: pandas.CSVDataSet
+##  filepath: data/01_raw/7m/resistance.csv
+##  load_args:
+##    index_col: 0
+##    encoding: 'utf-8'
+##    dtype:
+##      id: int
+##  save_args:
+##    index: True
+##    encoding: 'utf-8'
+#
+#7m.df_CMT_prime_corrected:
+#  type: pandas.CSVDataSet
+#  filepath: data/02_intermediate/7m/7m.df_CMT_prime_corrected.csv
+#  load_args:
+#    index_col: 0
+#  save_args:
+#    index: True
+#
+#7m.TT_resistance:
+#  type: pandas.CSVDataSet
+#  filepath: data/01_raw/7m/TT_resistance.csv
