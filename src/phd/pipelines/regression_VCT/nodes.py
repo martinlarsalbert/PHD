@@ -278,7 +278,7 @@ def add_extra_points_with_multiple_test_types(
     return df_VCT_extra
 
 
-def add_extra_circle_drift(df_VCT: pd.DataFrame) -> pd.DataFrame:
+def add_extra_circle_drift(df_VCT: pd.DataFrame, add_mirror_circle_drift: bool) -> pd.DataFrame:
     log.info("Add extra Circle + Drift")
 
     df_VCT = add_extra_points_with_multiple_test_types(
@@ -295,7 +295,10 @@ def add_extra_circle_drift(df_VCT: pd.DataFrame) -> pd.DataFrame:
     )
     df_VCT.fillna(0, inplace=True)
 
-    df_VCT = mirror_circle_drift(df_VCT=df_VCT)
+    if add_mirror_circle_drift:
+        df_VCT = mirror_circle_drift(df_VCT=df_VCT)
+    else:
+        log.info("Not adding mirrored circle and drift test (not assuming symmetry) ")
 
     return df_VCT
 

@@ -50,7 +50,7 @@ def create_pipeline(ship_name:str, **kwargs) -> Pipeline:
             ),
             node(
                 func=add_extra_circle_drift,
-                inputs=["df_VCT_raw"],
+                inputs=["df_VCT_raw","params:add_mirror_circle_drift"],
                 outputs="df_VCT",
                 name="add_extra_circle_drift_node",
                 tags=['load_VCT','regression_VCT'],
