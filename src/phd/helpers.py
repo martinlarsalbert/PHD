@@ -99,3 +99,53 @@ def identity_decorator(wrapped):
 
     wrapper.__signature__ = inspect.signature(wrapped)  # the magic is here!
     return wrapper
+
+def lazy(loaders:dict, function, **kwargs):
+    """
+    Apply lazy loading to a node to save memory
+       
+    
+    Args:
+        loaders (dict): all the loaders, which will be loaded and passed to the function
+        function (_type_): the function where the loaded variables will be inserted.
+    
+    Example:
+    
+    Instead of doing this (which consumes a lot of memory):
+    ```
+    def node(models:dict)->dict:
+        
+        new_models = {}
+        for name, loader in models.items():
+            model = loader()
+            new_models[name] = the_function(model=model, a=1)
+        
+        return new_models
+    ```
+    
+    We can instead use the lazy method:        
+    ```
+    def node(models:dict)->dict:
+        
+        new_models = {}
+        for name, loader in models.items():
+            new_models[name] = lazy(loaders={'model':loader}, function=the_function, a=1)
+        
+        return new_models
+    
+    
+    ```
+    """
+    def run():
+        inputs = {key:loader() for key,loader in loaders.items()}
+        return function(**inputs, **kwargs)
+    return run
+
+def lazy_iteration(loaders, var_name:str, function, **kwargs):
+    
+    savers = {}
+        
+    for name, loader in loaders.items():
+        savers[name] = lazy(loaders={var_name:loader}, function=function, **kwargs)
+        
+    return savers

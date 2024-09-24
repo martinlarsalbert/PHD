@@ -2,7 +2,16 @@ optiwise:
   thrust_channels:
     - Prop/PS/Thrust
     - Prop/SB/Thrust
-  VCT_exclude_parameters: {}
+  VCT_exclude_parameters:
+    Yrrr: 0  # From visual inspection of VCT
+    Nrrr: 0  # From visual inspection of VCT
+    Y0: 0  
+    N0: 0
+    #Nvvr: 0  # Till I get more data...
+    #Nvrr: 0
+    #Yvvr: 0
+    #Yvrr: 0
+
   #VCT_nonlinear_exclude_parameters: {}
   skip: {}
   tests: {}

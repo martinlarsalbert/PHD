@@ -18,6 +18,7 @@ from .pipelines import (
     added_mass_from_inverse_dynamics,
     regression_VCT_7m,
     captive,
+    add_propeller,
 )
 
 
@@ -68,6 +69,7 @@ def ship_pipeline(ship_name:str):
 
         + pipeline(regression_VCT.create_pipeline(ship_name=ship_name), namespace=ship_name)
 
+        + pipeline(add_propeller.create_pipeline(), namespace=ship_name)
 
         + pipeline(regression_ID.create_pipeline(), namespace=ship_name)
         

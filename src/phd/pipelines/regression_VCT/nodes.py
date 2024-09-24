@@ -300,6 +300,12 @@ def add_extra_circle_drift(df_VCT: pd.DataFrame, add_mirror_circle_drift: bool) 
     else:
         log.info("Not adding mirrored circle and drift test (not assuming symmetry) ")
 
+    ## remove duplicates within the same test type:
+    mask = df_VCT.groupby(by='test type').apply(lambda x: ~x['result_file_path'].duplicated())
+    mask = pd.Series(data=mask.values, index=mask.index.get_level_values(1))
+    df_VCT = df_VCT.loc[mask].copy()
+    
+    
     return df_VCT
 
 
