@@ -7,29 +7,30 @@
 wPCC.VCT_exclude_parameters:
     Y0: 0
     N0: 0
-    Yvdeltadelta: 0
-    Yvvdelta: 0
-    Yrdeltadelta: 0
-    Yrrdelta: 0
-    Yvrdelta: 0
-    Nrrdelta: 0
-    Nvrdelta: 0
-    Nvdeltadelta: 0
-    Nrdeltadelta: 0
-    Nvvdelta: 0
+    #Yvdeltadelta: 0
+    #Yvvdelta: 0
+    #Yrdeltadelta: 0
+    #Yrrdelta: 0
+    #Yvrdelta: 0
+    #Nrrdelta: 0
+    #Nvrdelta: 0
+    #Nvdeltadelta: 0
+    #Nrdeltadelta: 0
+    #Nvvdelta: 0
     Xthrustport : 0.883  # (1-tdf)
     Xthruststbd : 0.883  # (1-tdf)
-    Yvvv: 0
-    Nvvv: 0
-    Nrrr: 0
-    Yvvr: 0
-    Yvrr: 0
-    Nvvr: 0
-    Nvrr: 0
-    Yr: 0
-    Yrrr: 0
+    #Yvvv: 0
+    #Nvvv: 0
+    #Nrrr: 0
+    #Yvvr: 0
+    #Yvrr: 0
+    #Nvvr: 0
+    #Nvrr: 0
+    #Yr: 0
+    #Yrrr: 0
     gamma_0_port: 0.044
     gamma_0_stbd: -0.044
+    w_f: 0.297000  # This is actually to large (0.151)
     
 
 wPCC.VCT_selection:
@@ -42,6 +43,10 @@ wPCC.VCT_nonlinear_exclude_parameters:
     Xthruststbd : 0.883  # (1-tdf)
     gamma_0_port: 0.044
     gamma_0_stbd: -0.044
+
+wPCC.optimize_rudder_inflow : True
+wPCC.optimize_rudder_drag: True
+wPCC.add_mirror_circle_drift: False
 
 7m.VCT_exclude_parameters:
     Y0: 0

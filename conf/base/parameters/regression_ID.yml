@@ -33,3 +33,6 @@ wPCC.exclude_parameters_IDR:
   #Yr : 0 
   Y0 : 0
   N0 : 0
+
+wPCC.partial_IDR_regress_parameters:
+  - Nv

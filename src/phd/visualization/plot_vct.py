@@ -246,7 +246,60 @@ def resistance_plot(axes, row, datasets, test_type, y_key, df_, df_results, by_l
     by_label.update(zip(labels, handles))
 
 
-def plot_group(df, dof, ax, style, label, annotate=False, **kwargs):
+def plot_VCT(df_VCT:pd.DataFrame, df_prediction:pd.DataFrame=None, test_type='Drift angle', y_keys=['X_D','Y_D','N_D'], prime=False):
+    
+    data_VCT = df_VCT.groupby(by='test type').get_group(test_type)
+    
+    n_rows = len(y_keys)
+    Vs = data_VCT['V'].unique()
+    n_cols = len(Vs)     
+    
+    fig,axes = plt.subplots(ncols=n_cols, nrows=n_rows)
+    if (n_cols==0) and (n_rows==0):
+        axes=np.array([axes])
+    
+    axes = axes.reshape((n_rows,n_cols))
+    
+    axes_map={}
+    
+    for row,y_key in enumerate(y_keys):
+        axes_map[y_key] = {}
+        for col,V in enumerate(Vs):
+            axes_map[y_key][V] = axes[row,col]
+            
+
+    def plot_dataset(data, label:str, style='.--'):
+        for V, group in data.groupby(by='V'):
+            first_row=True
+            for y_key in y_keys:
+                ax = axes_map[y_key][V]
+                plot_group(df=group, dof=y_key, ax=ax, style=style, label=label, prime=prime)
+
+                if first_row:
+                    first_row=False
+                    ax.set_title(f"V:{V:0.2f} [m/s]")  
+
+                ax.grid()
+                ax.set_ylabel(y_key)
+
+        if n_rows > 1:
+            # Remove xlabels for all but the last row
+            for ax in axes[:-1,:].flatten():
+                ax.set_xlabel('')
+                
+    plot_dataset(data=data_VCT, label='VCT')
+    
+    if not df_prediction is None:
+        data_prediction = df_prediction.groupby(by='test type').get_group(test_type)
+        plot_dataset(data=data_prediction, label='prediction', style='-')
+
+    fig.suptitle(test_type)
+    
+    return fig
+
+    
+
+def plot_group(df, dof, ax, style, label, annotate=False, prime=False, **kwargs):
     test_type = df.iloc[0]["test type"]
     if test_type == "Rudder and drift angle":
         plot_rudder_drift(df, dof, ax, style, label, **kwargs)
@@ -255,7 +308,7 @@ def plot_group(df, dof, ax, style, label, annotate=False, **kwargs):
         plot_thrust_variation(df, dof, ax, style, label, **kwargs)
         # ax.get_legend().set_visible(False)
     else:
-        plot_standard(df, dof, ax, style, label, annotate, **kwargs)
+        plot_standard(df, dof, ax, style, label, annotate, prime=prime, **kwargs)
 
 
 def plot_rudder_drift(df, dof, ax, style, label, **kwargs):
@@ -278,31 +331,64 @@ def plot_thrust_variation(df, dof, ax, style, label, **kwargs):
         )
 
 
-def plot_standard(df, dof, ax, style, label, annotate=False, **kwargs):
+def plot_standard(df, dof, ax, style, label, annotate=False, prime=False, **kwargs):
     df_ = df.copy()
-    df_[r"$\delta$ $[deg]$"] = np.rad2deg(df_["delta"])
-    df_[r"$\beta$ $[deg]$"] = np.rad2deg(df_["beta"])
-    df_[r"$\phi$ $[deg]$"] = np.rad2deg(df_["phi"])
-    df_[r"$v' \cdot r'$ $[-]$"] = df_["v"] * df_["r"]
-    df_[r"$Fn$ $[-]$"] = df_["Fn"]
-    df_[r"$r'$ $[-]$"] = df["r"]
-
+    
+    df_["vr"] = df_["v"] * df_["r"]
+    
+    
+    #if prime:
+    #    xs = {
+    #        "resistance": r"$Fn$ $[-]$",
+    #        "Rudder angle": r"$\delta$ $[deg]$",
+    #        "Rudder angle resistance (no propeller)": r"$\delta$ $[deg]$",
+    #        "Drift angle": r"$\beta$ $[deg]$",
+    #        "Circle": r"$r'$ $[-]$",
+    #        "Circle + rudder angle": r"$\delta$ $[deg]$",
+    #        "Circle + Drift": r"$v' \cdot r'$ $[-]$",
+    #        "Thrust variation": r"$T'$ $[-]$",
+    #    }
+    
     xs = {
-        "resistance": r"$Fn$ $[-]$",
-        "Rudder angle": r"$\delta$ $[deg]$",
-        "Rudder angle resistance (no propeller)": r"$\delta$ $[deg]$",
-        "Drift angle": r"$\beta$ $[deg]$",
-        "Circle": r"$r'$ $[-]$",
-        "Circle + rudder angle": r"$\delta$ $[deg]$",
-        "Circle + Drift": r"$v' \cdot r'$ $[-]$",
-        "Thrust variation": r"$T'$ $[-]$",
+            "resistance": "Fn",
+            "Rudder angle": "delta",
+            "Rudder angle resistance (no propeller)": "delta",
+            "Drift angle": "beta",
+            "Circle": "r",
+            "Circle + rudder angle": "delta",
+            "Circle + Drift": "vr",
+            "Thrust variation": "thrust",
+        }
+    
+    xlabels = {
+        "Fn" : r"$Fn$",
+        "delta" : r"$\delta$",
+        "beta" : r"$\beta$",
+        "r" : r"$r$",
+        "vr": r"$v \cdot r$",
+        "thrust": r"$T$",
     }
-
+    
+    if prime:
+        units = {key: "$[-]$" for key in xlabels.keys()}
+    else:
+        units = {
+            "Fn" : "$[-]$",
+            "delta" : "$[deg]$",
+            "beta" : "$[deg]$",
+            "r" : r"$[rad/s]$",
+            "vr": "$[-]$",
+            "thrust": "$[N]$",
+        }
+    
     df_["index"] = df_.index
     test_type = df.iloc[0]["test type"]
     x = xs.get(test_type, "index")
 
     df_.sort_values(by=x).plot(x=x, y=dof, ax=ax, style=style, label=label, **kwargs)
+
+    xlabel=f"{xlabels[x]} {units[x]}"
+    ax.set_xlabel(xlabel)
 
     if annotate:
         for index, row in df_.iterrows():
