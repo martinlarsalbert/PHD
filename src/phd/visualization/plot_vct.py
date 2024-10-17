@@ -246,52 +246,92 @@ def resistance_plot(axes, row, datasets, test_type, y_key, df_, df_results, by_l
     by_label.update(zip(labels, handles))
 
 
-def plot_VCT(df_VCT:pd.DataFrame, df_prediction:pd.DataFrame=None, test_type='Drift angle', y_keys=['X_D','Y_D','N_D'], prime=False):
+def flat_keys(y_keys):
+    flat = []
+    for key in y_keys:
+        if isinstance(key,str):
+            flat.append(key)
+        else:
+            for sub_key in key:
+                flat.append(sub_key)
+    
+    return flat
+    
+
+def plot_VCT(df_VCT:pd.DataFrame, df_prediction:pd.DataFrame=None, test_type='Drift angle', y_keys=['X_D','Y_D','N_D'], colors={},prime=False):
     
     data_VCT = df_VCT.groupby(by='test type').get_group(test_type)
+    
+    if isinstance(y_keys,str):
+        y_keys=[y_keys]
     
     n_rows = len(y_keys)
     Vs = data_VCT['V'].unique()
     n_cols = len(Vs)     
     
     fig,axes = plt.subplots(ncols=n_cols, nrows=n_rows)
-    if (n_cols==0) and (n_rows==0):
+    if (n_cols==1) and (n_rows==1):
         axes=np.array([axes])
     
     axes = axes.reshape((n_rows,n_cols))
     
     axes_map={}
     
+    # Create a dict of axes:
     for row,y_key in enumerate(y_keys):
-        axes_map[y_key] = {}
+        
+        if isinstance(y_key,str): 
+            axes_map[y_key] = {}
+        else:
+            for sub_key in y_key:
+                axes_map[sub_key] = {}
+        
         for col,V in enumerate(Vs):
-            axes_map[y_key][V] = axes[row,col]
-            
-
+            if isinstance(y_key,str):
+                axes_map[y_key][V] = axes[row,col]
+                
+            else:
+                # y_key can also be a list of keys that should end up on the same axis
+                for sub_key in y_key:
+                    axes_map[sub_key][V] = axes[row,col]
+                    
+    #y_keys = flat_keys(y_keys)
+    
     def plot_dataset(data, label:str, style='.--'):
         for V, group in data.groupby(by='V'):
             first_row=True
             for y_key in y_keys:
-                ax = axes_map[y_key][V]
-                plot_group(df=group, dof=y_key, ax=ax, style=style, label=label, prime=prime)
-
+                
+                if isinstance(y_key,str):
+                    ax = axes_map[y_key][V]
+                    color = colors.get(y_key,'b')
+                    plot_group(df=group, dof=y_key, ax=ax, style=color+style, label=label, prime=prime)
+                    ax.set_ylabel(y_key)
+                else:
+                    for sub_key in y_key:
+                        ax = axes_map[sub_key][V]
+                        color = colors.get(sub_key,'b')
+                        plot_group(df=group, dof=sub_key, ax=ax, style=color+style, label=f"{sub_key} {label}", prime=prime)
+                    
+                    ax.set_ylabel(",".join(y_key))
+                        
+                
                 if first_row:
                     first_row=False
                     ax.set_title(f"V:{V:0.2f} [m/s]")  
 
                 ax.grid()
-                ax.set_ylabel(y_key)
-
+                
         if n_rows > 1:
             # Remove xlabels for all but the last row
             for ax in axes[:-1,:].flatten():
                 ax.set_xlabel('')
-                
-    plot_dataset(data=data_VCT, label='VCT')
+    
+    plot_dataset(data=data_VCT, label='VCT', style='.--')
     
     if not df_prediction is None:
         data_prediction = df_prediction.groupby(by='test type').get_group(test_type)
-        plot_dataset(data=data_prediction, label='prediction', style='-')
+        plot_dataset(data=data_prediction, label='prediction', style='x-')
 
     fig.suptitle(test_type)
     
@@ -304,6 +344,10 @@ def plot_group(df, dof, ax, style, label, annotate=False, prime=False, **kwargs)
     if test_type == "Rudder and drift angle":
         plot_rudder_drift(df, dof, ax, style, label, **kwargs)
         ax.get_legend().set_visible(False)
+    elif test_type == "Circle + Drift":
+        plot_circle_drift(df, dof, ax, style, label, **kwargs)
+    elif test_type == "Circle + Drift + rudder angle":
+        plot_circle_drift_rudder_angle(df, dof, ax, style, label, **kwargs)
     elif (test_type == "Thrust variation") and (dof != "fx"):
         plot_thrust_variation(df, dof, ax, style, label, **kwargs)
         # ax.get_legend().set_visible(False)
@@ -318,6 +362,45 @@ def plot_rudder_drift(df, dof, ax, style, label, **kwargs):
     for beta, group in df_.groupby(by=["beta"]):
         group.sort_values(by=x).plot(
             x=r"$\delta$ $[deg]$", y=dof, ax=ax, style=style, label=label, **kwargs
+        )
+        
+def plot_circle_drift(df, dof, ax, style, label, **kwargs):
+            
+    x = "beta_deg"
+    df_ = df.copy()
+    df_['beta_deg'] = np.rad2deg(df_['beta'])
+    
+    groups = df_.groupby(by="r")
+    colors = list(plt.cm.Wistia(np.linspace(0,1,len(groups))))
+    
+    the_style = style[1:]
+    
+    for r, group in groups:
+        the_label = f"{label} r={r:0.2f} rad/s"        
+        
+        color = colors.pop(0)
+        group.sort_values(by=x).plot(
+            x=x, y=dof, ax=ax, style=the_style, label=the_label, color=color,**kwargs
+        )
+
+def plot_circle_drift_rudder_angle(df, dof, ax, style, label, **kwargs):
+            
+    x = "beta_deg"
+    df_ = df.copy()
+    df_['beta_deg'] = np.rad2deg(df_['beta'])
+    
+    groups = df_.groupby(by=["r",'delta'])
+    colors = list(plt.cm.Wistia(np.linspace(0,1,len(groups))))
+    
+    the_style = style[1:]
+    
+    for (r,delta), group in groups:
+        
+        the_label = f"{label} r={r:0.2f} rad/s delta={np.rad2deg(delta):0.0f} deg"        
+        
+        color = colors.pop(0)
+        group.sort_values(by=x).plot(
+            x=x, y=dof, ax=ax, style=the_style, label=the_label, color=color,**kwargs
         )
 
 
@@ -335,7 +418,7 @@ def plot_standard(df, dof, ax, style, label, annotate=False, prime=False, **kwar
     df_ = df.copy()
     
     df_["vr"] = df_["v"] * df_["r"]
-    
+    df_["beta_deg"] = np.rad2deg(df_["beta"])
     
     #if prime:
     #    xs = {
@@ -353,7 +436,7 @@ def plot_standard(df, dof, ax, style, label, annotate=False, prime=False, **kwar
             "resistance": "Fn",
             "Rudder angle": "delta",
             "Rudder angle resistance (no propeller)": "delta",
-            "Drift angle": "beta",
+            "Drift angle": "beta_deg",
             "Circle": "r",
             "Circle + rudder angle": "delta",
             "Circle + Drift": "vr",
@@ -363,7 +446,7 @@ def plot_standard(df, dof, ax, style, label, annotate=False, prime=False, **kwar
     xlabels = {
         "Fn" : r"$Fn$",
         "delta" : r"$\delta$",
-        "beta" : r"$\beta$",
+        "beta_deg" : r"$\beta$",
         "r" : r"$r$",
         "vr": r"$v \cdot r$",
         "thrust": r"$T$",
@@ -375,7 +458,7 @@ def plot_standard(df, dof, ax, style, label, annotate=False, prime=False, **kwar
         units = {
             "Fn" : "$[-]$",
             "delta" : "$[deg]$",
-            "beta" : "$[deg]$",
+            "beta_deg" : "$[deg]$",
             "r" : r"$[rad/s]$",
             "vr": "$[-]$",
             "thrust": "$[N]$",
