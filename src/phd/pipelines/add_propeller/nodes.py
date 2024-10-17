@@ -90,7 +90,7 @@ def _fit_open_water_characteristics(model:ModularVesselSimulator, open_water_cha
     
     model.parameters.update(
         {
-                "C0_w_p0": model.parameters['w_p0'],
+                "C0_w_p0": model.ship_parameters['w_p0'],
                 "C1_w_p0": 0,
                 "k_0": fit.params['k0'],
                 "k_1": fit.params['k1'],

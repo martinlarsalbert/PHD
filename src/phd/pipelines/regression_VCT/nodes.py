@@ -301,9 +301,9 @@ def add_extra_circle_drift(df_VCT: pd.DataFrame, add_mirror_circle_drift: bool) 
         log.info("Not adding mirrored circle and drift test (not assuming symmetry) ")
 
     ## remove duplicates within the same test type:
-    mask = df_VCT.groupby(by='test type').apply(lambda x: ~x['result_file_path'].duplicated())
-    mask = pd.Series(data=mask.values, index=mask.index.get_level_values(1))
-    df_VCT = df_VCT.loc[mask].copy()
+    #mask = df_VCT.groupby(by='test type').apply(lambda x: ~x['result_file_path'].duplicated())
+    #mask = pd.Series(data=mask.values, index=mask.index.get_level_values(1))
+    #df_VCT = df_VCT.loc[mask].copy()
     
     
     return df_VCT
@@ -382,6 +382,27 @@ def regress_hull_VCT(
 
     return models
 
+def subtract_centripetal_and_Coriolis(df_VCT:pd.DataFrame, model:ModularVesselSimulator)->pd.DataFrame:
+    df_VCT = df_VCT.copy()
+    
+    df_VCT['X_H_VCT'] = df_VCT['X_H']
+    df_VCT['Y_H_VCT'] = df_VCT['Y_H']
+    df_VCT['N_H_VCT'] = df_VCT['N_H']
+    df_VCT['X_VCT'] = df_VCT['X_D']
+    df_VCT['Y_VCT'] = df_VCT['Y_D']
+    df_VCT['N_VCT'] = df_VCT['N_D']
+
+    added_masses_SI = model.added_masses_SI.copy()
+
+    df_VCT['X_H'] = run(model.lambda_VCT_hull_X_H, inputs=df_VCT, **added_masses_SI)
+    df_VCT['Y_H'] = run(model.lambda_VCT_hull_Y_H, inputs=df_VCT, **added_masses_SI)
+    df_VCT['N_H'] = run(model.lambda_VCT_hull_N_H, inputs=df_VCT, **added_masses_SI)
+    df_VCT['X_D'] = run(model.lambda_VCT_X_D, inputs=df_VCT, **added_masses_SI)
+    df_VCT['Y_D'] = run(model.lambda_VCT_Y_D, inputs=df_VCT, **added_masses_SI)
+    df_VCT['N_D'] = run(model.lambda_VCT_N_D, inputs=df_VCT, **added_masses_SI)
+    
+    return df_VCT
+
 def _regress_hull_VCT(
     model: ModularVesselSimulator,
     df_VCT: pd.DataFrame,
@@ -400,22 +421,7 @@ def _regress_hull_VCT(
         log.info(model.eq_VCT_hull_Y_H)
         log.info(model.eq_VCT_hull_N_H)   
 
-        df_VCT = df_VCT.copy()
-        df_VCT['X_H_VCT'] = df_VCT['X_H']
-        df_VCT['Y_H_VCT'] = df_VCT['Y_H']
-        df_VCT['N_H_VCT'] = df_VCT['N_H']
-        df_VCT['X_VCT'] = df_VCT['X_D']
-        df_VCT['Y_VCT'] = df_VCT['Y_D']
-        df_VCT['N_VCT'] = df_VCT['N_D']
-
-        added_masses_SI = model.added_masses_SI.copy()
-
-        df_VCT['X_H'] = run(model.lambda_VCT_hull_X_H, inputs=df_VCT, **added_masses_SI)
-        df_VCT['Y_H'] = run(model.lambda_VCT_hull_Y_H, inputs=df_VCT, **added_masses_SI)
-        df_VCT['N_H'] = run(model.lambda_VCT_hull_N_H, inputs=df_VCT, **added_masses_SI)
-        df_VCT['X_D'] = run(model.lambda_VCT_X_D, inputs=df_VCT, **added_masses_SI)
-        df_VCT['Y_D'] = run(model.lambda_VCT_Y_D, inputs=df_VCT, **added_masses_SI)
-        df_VCT['N_D'] = run(model.lambda_VCT_N_D, inputs=df_VCT, **added_masses_SI)
+        df_VCT = subtract_centripetal_and_Coriolis(df_VCT=df_VCT, model=model)
     else:
         log.info("NOT! Substracting the centripetal and Coriolis forces from the VCT data")    
         
@@ -430,8 +436,20 @@ def _regress_hull_VCT(
         
         parameters = ["kappa_v", "kappa_r", "kappa_v_gamma_g", "kappa_r_gamma_g"]
         log.info(f"Optimizing parameters:{parameters}")
+        
+        mask = df_VCT['test type'].isin([
+            'Circle',
+            'Drift angle',
+            'Circle + Drift + rudder angle',
+            'Circle + rudder angle',
+            'Rudder and drift angle',            
+            #'Rudder angle',
+        ])
+        data = df_VCT.loc[mask].copy()
+        data = df_VCT
+        
         model, changes = phd.pipelines.regression_VCT.optimize.fit(
-            model=model, data=df_VCT, parameters=parameters
+            model=model, data=data, parameters=parameters
         )
         log.info(f"Optimized the following parameters to:{changes}")
     else:
@@ -454,10 +472,10 @@ def _regress_hull_VCT(
         exclude_parameters=exclude_parameters,
     )
     # Separating the rudder hull interaction coefficients:
-    model.parameters["a_H"] = model.parameters["aH"] - 1
-    model.parameters["x_H"] = model.parameters["xH"] - 1
-    model.parameters.pop("aH")
-    model.parameters.pop("xH")
+    model.parameters["a_H"] = model.parameters["a_H"] - 1
+    model.parameters["x_H"] = model.parameters["x_H"] - 1
+    #model.parameters.pop("aH")
+    #model.parameters.pop("xH")
     log.info(f"a_H is:{model.parameters['a_H']}")
     log.info(f"x_H is:{model.parameters['x_H']}")
 

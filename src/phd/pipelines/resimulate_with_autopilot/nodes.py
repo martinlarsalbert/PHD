@@ -39,6 +39,7 @@ def resimulate(
     model: ModularVesselSimulator,
     angle: float = None,
     neutral_rudder_angle: float = None,
+    rudder_rate_full_scale = 2.32,
     **kwargs,
 ) -> pd.DataFrame:
     data = data.copy()
@@ -62,7 +63,7 @@ def resimulate(
         log.error("Could not find rev (find_initial_equilibrium_rev)")
         rev = data["rev"]
 
-    rudder_rate = 2.32 * np.sqrt(model.ship_parameters["scale_factor"])
+    rudder_rate = rudder_rate_full_scale * np.sqrt(model.ship_parameters["scale_factor"])
     if angle is None:
         log.info("finding the angle")
         angle_abs = np.round(np.rad2deg(data["delta"].abs().max()), 0)
@@ -100,6 +101,7 @@ def turning_circle(
     angle: float = None,
     neutral_rudder_angle: float = None,
     r_limit = 0.1,
+    rudder_rate_full_scale = 2.32,
     **kwargs,
 ) -> pd.DataFrame:
     data = data.copy()
@@ -123,7 +125,7 @@ def turning_circle(
         log.error("Could not find rev (find_initial_equilibrium_rev)")
         rev = data["rev"]
 
-    rudder_rate = 2.32 * np.sqrt(model.ship_parameters["scale_factor"])
+    rudder_rate = rudder_rate_full_scale * np.sqrt(model.ship_parameters["scale_factor"])
     if angle is None:
         log.info("finding the angle")
         angle_abs = np.round(np.rad2deg(data["delta"].abs().max()), 0)

@@ -30,7 +30,7 @@ def register_pipelines() -> Dict[str, Pipeline]:
     """
     # pipelines = find_pipelines()
     pipelines = {}
-    ships=['wPCC','optiwise']
+    ships=['wPCC','optiwise','DM']
     for ship_name in ships:
         pipelines[ship_name] = ship_pipeline(ship_name=ship_name)
 

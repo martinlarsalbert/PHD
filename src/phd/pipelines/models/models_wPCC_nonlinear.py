@@ -364,17 +364,18 @@ class ModelSemiempiricalCovered(ModelTowedSemiempiricalCovered):
         self.subsystems["rudders"] = rudders
 
         ## Default parameters:
+        c_ = (self.ship_parameters['c_r'] + self.ship_parameters['c_t'])/2
         rudder_particulars = {
             "x_R": self.ship_parameters["x_r"],
             "y_R": 0,
             "z_R": 0,
-            "A_R_C": self.ship_parameters["D"] * self.ship_parameters["c"],
+            "A_R_C": self.ship_parameters["D"] * c_,
             "A_R_U": (self.ship_parameters["b_R"] - self.ship_parameters["D"])
-            * self.ship_parameters["c"],
+            * c_,
         }
         
-        if not self.find_symbol_in_subsystem_output(w_f):
-            self.ship_parameters["w_f"] = self.ship_parameters["w_p0"]
+        #if not self.find_symbol_in_subsystem_output(w_f):
+        #    self.ship_parameters["w_f"] = self.ship_parameters["w_p0"]
                 
         self.ship_parameters.update(rudder_particulars)
         

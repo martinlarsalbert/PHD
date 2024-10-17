@@ -256,7 +256,7 @@ def _regress_hull_inverse_dynamics(
 def regress_hull_partial_inverse_dynamics(
     base_models: dict,
     data: pd.DataFrame,
-    include_parameters : list
+    regress_parameters : list
 ) -> dict:
     """Regress only some of the parameters
 
@@ -271,6 +271,7 @@ def regress_hull_partial_inverse_dynamics(
     models = {}
 
     log.info(figlet_format("Hull partial ID", font="starwars"))
+    log.info(f"Only regressing:{regress_parameters}")
 
     #data = gather_data(tests_ek_smooth_joined=tests_ek_smooth_joined)
 
@@ -280,6 +281,9 @@ def regress_hull_partial_inverse_dynamics(
         log.info(figlet_format(f"{name}", font="big"))
         base_model = loader()
         exclude_parameters = base_model.parameters.copy()
+        
+        for include_parameter in regress_parameters:
+            exclude_parameters.pop(include_parameter)
 
         models[name], fits = _regress_hull_inverse_dynamics(
             vmm_model=base_model,

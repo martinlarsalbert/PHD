@@ -280,7 +280,7 @@ def pipeline_with_rudder(
 
 
 def fit(
-    regression_pipeline: dict, model: ModularVesselSimulator, exclude_parameters={}
+    regression_pipeline: dict, model: ModularVesselSimulator, exclude_parameters={}, simplify_names=True, feature_name_subs={}
 ):
     models = {}
     exclude_parameters = exclude_parameters.copy()
@@ -313,13 +313,14 @@ def fit(
                 N_R,
             ],
             exclude_parameters=exclude_parameters,
+            feature_name_subs=feature_name_subs
         )
 
         data = regression["data"]
         assert len(data) > 0
         key = eq_to_matrix.acceleration_equation.lhs.name
         X, y = eq_to_matrix.calculate_features_and_label(
-            data=data, y=data[key], parameters=model.ship_parameters
+            data=data, y=data[key], parameters=model.ship_parameters, simplify_names=simplify_names
         )
 
         if const:
