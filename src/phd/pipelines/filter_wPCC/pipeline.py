@@ -18,13 +18,14 @@ from .nodes import (
     create_kalman_filter
 )
 
+tags = ["ek", "filter"]
 
 def create_pipeline(**kwargs) -> Pipeline:
     
     nodes = []
     N = 1
     for n in range(1,N+1):
-        nodes+=filter_pipeline(n=n, models="models_VCT_nonlinear", filter_model_name=f"params:filter_model_name{n}", SNR=f"params:SNR{n}")
+        nodes+=filter_pipeline(n=n, models="models_VCT_polynomial_rudder", filter_model_name=f"params:filter_model_name{n}", SNR=f"params:SNR{n}")
     
     nodes+=[
             
@@ -33,7 +34,7 @@ def create_pipeline(**kwargs) -> Pipeline:
                 inputs=["tests","ekf1"],  # (data has the raw positions)
                 outputs="x0",
                 name="initial_state_node",
-                tags=["ek", "filter"],
+                tags=tags,
             ),     
         ]
     
@@ -47,7 +48,7 @@ def filter_pipeline(n:int, models:str, filter_model_name:str, SNR:str):
                 inputs=[models, filter_model_name, SNR],
                 outputs=f"ekf{n}",
                 name=f"create_kalman_filter_node{n}",
-                tags=["ek", "filter"],
+                tags=tags,
             ),
             
             node(
@@ -60,7 +61,7 @@ def filter_pipeline(n:int, models:str, filter_model_name:str, SNR:str):
                 ],
                 outputs=f"filtered_result{n}",
                 name=f"filter_node{n}",
-                tags=["ek", "filter"],
+                tags=tags,
             ),
             
             node(
@@ -70,7 +71,7 @@ def filter_pipeline(n:int, models:str, filter_model_name:str, SNR:str):
                 ],
                 outputs=f"tests_ek{n}",
                 name=f"results_to_dataframe{n}",
-                tags=["ek", "filter"],
+                tags=tags,
             ),
             
             node(
@@ -81,7 +82,7 @@ def filter_pipeline(n:int, models:str, filter_model_name:str, SNR:str):
                 ],
                 outputs=f"smoother_result{n}",
                 name=f"smoother{n}",
-                tags=["ek", "filter"],
+                tags=tags,
             ),
             
             node(
@@ -91,7 +92,7 @@ def filter_pipeline(n:int, models:str, filter_model_name:str, SNR:str):
                 ],
                 outputs=f"tests_ek_smooth{n}",
                 name=f"smoother_result_to_dataframe{n}",
-                tags=["ek", "filter"],
+                tags=tags,
             ),
             
             
@@ -100,6 +101,7 @@ def filter_pipeline(n:int, models:str, filter_model_name:str, SNR:str):
                 inputs=[f"tests_ek{n}", "params:skip"],
                 outputs=f"tests_ek_joined{n}",
                 name=f"join_tests_ek{n}",
+                tags=tags
             ),
             
             node(
@@ -107,5 +109,6 @@ def filter_pipeline(n:int, models:str, filter_model_name:str, SNR:str):
                 inputs=[f"tests_ek_smooth{n}", "params:skip"],
                 outputs=f"tests_ek_smooth_joined{n}",
                 name=f"join_tests_ek_smooth{n}",
+                tags=tags
             ),
         ]

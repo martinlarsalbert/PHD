@@ -419,6 +419,7 @@ def plot_standard(df, dof, ax, style, label, annotate=False, prime=False, **kwar
     
     df_["vr"] = df_["v"] * df_["r"]
     df_["beta_deg"] = np.rad2deg(df_["beta"])
+    df_["delta_deg"] = np.rad2deg(df_["delta"])
     
     #if prime:
     #    xs = {
@@ -434,18 +435,18 @@ def plot_standard(df, dof, ax, style, label, annotate=False, prime=False, **kwar
     
     xs = {
             "resistance": "Fn",
-            "Rudder angle": "delta",
-            "Rudder angle resistance (no propeller)": "delta",
+            "Rudder angle": "delta_deg",
+            "Rudder angle resistance (no propeller)": "delta_deg",
             "Drift angle": "beta_deg",
             "Circle": "r",
-            "Circle + rudder angle": "delta",
+            "Circle + rudder angle": "delta_deg",
             "Circle + Drift": "vr",
             "Thrust variation": "thrust",
         }
     
     xlabels = {
         "Fn" : r"$Fn$",
-        "delta" : r"$\delta$",
+        "delta_deg" : r"$\delta$",
         "beta_deg" : r"$\beta$",
         "r" : r"$r$",
         "vr": r"$v \cdot r$",
@@ -457,7 +458,7 @@ def plot_standard(df, dof, ax, style, label, annotate=False, prime=False, **kwar
     else:
         units = {
             "Fn" : "$[-]$",
-            "delta" : "$[deg]$",
+            "delta_deg" : "$[deg]$",
             "beta_deg" : "$[deg]$",
             "r" : r"$[rad/s]$",
             "vr": "$[-]$",

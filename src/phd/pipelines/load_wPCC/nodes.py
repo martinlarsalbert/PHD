@@ -117,8 +117,15 @@ def _load(
     data = motions(data, replace_velocities=replace_velocities)
 
     data = add_thrust(data, thrust_channels=thrust_channels, rev_channels=rev_channels)
-    data['thrust_port'] = data['Prop/PS/Thrust']
-    data['thrust_stbd'] = data['Prop/SB/Thrust']
+    
+    if 'Prop/PS/Thrust' in data:
+        data['thrust_port'] = data['Prop/PS/Thrust']
+        data['thrust_stbd'] = data['Prop/SB/Thrust']
+    
+    if 'Prop/1/Thrust' in data:
+        data['thrust'] = data['Prop/1/Thrust']
+    
+    
     data['g'] = 9.81
     
     return data

@@ -12,7 +12,7 @@ def create_pipeline(**kwargs) -> Pipeline:
         [
             node(
                 func=resistance,
-                inputs=["time_series_meta_data", "tests", "ship_data"],
+                inputs=["time_series_meta_data", "tests", "ship_data", "params:resistance_ids"],
                 outputs="resistance_MDL",
                 name="resistance",
                 tags=["resistance"]

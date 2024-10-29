@@ -1,7 +1,6 @@
 optiwise:
   thrust_channels:
-    - Prop/PS/Thrust
-    - Prop/SB/Thrust
+    - Prop/1/Thrust
   VCT_exclude_parameters:
     Yrrr: 0  # From visual inspection of VCT
     Nrrr: 0  # From visual inspection of VCT
@@ -13,7 +12,7 @@ optiwise:
     #Yvrr: 0
 
   #VCT_nonlinear_exclude_parameters: {}
-  skip: {}
+  #skip: {}
   tests: {}
   VCT_selection: null 
 
@@ -29,13 +28,152 @@ optiwise:
       kappa_r: 0.8
       kappa_r_gamma_g: 0
       gamma_0: -0.023212879051524585
-      #Xudot: -0.000379  # These values were calculated with OCTOPUS office (see: 146.10_added_mass_wPCC.ipynb)
-      #Yvdot: -0.003839
-      #Nrdot: -0.000329
-      #Yrdot: -0.000173
-      #Nvdot: -0.000163
+      Xudot: -0.001864  # These values were calculated with OCTOPUS office (see: 13.10_added_mass_OCTOPUS.ipynb)
+      Yvdot: -0.015473
+      Nrdot: -0.0007267535092566891 # From pure yaw (see: 11.10_ShipFlowMotions_pure_yaw_no_FFT.ipynb)
+      Yrdot: -0.000537
+      Nvdot: -0.000537
       w_p0: 0.5049  # Very large indead! (But should you change the wake or CL?)
   create_jacobians : False
   optimize_rudder_inflow : True
   optimize_rudder_drag: True
   add_mirror_circle_drift: False  # The ship is not symmetric.
+
+  WL_to_roll_centre: -0.20  # [m]  Guessing...
+  rev_channels:
+    - Prop/1/N
+
+  ## MDL resistance:
+  resistance_ids:
+    - 23469
+    - 23470
+    - 23471
+    - 23472
+    - 23480
+    - 23481
+    - 23482
+    - 23483
+    - 23486
+    - 23487
+    - 23488
+    - 23489
+    - 23490
+    - 23491
+    - 23492
+    - 23473
+  
+  ## Kalman filter:
+  ek_covariance_input:
+    process_variance:
+      u : 1.7
+      v : 1.7
+      r : 1.7  # [deg]
+    measurement_error_max:
+      positions: 0.01
+      psi: 0.25  # [deg]
+  ek_covariance_input2:
+    process_variance:
+      u : 0.05
+      v : 0.05
+      r : 0.1  # [deg]
+    measurement_error_max:
+      positions: 0.01
+      psi: 0.25  # [deg]
+  filter_model_name1: simple
+  filter_model_name2: simple
+  filter_model_name3: simple
+  SNR1: 0.1
+  SNR2: 1
+  SNR3: 10
+  skip:
+    - 23459  # GM before
+    - 23460  # GM before
+    - 23461  # GM SB
+    - 23462  # GM PS
+    - 23463  #  
+    - 23464  #  
+    - 23465  #  
+    - 23466  #  
+    - 23466  #  
+    - 23467  # Large rudder + trip
+    - 23468  # Large rudder + trip
+    - 23469  # Large rudder + trip
+    - 23470  # Large rudder + trip
+    - 23471  # Large rudder + trip
+    - 23472  # Large rudder + trip
+    - 23473  # Large rudder + trip
+    - 23474  # Large rudder + trip
+    - 23475  # Large rudder + trip
+    - 23476  # Large rudder + trip
+    - 23477  # Large rudder + trip
+    - 23478  # Large rudder + trip
+    - 23479  # Large rudder + trip
+    - 23480  # Small rudder+ No trip
+    - 23481  # Small rudder+ No trip
+    - 23482  # Small rudder+ No trip
+    - 23483  # Small rudder+ No trip
+    - 23486  # Small rudder+No trip
+    - 23487  # Small rudder+No trip
+    - 23488  # Small rudder+No trip
+    - 23489  # Small rudder+No trip
+    - 23490  # Small rudder+No trip
+    - 23491  # Small rudder+No trip
+    - 23492  # Small rudder+No trip
+    - 23493  # Small rudder+No trip
+    - 23494  # Small rudder+No trip
+    - 23495  # Small rudder+No trip
+    - 23496  # Small rudder+No trip
+    - 23497  # Small rudder+No trip
+    - 23498  # GM before
+    - 23499  # GM before
+    - 23500  # GM before
+    - 23501  # GM before
+    - 23502  # GM before
+    - 23503  # GM before
+    - 23504  # GM before
+    - 23505  # GM before
+    - 23506  # GM before
+    - 23507  # GM before
+    - 23508  # Slask
+    - 23509  # Slask
+    - 23510  # Slask
+    - 23511  # Slask
+    - 23512  # Slask
+    - 23513  # Slask
+    - 23556  # TWA=60 TWS=8
+    - 23557  # TWA=150 TWS=8
+    - 23558  # TWA=-60 TWS=8
+    - 23559  # TWA=-60 TWS=8
+    - 23560  # TWA=-150 TWS=8
+    - 23561  # TWA=-150 TWS=8
+    - 23562  # TWA=60 TWS=8
+    - 23563  # TWA=-60 TWS=8
+    - 23564  # TWA=-60 TWS=8
+    - 23565  # TWA=-60 TWS=8
+    - 23566  # TWA=60 TWS=8
+    - 23567  # TWA=150 TWS=8
+    - 23568  # TWA=-60 TWS=8
+    - 23569  # TWA=-150 TWS=8
+    - 23570  # TWA=-60 TWS=8
+    - 23571  # TWA=-150 TWS=8
+    - 23579  #  
+    - 23580  #  
+    - 23581  #  
+    - 23582  #  
+    - 23583  #  
+    - 23584  #  
+    - 23585  #  
+    - 23586  # Circle SB
+    - 23587  # Circle SB
+    - 23588  # Circle SB
+    - 23589  # Circle PS
+    #- 23590  # ZZ10/10 SB
+    #- 23591  # ZZ10/10 SB
+    #- 23592  # ZZ10/10 SB
+    #- 23593  # ZZ10/10 PS
+    #- 23594  # ZZ20/20 SB
+    #- 23595  # ZZ20/20 SB
+    #- 23596  # ZZ20/20 PS
+    #- 23597  # ZZ20/20 PS
+    - 23598  #  
+

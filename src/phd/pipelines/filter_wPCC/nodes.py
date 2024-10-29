@@ -53,20 +53,25 @@ def create_kalman_filter(models:dict, model_name:str, SNR=1)->ExtendedKalmanFilt
     
     Q1 = 1/50*np.diag([0,0,0,sigma_u**2,sigma_v**2,sigma_r**2,])
     
+    #ekf = ExtendedKalmanFilterVMM(model=model, B=B, H=H1, Q=Q1, R=R1, input_columns=[], 
+    #                          control_columns=['delta',
+    #                                           'thrust_port', 
+    #                                           'thrust_stbd',
+    #                                           'phi',
+    #                                           'theta',
+    #                                           'g',
+    #                                           'Hull/Acc/X1',
+    #                                           'Hull/Acc/Y1',
+    #                                           'Hull/Acc/Y2',
+    #                                           'Hull/Acc/Z1',
+    #                                           'Hull/Acc/Z2',
+    #                                           'Hull/Acc/Z3',], 
+    #                           X=X_1)
+    
     ekf = ExtendedKalmanFilterVMM(model=model, B=B, H=H1, Q=Q1, R=R1, input_columns=[], 
-                              control_columns=['delta',
-                                               'thrust_port', 
-                                               'thrust_stbd',
-                                               'phi',
-                                               'theta',
-                                               'g',
-                                               'Hull/Acc/X1',
-                                               'Hull/Acc/Y1',
-                                               'Hull/Acc/Y2',
-                                               'Hull/Acc/Z1',
-                                               'Hull/Acc/Z2',
-                                               'Hull/Acc/Z3',], 
+                              control_columns=model.control_keys, 
                                X=X_1)
+
     
     return ekf
 
@@ -255,6 +260,7 @@ def filter_lazy(
     name:str
 ):
     def wrapper():
+        log.info(f"Do the filtering for:{name}")
         try:
             return filter(
             loader=loader,
@@ -273,17 +279,18 @@ def filter(
 ) -> pd.DataFrame:
     data = loader()
     
-    # Calculate time derivatives of control variables:
-    data['delta1d_'] = derivative(data,'delta')
-    rudder_rate = np.deg2rad(2.32)*np.sqrt(ekf.model.ship_parameters['scale_factor'])
-    data['delta1d'] = np.round(data['delta1d_']/rudder_rate,0)*rudder_rate
+    if isinstance(ekf,ExtendedKalmanFilterVMMWith6Accelerometers):
+        # Calculate time derivatives of control variables:
+        data['delta1d_'] = derivative(data,'delta')
+        rudder_rate = np.deg2rad(2.32)*np.sqrt(ekf.model.ship_parameters['scale_factor'])
+        data['delta1d'] = np.round(data['delta1d_']/rudder_rate,0)*rudder_rate
 
-    dt = np.mean(pd.Series(data.index).diff()[1:])
-    fs = 1/dt
-    data['thrust_port_filtered'] = lowpass_filter(data['thrust_port'], cutoff=10, fs=fs, order=1)
-    data['thrust_stbd_filtered'] = lowpass_filter(data['thrust_stbd'], cutoff=10, fs=fs, order=1)
-    data['thrust_port1d'] = derivative(data,'thrust_port_filtered')
-    data['thrust_stbd1d'] = derivative(data,'thrust_stbd_filtered')
+        dt = np.mean(pd.Series(data.index).diff()[1:])
+        fs = 1/dt
+        data['thrust_port_filtered'] = lowpass_filter(data['thrust_port'], cutoff=10, fs=fs, order=1)
+        data['thrust_stbd_filtered'] = lowpass_filter(data['thrust_stbd'], cutoff=10, fs=fs, order=1)
+        data['thrust_port1d'] = derivative(data,'thrust_port_filtered')
+        data['thrust_stbd1d'] = derivative(data,'thrust_stbd_filtered')
     
     P_0 = np.zeros((ekf.n,ekf.n))
     x0 = pd.Series(x0)[ekf.state_columns].values.reshape(ekf.n,1)
@@ -303,15 +310,17 @@ def smoother(ekf:ExtendedKalmanFilterVMMWith6Accelerometers, filtered_results:di
     
     smoothened_results = {}
     for name, loader in filtered_results.items():
-        smoothened_results[name] = smoother_lazy(loader=loader, ekf=ekf)
+        smoothened_results[name] = smoother_lazy(loader=loader, ekf=ekf, name=name)
         
     return smoothened_results
     
 def smoother_lazy(
     loader,
     ekf,
+    name,
 ):
     def wrapper():
+        log.info(f"Do the smoothening for:{name}")
         results = loader()
         results_smoother =  ekf.smoother(results=results)
         #df_smoothened = results_smoother.df
