@@ -291,7 +291,7 @@ def plot_compare_model_forces(
     for ax in axes:
         ax.grid(True)
     
-    plt.tight_layout()
+    #plt.tight_layout()
     
     return fig
 
