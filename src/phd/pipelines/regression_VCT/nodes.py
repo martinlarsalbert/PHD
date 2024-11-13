@@ -25,6 +25,11 @@ from sklearn.metrics import r2_score
 from vessel_manoeuvring_models.parameters import df_parameters
 import phd.pipelines.regression_VCT.optimize
 from vessel_manoeuvring_models.models.rudder_simple import RudderSimpleSystem
+import pysindy as ps
+from pysindy.feature_library import PolynomialLibrary
+from sympy.parsing.sympy_parser import parse_expr
+from vessel_manoeuvring_models.models.subsystem import PrimeEquationPolynomialSubSystem, create_expression_and_coefficient_from_feature
+from sympy import Eq
 
 p = df_parameters["symbol"]
 
@@ -1266,4 +1271,145 @@ def meassured_rudder_force_model_(model:ModularVesselSimulator)-> ModularVesselS
     
     return model
     
+def regress_polynomial_rudder(
+    models_VCT: dict,
+    df_VCT_scaled: pd.DataFrame,
+    polynomial_rudder_models:dict
+):
+    log.info(figlet_format("Polynomial rudder", font="starwars"))
     
+    models = {}
+
+    for name, parameters in polynomial_rudder_models.items():
+        
+        base_model_name = parameters.get('base_model','semiempirical_covered_inertia')
+        loader = models_VCT[base_model_name]
+        base_model = loader()
+
+        log.info(f"regressing polynomial rudder for:{name}")
+        model, fits = _regress_polynomial_rudder(
+            model=base_model,
+            df_VCT=df_VCT_scaled,
+            parameters=parameters,
+            full_output=True,
+        )
+
+        models[name] = model
+        # Also return fits?
+
+    return models
+
+def _regress_polynomial_rudder(model:ModularVesselSimulator, df_VCT:pd.DataFrame, parameters={}, full_output=False,):
+    
+    if not 'mirror' in df_VCT:
+        df_VCT['mirror'] = False
+        
+    if 'rho' in df_VCT:
+        model.ship_parameters['rho'] = df_VCT.iloc[0]['rho']
+        df_VCT.drop(columns=['rho'], inplace=True)
+            
+    ## Mirror:
+    df_VCT_raw = df_VCT.copy()
+    df_ = df_VCT_raw.loc[~df_VCT_raw['mirror']]
+    df_VCT_mirror = df_.copy()
+    df_VCT_mirror['Y_R_port'] = -df_['Y_R_stbd']
+    df_VCT_mirror['Y_R_stbd'] = -df_['Y_R_port']
+    df_VCT_mirror['N_R_port'] = -df_['N_R_stbd']
+    df_VCT_mirror['N_R_stbd'] = -df_['N_R_port']
+
+    mirror_keys=[
+        'Y_R',
+        'N_R',
+        'v',
+        'r',
+        'beta',
+        'delta',
+    ]
+    for mirror_key in mirror_keys:
+        df_VCT_mirror[mirror_key]=-df_VCT_mirror[mirror_key]
+    df_VCT_mirror['mirror'] = True
+
+    mask = (df_VCT_mirror[['v','r','delta']]==0).all(axis=1)
+    df_VCT_mirror = df_VCT_mirror.loc[~mask].copy()
+
+    df_VCT = pd.concat((df_VCT, df_VCT_mirror))
+    
+    df_VCT_hydro = subtract_centripetal_and_Coriolis(df_VCT=df_VCT, model=model)
+    
+    df_VCT_prime = model.prime(df_VCT_hydro, only_with_defined_units=True)
+    
+    input_features = ['v','r','delta','thrust']
+    x = df_VCT_prime[input_features]
+    
+    ## Y_R
+    log.info("Fitting Y_R")
+    degree_Y_R = parameters.get("degree_Y_R",3)
+    polynomial_library = PolynomialLibrary(degree=degree_Y_R)
+    polynomial_library.fit(x)
+    X = pd.DataFrame(polynomial_library.transform(x), columns=polynomial_library.get_feature_names(input_features=input_features), index=x.index)
+    y = df_VCT_prime['Y_R']
+    
+    treshold_Y_R = parameters.get("treshold_Y_R",0.0007)
+    optimizer = ps.STLSQ(threshold=treshold_Y_R)
+    optimizer.fit(X,y)
+    
+    mask = np.abs(optimizer.coef_)[0] > 0
+    good_columns = X.columns[mask]
+    X_good = X[good_columns].copy()
+    log.info(f"Number of Y_R features:{len(good_columns)}")
+    
+    fits={}
+    fits['Y_R'] = fit = sm.OLS(y,X_good).fit()
+    log.info(fit.summary2())
+    
+    ## X_R
+    log.info("Fitting X_R")
+    degree_X_R = parameters.get("degree_X_R",2)
+    polynomial_library_X = PolynomialLibrary(degree=degree_X_R)
+    polynomial_library_X.fit(x)
+    X_X = pd.DataFrame(polynomial_library_X.transform(x), columns=polynomial_library_X.get_feature_names(input_features=input_features), index=x.index)
+    y_X = df_VCT_prime['X_R']
+    treshold_X_R = parameters.get("treshold_X_R",0.0000005)
+    optimizer_X = ps.STLSQ(threshold=treshold_X_R)
+    optimizer_X.fit(X_X,y_X)
+    mask = np.abs(optimizer_X.coef_)[0] > 0
+    good_columns = X_X.columns[mask]
+    X_X_good = X_X[good_columns].copy()
+    log.info(f"Number of X_R features:{len(good_columns)}")
+    fits['X_R'] = fit_X = sm.OLS(y_X,X_X_good).fit()
+    log.info(fit_X.summary2())
+    
+    ## Predictor
+    features = list(fit.params.keys())
+    features_X = list(fit_X.params.keys())
+
+    feature_equations={'Y_R':features,
+                       'X_R':features_X,
+                      }
+
+    x_R, y_R, z_R = sp.symbols("x_R y_R z_R")
+
+    equations = [
+        Eq(N_R,Y_R*x_R)
+    ]
+    model_new = model.copy()
+    polynomial_subsystem = PrimeEquationPolynomialSubSystem(ship=model_new, feature_equations=feature_equations, equations=equations)   
+    model_new.subsystems['rudders'] = polynomial_subsystem
+    fitted_parameters = polynomial_subsystem.rename_parameters(parameters=fit.params, label='Y_R')
+    fitted_parameters_X = polynomial_subsystem.rename_parameters(parameters=fit_X.params, label='X_R')
+    model_new.parameters.update(fitted_parameters)
+    model_new.parameters.update(fitted_parameters_X)    
+    
+    model_new.set_ship_parameters(model_new.ship_parameters)
+    
+    if 'rudder_port' in model_new.subsystems:
+        model_new.subsystems.pop('rudder_port')
+        model_new.control_keys=['delta','thrust','thrust_port','thrust_stbd']
+    
+    if 'rudder_stbd' in model_new.subsystems:
+        model_new.subsystems.pop('rudder_stbd')
+
+    if full_output:
+        return model_new, fits
+    else:
+        return model_new

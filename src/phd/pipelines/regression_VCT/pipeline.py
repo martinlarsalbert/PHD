@@ -20,6 +20,7 @@ from .nodes import (
     #adopting_nonlinear_to_MDL,
     subtract_centrifugal_and_centrepetal_forces,
     meassured_rudder_force_model,
+    regress_polynomial_rudder,
 )
 
 
@@ -105,6 +106,21 @@ def create_pipeline(ship_name:str, **kwargs) -> Pipeline:
                 name="meassured_rudder_force_model",
                 tags=["generate_model", "regression_VCT", "adopting_to_MDL"],
             ),
+            node(
+                func=regress_polynomial_rudder,
+                inputs=["models_VCT","df_VCT_scaled","params:polynomial_rudder_models"],
+                outputs="models_VCT_polynomial_rudder",
+                name="regress_polynomial_rudder",
+                tags=["generate_model", "regression_VCT", "polynomial_model"],
+            ),
+            node(
+                func=adopting_to_MDL,
+                inputs=["models_VCT_polynomial_rudder", "resistance_MDL"],
+                outputs="models_VCT_polynomial_rudder_MDL",
+                name="regress_polynomial_rudder_MDL",
+                tags=["generate_model", "regression_VCT", "adopting_to_MDL", "polynomial_model"],
+            ),
+            
             #node(
             #    func=adopting_hull_rudder_to_MDL,
             #    inputs=["models_rudder_VCT", "resistance_MDL", "models_VCT_MDL"],

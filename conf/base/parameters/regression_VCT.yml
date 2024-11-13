@@ -38,7 +38,17 @@ wPCC.VCT_selection:
 
 wPCC.VCT_limits:
     beta_deg : [-16,16]
-    r: [-0.01168456786593292,0.01168456786593292] 
+    r: [-0.01168456786593292,0.01168456786593292]
+
+wPCC.polynomial_rudder_models:
+    simple:
+        base_model: semiempirical_covered_inertia
+        degree_Y_R: 3
+        treshold_Y_R: 0.0007
+        degree_X_R: 2
+        treshold_X_R: 0.0000005
+
+
 
 wPCC.VCT_nonlinear_exclude_parameters:
     Y0: 0
