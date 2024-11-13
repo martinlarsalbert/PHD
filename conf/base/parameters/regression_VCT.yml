@@ -36,6 +36,10 @@ wPCC.VCT_exclude_parameters:
 wPCC.VCT_selection:
     - M5139-02-A_MS.df_VCT
 
+wPCC.VCT_limits:
+    beta_deg : [-16,16]
+    r: [-0.01168456786593292,0.01168456786593292] 
+
 wPCC.VCT_nonlinear_exclude_parameters:
     Y0: 0
     N0: 0

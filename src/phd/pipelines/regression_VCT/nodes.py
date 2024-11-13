@@ -188,7 +188,7 @@ def extra_columns(df):
     return df
 
 
-def select(df_VCT_all_raw: dict, VCT_selection:list) -> pd.DataFrame:
+def select(df_VCT_all_raw: dict, VCT_selection:list, VCT_limits:dict) -> pd.DataFrame:
     """_summary_
 
     Parameters
@@ -208,9 +208,32 @@ def select(df_VCT_all_raw: dict, VCT_selection:list) -> pd.DataFrame:
     selection = [df_VCT_all_raw[key]() for key in VCT_selection]
     df_VCT_raw = pd.concat(selection, axis=0)
     
+    df_VCT_raw = limit_VCT(df_VCT=df_VCT_raw, VCT_limits=VCT_limits)
     
     return df_VCT_raw
 
+def limit_VCT(df_VCT:pd.DataFrame, VCT_limits:dict)->pd.DataFrame:
+    
+    if VCT_limits is None:
+        log.info("No limit to VCT data")
+        return df_VCT
+    
+    df_VCT_limited = df_VCT.copy()
+    
+    for key, limits in VCT_limits.items():
+        
+        if '_deg' in key:
+            key = key.replace('_deg','')
+            limits = np.deg2rad(limits)
+        
+        log.info(f"Limit VCT data {key} to the range:{limits}")
+        mask = df_VCT_limited[key].between(limits[0],limits[1])
+        df_VCT_limited = df_VCT_limited.loc[mask].copy()
+    
+    log.info(f"{len(df_VCT)-len(df_VCT_limited)} VCT points were outside the limits and therefore excluded.")
+    
+    return df_VCT_limited
+    
 def load_MDL(tests:dict, exclude=[])->pd.DataFrame:
     
     _ = []

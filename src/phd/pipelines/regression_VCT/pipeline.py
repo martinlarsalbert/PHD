@@ -44,7 +44,7 @@ def create_pipeline(ship_name:str, **kwargs) -> Pipeline:
             ,
             node(
                 func=select,
-                inputs=["df_VCT_all","params:VCT_selection"],
+                inputs=["df_VCT_all","params:VCT_selection", "params:VCT_limits"],
                 outputs="df_VCT_raw",
                 name="select_VCT_node",
                 tags=['load_VCT','regression_VCT'],
