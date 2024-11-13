@@ -1,3 +1,6 @@
 [submodule "docs/System-identification-for-a-physically-correct-ship-manoeuvring-model-in-wind-conditions"]
 	path = docs/System-identification-for-a-physically-correct-ship-manoeuvring-model-in-wind-conditions
 	url = https://github.com/martinlarsalbert/System-identification-for-a-physically-correct-ship-manoeuvring-model-in-wind-conditions
+[submodule "docs/paper5"]
+	path = docs/paper5
+	url = https://github.com/martinlarsalbert/Identifying-a-system-based-manoeuvring-model-with-virtual-captive-tests
