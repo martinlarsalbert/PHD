@@ -16,5 +16,5 @@ wPCC.accelerometer_position:
     y: 0.33  # to starboard.
     z: -0.1  # Unsure about value
 
-wPCC.WL_to_roll_centre: -0.18025841446871002  # [m]
+wPCC.WL_to_roll_centre: -0.18025841446871002  # [m] (see 144.10_roll_centre_speed.ipynb)
 

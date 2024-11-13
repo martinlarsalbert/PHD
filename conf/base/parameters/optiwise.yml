@@ -39,7 +39,7 @@ optiwise:
   optimize_rudder_drag: True
   add_mirror_circle_drift: False  # The ship is not symmetric.
 
-  WL_to_roll_centre: -0.20  # [m]  Guessing...
+  WL_to_roll_centre: 0.09958290111232058  # [m]  (see OPTIWISE/20.01_roll_centre_speed.ipynb)
   rev_channels:
     - Prop/1/N
 
@@ -86,94 +86,96 @@ optiwise:
   SNR2: 1
   SNR3: 10
   skip:
-    - 23459  # GM before
-    - 23460  # GM before
-    - 23461  # GM SB
-    - 23462  # GM PS
-    - 23463  #  
-    - 23464  #  
-    - 23465  #  
-    - 23466  #  
-    - 23466  #  
-    - 23467  # Large rudder + trip
-    - 23468  # Large rudder + trip
-    - 23469  # Large rudder + trip
-    - 23470  # Large rudder + trip
-    - 23471  # Large rudder + trip
-    - 23472  # Large rudder + trip
-    - 23473  # Large rudder + trip
-    - 23474  # Large rudder + trip
-    - 23475  # Large rudder + trip
-    - 23476  # Large rudder + trip
-    - 23477  # Large rudder + trip
-    - 23478  # Large rudder + trip
-    - 23479  # Large rudder + trip
-    - 23480  # Small rudder+ No trip
-    - 23481  # Small rudder+ No trip
-    - 23482  # Small rudder+ No trip
-    - 23483  # Small rudder+ No trip
-    - 23486  # Small rudder+No trip
-    - 23487  # Small rudder+No trip
-    - 23488  # Small rudder+No trip
-    - 23489  # Small rudder+No trip
-    - 23490  # Small rudder+No trip
-    - 23491  # Small rudder+No trip
-    - 23492  # Small rudder+No trip
-    - 23493  # Small rudder+No trip
-    - 23494  # Small rudder+No trip
-    - 23495  # Small rudder+No trip
-    - 23496  # Small rudder+No trip
-    - 23497  # Small rudder+No trip
-    - 23498  # GM before
-    - 23499  # GM before
-    - 23500  # GM before
-    - 23501  # GM before
-    - 23502  # GM before
-    - 23503  # GM before
-    - 23504  # GM before
-    - 23505  # GM before
-    - 23506  # GM before
-    - 23507  # GM before
-    - 23508  # Slask
-    - 23509  # Slask
-    - 23510  # Slask
-    - 23511  # Slask
-    - 23512  # Slask
-    - 23513  # Slask
-    - 23556  # TWA=60 TWS=8
-    - 23557  # TWA=150 TWS=8
-    - 23558  # TWA=-60 TWS=8
-    - 23559  # TWA=-60 TWS=8
-    - 23560  # TWA=-150 TWS=8
-    - 23561  # TWA=-150 TWS=8
-    - 23562  # TWA=60 TWS=8
-    - 23563  # TWA=-60 TWS=8
-    - 23564  # TWA=-60 TWS=8
-    - 23565  # TWA=-60 TWS=8
-    - 23566  # TWA=60 TWS=8
-    - 23567  # TWA=150 TWS=8
-    - 23568  # TWA=-60 TWS=8
-    - 23569  # TWA=-150 TWS=8
-    - 23570  # TWA=-60 TWS=8
-    - 23571  # TWA=-150 TWS=8
-    - 23579  #  
-    - 23580  #  
-    - 23581  #  
-    - 23582  #  
-    - 23583  #  
-    - 23584  #  
-    - 23585  #  
-    - 23586  # Circle SB
-    - 23587  # Circle SB
-    - 23588  # Circle SB
-    - 23589  # Circle PS
-    #- 23590  # ZZ10/10 SB
-    #- 23591  # ZZ10/10 SB
-    #- 23592  # ZZ10/10 SB
-    #- 23593  # ZZ10/10 PS
-    #- 23594  # ZZ20/20 SB
-    #- 23595  # ZZ20/20 SB
-    #- 23596  # ZZ20/20 PS
-    #- 23597  # ZZ20/20 PS
-    - 23598  #  
-
+    - 23463  # roll decay  
+    - 23464  # roll decay  
+    - 23465  # roll decay  
+    - 23466  # roll decay  
+    - 23466  # roll decay  
+    - 23467  # reference speed Large rudder + trip
+    - 23468  # reference speed Large rudder + trip
+    - 23469  # reference speed Large rudder + trip
+    - 23470  # reference speed Large rudder + trip
+    - 23471  # reference speed Large rudder + trip
+    - 23472  # reference speed Large rudder + trip
+    - 23473  # reference speed Large rudder + trip
+    - 23474  # reference speed Large rudder + trip
+    - 23475  # reference speed Large rudder + trip
+    - 23476  # reference speed Large rudder + trip
+    - 23477  # reference speed Large rudder + trip
+    - 23478  # reference speed Large rudder + trip
+    - 23479  # reference speed Large rudder + trip
+    - 23480  # reference speed Small rudder+ No trip
+    - 23481  # reference speed Small rudder+ No trip
+    - 23482  # reference speed Small rudder+ No trip
+    - 23483  # reference speed Small rudder+ No trip
+    - 23486  # reference speed Small rudder+No trip
+    - 23487  # reference speed Small rudder+No trip
+    - 23488  # reference speed Small rudder+No trip
+    - 23489  # reference speed Small rudder+No trip
+    - 23490  # reference speed Small rudder+No trip
+    - 23491  # reference speed Small rudder+No trip
+    - 23492  # reference speed Small rudder+No trip
+    - 23493  # rodergrundvinkel Small rudder+No trip
+    - 23494  # rodergrundvinkel Small rudder+No trip
+    - 23495  # rodergrundvinkel Small rudder+No trip
+    - 23496  # rodergrundvinkel Small rudder+No trip
+    - 23497  # rodergrundvinkel Small rudder+No trip
+    - 23579  # turning circle  
+    - 23580  # turning circle  
+    - 23581  # turning circle  
+    - 23582  # turning circle  
+    - 23583  # zigzag  
+    - 23584  # zigzag  
+    - 23585  # zigzag  
+    - 23586  # turning circle Circle SB
+    - 23587  # turning circle Circle SB
+    - 23588  # turning circle Circle SB
+    - 23589  # turning circle Circle PS
+    #- 23590  # zigzag ZZ10/10 SB
+    #- 23591  # zigzag ZZ10/10 SB
+    #- 23592  # zigzag ZZ10/10 SB
+    #- 23593  # zigzag ZZ10/10 PS
+    #- 23594  # zigzag ZZ20/20 SB
+    #- 23595  # zigzag ZZ20/20 SB
+    #- 23596  # zigzag ZZ20/20 PS
+    #- 23597  # zigzag ZZ20/20 PS
+    #- 23598  # zigzag
+    #- 23679  # zigzag ZZ10/10 SB
+    #- 23680  # zigzag ZZ10/10 PS
+    - 23681  # zigzag ZZ10/10 PS
+    #- 23682  # zigzag ZZ20/20 SB
+    - 23683  # spiral  
+    - 23684  # spiral  
+    - 23685  # spiral  
+    - 23686  # spiral  
+    - 23687  # spiral  
+    - 23688  # spiral  
+    - 23689  # spiral  
+    - 23690  # spiral  
+    - 23691  # spiral  
+    - 23692  # spiral  
+    - 23693  # spiral  
+    - 23694  # spiral  
+    - 23695  # spiral  
+    - 23696  # spiral  
+    - 23697  # spiral  
+    - 23698  # spiral  
+    - 23699  # spiral  
+    - 23700  # spiral  
+    - 23701  # spiral  
+    - 23702  # spiral  
+    - 23703  # spiral  
+    - 23704  # spiral  
+    - 23705  # spiral  
+    - 23706  # spiral  
+    - 23707  # turning circle Circle SB
+    - 23708  # turning circle Circle SB
+    - 23709  # turning circle Circle SB
+    - 23710  # turning circle Circle PS
+    - 23711  # zigzag ZZ10/10 SB
+    #- 23712  # zigzag ZZ20/20 SB
+    - 23713  # zigzag ZZ20/20 PS
+    - 23714  # reference speed Collision avoidance
+    - 23715  # reference speed Collision avoidance
+    - 23716  # reference speed Collision avoidance
+    - 23717  # reference speed Collision avoidance

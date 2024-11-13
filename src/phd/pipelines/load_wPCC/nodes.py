@@ -323,3 +323,32 @@ def _move_to_roll_centre(loader,WL_to_roll_centre:float):
     
     return data
     
+def meta_data(time_series_meta_data:pd.DataFrame, tests:dict)-> pd.DataFrame:
+    
+    test_meta_data = time_series_meta_data.copy()
+    
+    for id, row in time_series_meta_data.iterrows():
+        
+        if not str(id) in tests:
+            continue
+        
+        data = tests[str(id)]()
+        test_meta_data.loc[id,'angle'] = find_rudder_angle(data=data)
+
+    test_meta_data['direction'] = test_meta_data['angle'].apply(lambda x: "port" if x > 0 else "stbd")
+    
+    mask = test_meta_data['test_type'] == 'zigzag'
+    test_meta_data['loading condition'] = test_meta_data['name']
+    test_meta_data.loc[mask,'name'] = test_meta_data.loc[mask].apply(lambda x: f"{x['test_type']} {x['angle']:0.0f}/{x['angle']:0.0f} {x['direction']}", axis=1) 
+    
+    return test_meta_data
+    
+def find_rudder_angle(data:pd.DataFrame):
+
+    s = data.abs().max()
+    
+    i = (data['delta'].abs() > np.deg2rad(5)).idxmax()
+    s['delta']*=np.sign(data.loc[i,'delta'])
+    
+    return np.round(np.rad2deg(s['delta']))
+    

@@ -17,12 +17,14 @@ from vessel_manoeuvring_models.substitute_dynamic_symbols import (
     equation_to_python_method,
 )
 from phd.visualization.plot_prediction import predict
+from phd.helpers import lazy, lazy_iteration
 
 # from vct.read_shipflow import mirror_x_z
 from phd.pipelines.models import optimize_l_R_shape
 from sklearn.metrics import r2_score
 from vessel_manoeuvring_models.parameters import df_parameters
 import phd.pipelines.regression_VCT.optimize
+from vessel_manoeuvring_models.models.rudder_simple import RudderSimpleSystem
 
 p = df_parameters["symbol"]
 
@@ -279,21 +281,21 @@ def add_extra_points_with_multiple_test_types(
 
 
 def add_extra_circle_drift(df_VCT: pd.DataFrame, add_mirror_circle_drift: bool) -> pd.DataFrame:
-    log.info("Add extra Circle + Drift")
-
-    df_VCT = add_extra_points_with_multiple_test_types(
-        df_VCT=df_VCT,
-        new_test_type="Circle + Drift",
-        old_test_type="Circle",
-        by=["V_round", "r_round"],
-    )
-    df_VCT = add_extra_points_with_multiple_test_types(
-        df_VCT=df_VCT,
-        new_test_type="Circle + Drift",
-        old_test_type="Drift angle",
-        by=["V_round", "beta_round"],
-    )
-    df_VCT.fillna(0, inplace=True)
+    #log.info("Add extra Circle + Drift")
+#
+    #df_VCT = add_extra_points_with_multiple_test_types(
+    #    df_VCT=df_VCT,
+    #    new_test_type="Circle + Drift",
+    #    old_test_type="Circle",
+    #    by=["V_round", "r_round"],
+    #)
+    #df_VCT = add_extra_points_with_multiple_test_types(
+    #    df_VCT=df_VCT,
+    #    new_test_type="Circle + Drift",
+    #    old_test_type="Drift angle",
+    #    by=["V_round", "beta_round"],
+    #)
+    #df_VCT.fillna(0, inplace=True)
 
     if add_mirror_circle_drift:
         df_VCT = mirror_circle_drift(df_VCT=df_VCT)
@@ -342,6 +344,41 @@ def mirror_circle_drift(df_VCT) -> pd.DataFrame:
     df_VCT["mirror"] = df_VCT["mirror"].fillna(False)
 
     return df_VCT
+
+def add_mirrored(df_VCT:pd.DataFrame, keys_other = [
+        "beta",
+        "r",
+        "v",
+        "delta",
+    ])->pd.DataFrame:
+    
+    
+    df_mirror = mirror(df_VCT, keys_other=keys_other)
+    df_mirror['mirror'] = True
+    df_VCT['mirror'] = False
+    df_VCT = pd.concat((df_VCT,df_mirror))
+    
+    ## Remove added mirrors where keys are the same:
+    keys = ['u','v','r','delta']
+    mask = df_VCT[keys].duplicated()
+    df_VCT = df_VCT.loc[~mask].copy()
+    return df_VCT
+    
+def mirror(df_VCT:pd.DataFrame, keys_other = [
+        "beta",
+        "r",
+        "v",
+        "delta",
+    ])->pd.DataFrame:
+    
+    df_mirror = df_VCT.copy()
+    keys_fy = [key for key in df_mirror.columns if "fy" in key or "Y_" in key]
+    keys_mz = [key for key in df_mirror.columns if "mz" in key or "N_" in key]
+    
+    keys = keys_other + keys_fy + keys_mz
+    df_mirror[keys] *= -1.0
+    return df_mirror
+
 
 
 def regress_hull_VCT(
@@ -1174,3 +1211,36 @@ def subtract_centrifugal_and_centrepetal_forces(df_VCT:pd.DataFrame, model:Modul
     df_VCT_viscous['N_D'] = run(lambda_N_D, inputs=df_VCT_viscous, **added_masses)
     
     return df_VCT_viscous
+
+def meassured_rudder_force_model(models_VCT_MDL:dict)-> dict:
+    """If the rudder forces have been measured, as simpler rudder system that replicates these forces can thus be adopted.
+
+    Args:
+        models_VCT_MDL (dict): _description_
+
+    Returns:
+        dict: _description_
+    """
+    #models = {}
+    #for name, loader in models_VCT_MDL.items():
+    #    model = loader()
+    #    models[name] = meassured_rudder_force_model_(model=model)
+    #    
+    #return models
+    
+    return lazy_iteration(models_VCT_MDL, var_name='model', function=meassured_rudder_force_model_)
+    
+def meassured_rudder_force_model_(model:ModularVesselSimulator)-> ModularVesselSimulator:
+    
+    #model=model.copy()
+    
+    if 'mmg_wake_system' in model.subsystems:
+        model.subsystems.pop('mmg_wake_system')
+    
+    rudder = RudderSimpleSystem(ship=model)
+    model.subsystems['rudder'] = rudder
+    model.control_keys=['X_RM','Y_RM','thrust']
+    
+    return model
+    
+    

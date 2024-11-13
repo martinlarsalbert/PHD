@@ -415,6 +415,8 @@ def lowpass(
             skip_samples:-skip_samples
         ][key]
 
+    df_lowpass['beta'] = np.arctan2(-df_lowpass['v'],df_lowpass['u'])
+
     df_lowpass["u1d"] = r_ = derivative(df_lowpass, "u")
     df_lowpass["v1d"] = r_ = derivative(df_lowpass, "v")
     df_lowpass["r1d"] = r_ = derivative(df_lowpass, "r")

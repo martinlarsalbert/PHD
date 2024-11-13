@@ -302,25 +302,37 @@ def plot_VCT(df_VCT:pd.DataFrame, df_prediction:pd.DataFrame=None, test_type='Dr
             first_row=True
             for y_key in y_keys:
                 
+                keys = []           
                 if isinstance(y_key,str):
+                    if not y_key in data:
+                        continue
+                
                     ax = axes_map[y_key][V]
                     color = colors.get(y_key,'b')
                     plot_group(df=group, dof=y_key, ax=ax, style=color+style, label=label, prime=prime)
                     ax.set_ylabel(y_key)
+                    keys.append(y_key)
                 else:
                     for sub_key in y_key:
+                        
+                        if not sub_key in data:
+                            continue
+                
                         ax = axes_map[sub_key][V]
                         color = colors.get(sub_key,'b')
                         plot_group(df=group, dof=sub_key, ax=ax, style=color+style, label=f"{sub_key} {label}", prime=prime)
+                        keys.append(sub_key)
                     
-                    ax.set_ylabel(",".join(y_key))
+                    if len(keys) > 0:
+                        ax.set_ylabel(",".join(keys))
                         
                 
-                if first_row:
-                    first_row=False
-                    ax.set_title(f"V:{V:0.2f} [m/s]")  
+                if len(keys) > 0:
+                    if first_row:
+                        first_row=False
+                        ax.set_title(f"V:{V:0.2f} [m/s]")  
 
-                ax.grid()
+                    ax.grid()
                 
         if n_rows > 1:
             # Remove xlabels for all but the last row

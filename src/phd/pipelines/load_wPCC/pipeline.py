@@ -4,7 +4,7 @@ generated using Kedro 0.18.7
 """
 
 from kedro.pipeline import Pipeline, node, pipeline
-from .nodes import load, move_to_roll_centre
+from .nodes import load, move_to_roll_centre, meta_data
 
 
 def create_pipeline(**kwargs):
@@ -19,7 +19,7 @@ def create_pipeline(**kwargs):
                 ],
                 outputs="tests_WL",
                 name="load_node",
-                tags=["filter","load"],
+                tags=["load",],
             ),
             node(
                 func=move_to_roll_centre,
@@ -29,8 +29,16 @@ def create_pipeline(**kwargs):
                 ],
                 outputs="tests",
                 name="move_to_roll_centre",
-                tags=["filter","load"],
+                tags=["load",],
             ),
+            node(
+                func=meta_data,
+                inputs=["time_series_meta_data","tests"],
+                outputs="test_meta_data",
+                name="meta_data",
+                tags=["load","load_meta_data"],
+            ),
+            
             # node(
             #    func=filter,
             #    inputs=[

@@ -19,6 +19,7 @@ from .nodes import (
     limit_states_for_regression,
     #adopting_nonlinear_to_MDL,
     subtract_centrifugal_and_centrepetal_forces,
+    meassured_rudder_force_model,
 )
 
 
@@ -95,6 +96,13 @@ def create_pipeline(ship_name:str, **kwargs) -> Pipeline:
                 inputs=["models_VCT", "resistance_MDL"],
                 outputs="models_VCT_MDL",
                 name="adopting_to_MDL",
+                tags=["generate_model", "regression_VCT", "adopting_to_MDL"],
+            ),
+            node(
+                func=meassured_rudder_force_model,
+                inputs=["models_VCT_MDL"],
+                outputs="models_measured_rudder_force",
+                name="meassured_rudder_force_model",
                 tags=["generate_model", "regression_VCT", "adopting_to_MDL"],
             ),
             #node(

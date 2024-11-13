@@ -9,28 +9,7 @@ wPCC.time_series_preprocessed.ek_smooth_CG:  # Expressed in CG (as was used in t
       index: True
   filename_suffix: .csv
 
-wPCC.tests_WL:
-  type: PartitionedDataSet
-  path: data/02_intermediate/wPCC/tests_WL
-  dataset:
-    type: pandas.CSVDataSet
-    load_args:
-      index_col: 0
-    save_args:
-      index: True
-  filename_suffix: .csv
 
-wPCC.test_meta_data:
-  type: pandas.CSVDataSet
-  filepath: data/02_intermediate/wPCC/test_meta_data.csv
-  load_args:
-    index_col: 0
-    encoding: 'utf-8'
-    dtype:
-      id: int
-  save_args:
-    index: True
-    encoding: 'utf-8'
 
 
 

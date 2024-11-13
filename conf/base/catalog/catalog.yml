@@ -197,6 +197,17 @@
       index: True
   filename_suffix: .csv
 
+"{namespace}.tests_WL":
+  type: PartitionedDataSet
+  path: data/02_intermediate/{namespace}/tests_WL
+  dataset:
+    type: pandas.CSVDataSet
+    load_args:
+      index_col: 0
+    save_args:
+      index: True
+  filename_suffix: .csv
+
 "{namespace}.units":
   type: yaml.YAMLDataSet
   filepath: data/01_raw/{namespace}/units.yml
@@ -210,6 +221,19 @@
   save_args:
     index: True
     encoding: 'utf-8'
+
+"{namespace}.test_meta_data":
+  type: pandas.CSVDataSet
+  filepath: data/02_intermediate/{namespace}/test_meta_data.csv
+  load_args:
+    index_col: 0
+    encoding: 'utf-8'
+    dtype:
+      id: int
+  save_args:
+    index: True
+    encoding: 'utf-8'
+
 
 "{namespace}.time_series_preprocessed.ek":
   type: PartitionedDataSet
@@ -388,6 +412,13 @@
 "{namespace}.models_VCT_MDL":
   type: PartitionedDataSet
   path: data/06_models/{namespace}/models_VCT_MDL
+  dataset:
+    type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
+  filename_suffix: .pkl
+
+"{namespace}.models_measured_rudder_force":
+  type: PartitionedDataSet
+  path: data/06_models/{namespace}/models_measured_rudder_force
   dataset:
     type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
   filename_suffix: .pkl

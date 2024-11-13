@@ -6,7 +6,9 @@ import numpy as np
 from matplotlib.ticker import StrMethodFormatter
 from vessel_manoeuvring_models.angles import smallest_signed_angle
 from vessel_manoeuvring_models.substitute_dynamic_symbols import run
-
+from vessel_manoeuvring_models.visualization.plot import track_plot
+import matplotlib.ticker as plticker
+    
 def predict(model: ModularVesselSimulator, data: pd.DataFrame, main_equation_excludes=[], VCT=True) -> pd.DataFrame:
     """
 
@@ -207,8 +209,10 @@ def plot_compare_model_forces(
             },
     },
     delta_corners=True,
+    units={
+    },
+    symbols={},
 ):
-       
     
     if len(styles) == 1:
         for name,model in models.items():
@@ -227,43 +231,62 @@ def plot_compare_model_forces(
 
     
 
-    style='--'
-    data.plot(y="beta", style=style,color="red", label=r'$\beta$', ax=ax)
-    data.plot(y="delta",  style=style,color="g", label=r'$\delta$', ax=ax)
-    ax.set_xlim(data.index[0], data.index[-1])
-    ax.legend(loc="upper left")
-    
+    #style='--'
+    #data.plot(y="beta", style=style,color="red", label=r'$\beta$', ax=ax)
+    #data.plot(y="delta",  style=style,color="g", label=r'$\delta$', ax=ax)
+    #ax.set_xlim(data.index[0], data.index[-1])
+    #ax.legend(loc="upper left")
+    #
     if delta_corners:
         starts, ends, corners = get_delta_corners(data=data)
         ax.set_xticks(corners.index)
+    #
+    #ax.set_xticklabels([])
+    #ax.set_yticklabels([])
+    ## ax.grid(False)
+#
+    #ax2 = ax.twinx()
+    #data.plot(y="r",  style=style,color="b", label=r'$r$', ax=ax2)
+    #ax2.legend(loc="lower left")
+    #ax2.grid(False)
+    #ax2.set_yticklabels([])
     
-    ax.set_xticklabels([])
-    ax.set_yticklabels([])
-    # ax.grid(False)
+    data['time'] = data.index
+    ax = track_plot(data, lpp=model.ship_parameters['L'], beam=model.ship_parameters['B'], flip=True, ax=ax, equal=False, delta=True, x_dataset='time')
+    #ax.axis('scaled')
+    #ax.set_xlim(data['x0'].min(), data['x0'].max())
+    #ax.set_ylim(data['y0'].min(), data['y0'].max())
+        
+    ax.get_legend().set_visible(False)
+    ax.set_title('')
+    
 
-    ax2 = ax.twinx()
-    data.plot(y="r",  style=style,color="b", label=r'$r$', ax=ax2)
-    ax2.legend(loc="lower left")
-    ax2.grid(False)
-    ax2.set_yticklabels([])
-
-    units={
-        'X':'N',
-        'Y':'N',
-        'N':'Nm',
-    }
+    
     
     for key, ax in zip(keys, axes[1:]):
+        
+        unit = units.get(key,'-')
+        symbol = symbols.get(key,key)
+            
+            
         if key in forces_from_motions:
             forces_from_motions.plot(y=key, **styles["Experiment"], ax=ax)
 
         for name, forces_predicted in force_predictions.items():
-            forces_predicted.plot(y=key, **styles[name], ax=ax)
+            if key in forces_predicted:
+                if unit=='rad':
+                    forces_predicted[f'{key}_deg'] = np.rad2deg(forces_predicted[key])
+                    forces_predicted.plot(y=f'{key}_deg', **styles[name], ax=ax)
+                    ax.set_ylabel(rf"${symbol}$ [deg]")
+                else:
+                    forces_predicted.plot(y=key, **styles[name], ax=ax)
+                    ax.set_ylabel(rf"${symbol}$ [{unit}]")
         
-        unit = units.get(key[0],'-')
-        ax.set_ylabel(rf"${key}$ [{unit}]")
-        ax.get_legend().set_visible(False)
-        ax.get_legend().set_visible(False)
+        try:
+            ax.get_legend().set_visible(False)
+        except:
+            pass
+        
         ax.set_xlim(data.index[0], data.index[-1])
         
         if delta_corners:
@@ -281,17 +304,51 @@ def plot_compare_model_forces(
     #axes[-1].set_xticklabels([])
     #axes[-1].set_major_formatter(StrMethodFormatter('{x:,.0f}'))
     
-    ylims=[]
-    for ax in axes[1:]:
-        ylims.append(ax.get_ylim())
-    ylims = (np.min(np.min(ylims)),np.max(np.max(ylims)))
-    for ax in axes[1:]:
-        ax.set_ylim(ylims)
+    units_inverse = {}
+    for key,unit in units.items():
+        
+        if not unit in units_inverse:
+            units_inverse[unit]=[]
+            
+        units_inverse[unit].append(key)
     
+    #print(units_inverse)
+    
+    axes_dict = {key:ax for ax,key in zip(axes[1:],keys)}
+    #print(axes_dict)
+    ylim_dict = {}
+    for unit, keys_ in units_inverse.items():
+        
+        ymins=[]
+        ymaxs=[]
+        for key in keys_:
+            if not key in axes_dict:
+                continue            
+            
+            ymin,ymax = axes_dict[key].get_ylim()
+            ymins.append(ymin)
+            ymaxs.append(ymax)
+        
+        if len(ymins) > 0:
+            ylim_dict[unit] = (np.min(ymins),np.max(ymaxs))
+    
+    #print(ylim_dict)
+    
+    for ax,key in zip(axes[1:],keys):
+        unit = units.get(key,'')
+        if unit in ylim_dict:
+            ax.set_ylim(*ylim_dict[unit])
+            #print(f'updating {key} {ylim_dict[unit]}')
+
+    
+    axes[0].set_xlim(axes[1].get_xlim())
+    
+    loc = plticker.MultipleLocator(base=2.0) # this locator puts ticks at regular intervals
     for ax in axes:
-        ax.grid(True)
-    
-    #plt.tight_layout()
+        ax.xaxis.set_major_locator(loc)
+        ax.grid(True, axis='x')
+        ax.grid(False, axis='y')
+
     
     return fig
 

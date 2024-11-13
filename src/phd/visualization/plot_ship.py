@@ -18,6 +18,7 @@ def track_plots(
     flip=False,
     time_window=[0, np.inf],
     include_wind=True,
+    include_label=True,
 ) -> plt.axes:
     styles_ = styles.copy()
 
@@ -34,6 +35,7 @@ def track_plots(
         styles=styles_,
         flip=flip,
         time_window=time_window,
+        include_label=include_label,
     )
 
     if not include_wind:
