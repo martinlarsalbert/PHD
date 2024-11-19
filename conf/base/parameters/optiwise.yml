@@ -14,7 +14,23 @@ optiwise:
   #VCT_nonlinear_exclude_parameters: {}
   #skip: {}
   tests: {}
-  VCT_selection: null 
+  VCT_selection: null
+  VCT_limits:
+    beta_deg : [-16,16]
+  polynomial_rudder_models:
+    simple:
+        base_model: semiempirical_covered_inertia
+        degree_Y_R: 4
+        treshold_Y_R: 0.0007
+        degree_X_R: 4
+        treshold_X_R: 0.0000005
+    
+    complex:
+        base_model: semiempirical_covered_inertia
+        degree_Y_R: 4
+        treshold_Y_R: 0.0001
+        degree_X_R: 4
+        treshold_X_R: 0.0002
 
   parameters:
     default:

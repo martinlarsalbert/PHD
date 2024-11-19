@@ -366,9 +366,24 @@
     type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
   filename_suffix: .pkl
 
+"{namespace}.models_VCT_MMG_rudder":
+  type: PartitionedDataSet
+  path: data/06_models/{namespace}/models_VCT_MMG_rudder
+  dataset:
+    type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
+  filename_suffix: .pkl
+
+
 "{namespace}.models_VCT_polynomial_rudder_MDL":
   type: PartitionedDataSet
   path: data/06_models/{namespace}/models_VCT_polynomial_rudder_MDL
+  dataset:
+    type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
+  filename_suffix: .pkl
+
+"{namespace}.models_VCT_MMG_rudder_MDL":
+  type: PartitionedDataSet
+  path: data/06_models/{namespace}/models_VCT_MMG_rudder_MDL
   dataset:
     type: phd.extras.datasets.model_dataset.ModularVesselSimulatorDataSet
   filename_suffix: .pkl

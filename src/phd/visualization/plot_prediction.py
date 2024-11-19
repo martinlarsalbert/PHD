@@ -251,6 +251,15 @@ def plot_compare_model_forces(
     #ax2.grid(False)
     #ax2.set_yticklabels([])
     
+    ax2 = ax.twinx()
+    data['delta_deg'] = np.rad2deg(data['delta'])
+    data.plot(y='delta_deg', style='-', color='gray', zorder=-100, ax=ax2)
+    ax2.set_ylim(-20,20)
+    ax2.set_yticks([])
+    ax2.set_ylabel(r'$\delta$ [deg]', color='gray')
+    
+    
+    
     data['time'] = data.index
     ax = track_plot(data, lpp=model.ship_parameters['L'], beam=model.ship_parameters['B'], flip=True, ax=ax, equal=False, delta=True, x_dataset='time')
     #ax.axis('scaled')
@@ -259,8 +268,6 @@ def plot_compare_model_forces(
         
     ax.get_legend().set_visible(False)
     ax.set_title('')
-    
-
     
     
     for key, ax in zip(keys, axes[1:]):

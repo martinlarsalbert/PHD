@@ -48,6 +48,13 @@ wPCC.polynomial_rudder_models:
         degree_X_R: 2
         treshold_X_R: 0.0000005
 
+    complex:
+        base_model: semiempirical_covered_inertia
+        degree_Y_R: 4
+        treshold_Y_R: 0.000525
+        degree_X_R: 4
+        treshold_X_R: 0.00005
+
 
 
 wPCC.VCT_nonlinear_exclude_parameters:

@@ -258,7 +258,7 @@ def flat_keys(y_keys):
     return flat
     
 
-def plot_VCT(df_VCT:pd.DataFrame, df_prediction:pd.DataFrame=None, test_type='Drift angle', y_keys=['X_D','Y_D','N_D'], colors={},prime=False):
+def plot_VCT(df_VCT:pd.DataFrame, predictions={}, test_type='Drift angle', y_keys=['X_D','Y_D','N_D'], colors={},prime=False, styles={}):
     
     data_VCT = df_VCT.groupby(by='test type').get_group(test_type)
     
@@ -308,8 +308,8 @@ def plot_VCT(df_VCT:pd.DataFrame, df_prediction:pd.DataFrame=None, test_type='Dr
                         continue
                 
                     ax = axes_map[y_key][V]
-                    color = colors.get(y_key,'b')
-                    plot_group(df=group, dof=y_key, ax=ax, style=color+style, label=label, prime=prime)
+                    #color = colors.get(y_key,'b')
+                    plot_group(df=group, dof=y_key, ax=ax, style=style, label=label, prime=prime)
                     ax.set_ylabel(y_key)
                     keys.append(y_key)
                 else:
@@ -319,8 +319,8 @@ def plot_VCT(df_VCT:pd.DataFrame, df_prediction:pd.DataFrame=None, test_type='Dr
                             continue
                 
                         ax = axes_map[sub_key][V]
-                        color = colors.get(sub_key,'b')
-                        plot_group(df=group, dof=sub_key, ax=ax, style=color+style, label=f"{sub_key} {label}", prime=prime)
+                        #color = colors.get(sub_key,'b')
+                        plot_group(df=group, dof=sub_key, ax=ax, style=style, label=f"{sub_key} {label}", prime=prime)
                         keys.append(sub_key)
                     
                     if len(keys) > 0:
@@ -339,11 +339,18 @@ def plot_VCT(df_VCT:pd.DataFrame, df_prediction:pd.DataFrame=None, test_type='Dr
             for ax in axes[:-1,:].flatten():
                 ax.set_xlabel('')
     
-    plot_dataset(data=data_VCT, label='VCT', style='.--')
-    
-    if not df_prediction is None:
+    predictions['VCT'] = data_VCT
+    predictions_unordered = predictions.copy()
+    predictions={}
+    predictions['VCT'] = predictions_unordered['VCT']
+    predictions.update(predictions_unordered)
+                
+    for name, df_prediction in predictions.items():
         data_prediction = df_prediction.groupby(by='test type').get_group(test_type)
-        plot_dataset(data=data_prediction, label='prediction', style='x-')
+        style_all = styles.get(name,{})
+        label=style_all.get('label',name)
+        style = style_all.get('style','x-')
+        plot_dataset(data=data_prediction, label=label, style=style)
 
     fig.suptitle(test_type)
     

@@ -387,7 +387,7 @@ def add_mirrored(df_VCT:pd.DataFrame, keys_other = [
     df_VCT = pd.concat((df_VCT,df_mirror))
     
     ## Remove added mirrors where keys are the same:
-    keys = ['u','v','r','delta']
+    keys = ['u','v','r','delta','rev']
     mask = df_VCT[keys].duplicated()
     df_VCT = df_VCT.loc[~mask].copy()
     return df_VCT
@@ -1312,10 +1312,11 @@ def _regress_polynomial_rudder(model:ModularVesselSimulator, df_VCT:pd.DataFrame
     df_VCT_raw = df_VCT.copy()
     df_ = df_VCT_raw.loc[~df_VCT_raw['mirror']]
     df_VCT_mirror = df_.copy()
-    df_VCT_mirror['Y_R_port'] = -df_['Y_R_stbd']
-    df_VCT_mirror['Y_R_stbd'] = -df_['Y_R_port']
-    df_VCT_mirror['N_R_port'] = -df_['N_R_stbd']
-    df_VCT_mirror['N_R_stbd'] = -df_['N_R_port']
+    if model.is_twin_screw:
+        df_VCT_mirror['Y_R_port'] = -df_['Y_R_stbd']
+        df_VCT_mirror['Y_R_stbd'] = -df_['Y_R_port']
+        df_VCT_mirror['N_R_port'] = -df_['N_R_stbd']
+        df_VCT_mirror['N_R_stbd'] = -df_['N_R_port']
 
     mirror_keys=[
         'Y_R',
@@ -1393,8 +1394,22 @@ def _regress_polynomial_rudder(model:ModularVesselSimulator, df_VCT:pd.DataFrame
         Eq(N_R,Y_R*x_R)
     ]
     model_new = model.copy()
-    polynomial_subsystem = PrimeEquationPolynomialSubSystem(ship=model_new, feature_equations=feature_equations, equations=equations)   
-    model_new.subsystems['rudders'] = polynomial_subsystem
+    model_new.create_predictor_and_jacobian()
+    model_new.get_states_in_jacobi()
+    
+    if model.is_twin_screw:
+        model_new.control_keys=['delta','thrust','thrust_port','thrust_stbd']
+    else:
+        model_new.control_keys=['delta','thrust']
+        model_new.subsystems.pop('mmg_wake_system')
+    
+    polynomial_subsystem = PrimeEquationPolynomialSubSystem(ship=model_new, feature_equations=feature_equations, equations=equations)       
+    if model.is_twin_screw:
+        model_new.subsystems['rudders'] = polynomial_subsystem
+    else:
+        model_new.subsystems['rudder'] = polynomial_subsystem
+    
+    
     fitted_parameters = polynomial_subsystem.rename_parameters(parameters=fit.params, label='Y_R')
     fitted_parameters_X = polynomial_subsystem.rename_parameters(parameters=fit_X.params, label='X_R')
     model_new.parameters.update(fitted_parameters)
@@ -1404,7 +1419,6 @@ def _regress_polynomial_rudder(model:ModularVesselSimulator, df_VCT:pd.DataFrame
     
     if 'rudder_port' in model_new.subsystems:
         model_new.subsystems.pop('rudder_port')
-        model_new.control_keys=['delta','thrust','thrust_port','thrust_stbd']
     
     if 'rudder_stbd' in model_new.subsystems:
         model_new.subsystems.pop('rudder_stbd')
