@@ -166,6 +166,7 @@ def extra_columns(df):
     df["X_H"] = df["fx_hull"]
     df["Y_H"] = df["fy_hull"]
     df["N_H"] = df["mz_hull"]
+    df["X_P"] = df["T_tot_net_force"]
 
     if "fx_rudders" in df:
         df["X_R"] = df["fx_rudders"]

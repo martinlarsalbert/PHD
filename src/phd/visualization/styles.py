@@ -1,5 +1,5 @@
 styles = {
-    "VCT":{'style':'k.-','zorder':100,'lw':0.7,'label':'VCT'},
+    "VCT":{'style':'k.','zorder':100,'lw':0.7,'label':'VCT'},
     "Experiment" : {'style':'k-','zorder':100,'lw':0.7},
     "polynomial rudder" : {'style':'-','color':'red'},
     "semiempirical rudder" : {'style':'b-','label':"semi-empirical rudder"},

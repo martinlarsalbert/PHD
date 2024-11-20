@@ -258,7 +258,7 @@ def flat_keys(y_keys):
     return flat
     
 
-def plot_VCT(df_VCT:pd.DataFrame, predictions={}, test_type='Drift angle', y_keys=['X_D','Y_D','N_D'], colors={},prime=False, styles={}):
+def plot_VCT(df_VCT:pd.DataFrame, predictions={}, test_type='Drift angle', y_keys=['X_D','Y_D','N_D'], prime=False, styles={}):
     
     data_VCT = df_VCT.groupby(by='test type').get_group(test_type)
     
@@ -308,7 +308,6 @@ def plot_VCT(df_VCT:pd.DataFrame, predictions={}, test_type='Drift angle', y_key
                         continue
                 
                     ax = axes_map[y_key][V]
-                    #color = colors.get(y_key,'b')
                     plot_group(df=group, dof=y_key, ax=ax, style=style, label=label, prime=prime)
                     ax.set_ylabel(y_key)
                     keys.append(y_key)
@@ -319,7 +318,6 @@ def plot_VCT(df_VCT:pd.DataFrame, predictions={}, test_type='Drift angle', y_key
                             continue
                 
                         ax = axes_map[sub_key][V]
-                        #color = colors.get(sub_key,'b')
                         plot_group(df=group, dof=sub_key, ax=ax, style=style, label=f"{sub_key} {label}", prime=prime)
                         keys.append(sub_key)
                     
@@ -356,7 +354,113 @@ def plot_VCT(df_VCT:pd.DataFrame, predictions={}, test_type='Drift angle', y_key
     
     return fig
 
+def plot_VCT_components(df_VCT:pd.DataFrame, df_prediction:pd.DataFrame, test_type='Drift angle', y_keys=['X_D','Y_D','N_D'], colors={}, prime=False):
     
+    data_VCT = df_VCT.groupby(by='test type').get_group(test_type)
+    
+    if isinstance(y_keys,str):
+        y_keys=[y_keys]
+    
+    n_rows = len(y_keys)
+    Vs = data_VCT['V'].unique()
+    n_cols = len(Vs)     
+    
+    fig,axes = plt.subplots(ncols=n_cols, nrows=n_rows)
+    if (n_cols==1) and (n_rows==1):
+        axes=np.array([axes])
+    
+    axes = axes.reshape((n_rows,n_cols))
+    
+    axes_map={}
+    
+    # Create a dict of axes:
+    for row,y_key in enumerate(y_keys):
+        
+        if isinstance(y_key,str): 
+            axes_map[y_key] = {}
+        else:
+            for sub_key in y_key:
+                axes_map[sub_key] = {}
+        
+        for col,V in enumerate(Vs):
+            if isinstance(y_key,str):
+                axes_map[y_key][V] = axes[row,col]
+                
+            else:
+                # y_key can also be a list of keys that should end up on the same axis
+                for sub_key in y_key:
+                    axes_map[sub_key][V] = axes[row,col]
+                    
+    #y_keys = flat_keys(y_keys)
+    
+    def plot_dataset(data, label:str, style='.'):
+        for V, group in data.groupby(by='V'):
+            first_row=True
+            for y_key in y_keys:
+                
+                keys = []           
+                if isinstance(y_key,str):
+                    if not y_key in data:
+                        continue
+                
+                    ax = axes_map[y_key][V]
+                    color = colors.get(key,'k')
+                    
+                    plot_group(df=group, dof=y_key, ax=ax, style=new_style, label=label, prime=prime)
+                    ax.set_ylabel(y_key)
+                    keys.append(y_key)
+                else:
+                    for sub_key in y_key:
+                        
+                        if not sub_key in data:
+                            continue
+                
+                        ax = axes_map[sub_key][V]
+                        color = colors.get(sub_key,'k')
+                        
+                        if label=='__none__':
+                            label_new=label
+                        else:
+                            label_new=fr"${sub_key}$" 
+                        
+                        plot_group(df=group, dof=sub_key, ax=ax, style=style, label=label_new, prime=prime, color=color)
+                        keys.append(sub_key)
+                    
+                    if len(keys) > 0:
+                        ax.set_ylabel(",".join(keys))
+                        
+                
+                if len(keys) > 0:
+                    if first_row:
+                        first_row=False
+                        ax.set_title(f"V:{V:0.2f} [m/s]")  
+
+                    ax.grid()
+                
+        if n_rows > 1:
+            # Remove xlabels for all but the last row
+            for ax in axes[:-1,:].flatten():
+                ax.set_xlabel('')
+    
+
+                
+    #data_prediction = df_prediction.groupby(by='test type').get_group(test_type)
+    #style_all = styles.get(name,{})
+    #label=style_all.get('label',name)
+    #style = style_all.get('style','x-')
+    
+    
+    if df_prediction is None:
+        plot_dataset(data=data_VCT, label='VCT', style='.')
+    else:
+        plot_dataset(data=data_VCT, label='__none__', style='.')
+        
+        data_prediction = df_prediction.groupby(by='test type').get_group(test_type)
+        plot_dataset(data=data_prediction, label='', style='-')
+
+    fig.suptitle(test_type)
+    
+    return fig
 
 def plot_group(df, dof, ax, style, label, annotate=False, prime=False, **kwargs):
     test_type = df.iloc[0]["test type"]
