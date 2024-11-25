@@ -260,7 +260,13 @@ def flat_keys(y_keys):
 
 def plot_VCT(df_VCT:pd.DataFrame, predictions={}, test_type='Drift angle', y_keys=['X_D','Y_D','N_D'], prime=False, styles={}):
     
-    data_VCT = df_VCT.groupby(by='test type').get_group(test_type)
+    if isinstance(test_type,str):
+        test_types = [test_type]
+    else:
+        test_types = test_type
+        
+    mask = df_VCT['test type'].isin(test_types)
+    data_VCT = df_VCT.loc[mask].copy()
     
     if isinstance(y_keys,str):
         y_keys=[y_keys]
@@ -344,7 +350,10 @@ def plot_VCT(df_VCT:pd.DataFrame, predictions={}, test_type='Drift angle', y_key
     predictions.update(predictions_unordered)
                 
     for name, df_prediction in predictions.items():
-        data_prediction = df_prediction.groupby(by='test type').get_group(test_type)
+        
+        mask = df_prediction['test type'].isin(test_types)
+        data_prediction = df_prediction.loc[mask].copy()
+        
         style_all = styles.get(name,{})
         label=style_all.get('label',name)
         style = style_all.get('style','x-')
