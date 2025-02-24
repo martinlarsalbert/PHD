@@ -88,9 +88,14 @@ def _fit_open_water_characteristics(model:ModularVesselSimulator, open_water_cha
     
     log.info(fit.summary2())
     
+    if 'w_p0' in model.parameters:
+        w_p0_ = model.parameters['w_p0']
+    else:
+        w_p0_ = model.ship_parameters['w_p0']
+        
     model.parameters.update(
         {
-                "C0_w_p0": model.parameters['w_p0'],
+                "C0_w_p0": w_p0_,
                 "C1_w_p0": 0,
                 "k_0": fit.params['k_0'],
                 "k_1": fit.params['k_1'],

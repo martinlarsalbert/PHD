@@ -212,65 +212,78 @@ def plot_compare_model_forces(
     units={
     },
     symbols={},
+    do_track_plot=True,
+    scale_ship=1.0,
 ):
     
     if len(styles) == 1:
-        for name,model in models.items():
+        for name,model_ in models.items():
             styles[name] = {"style": "b-", "lw": 0.5, "label": name}
-        
+    
+    if do_track_plot:
+        n_plots = len(keys)+1
+    else:
+        n_plots = len(keys)
 
-    height_ratios=np.ones(len(keys)+1)
+    height_ratios=np.ones(n_plots)
     height_ratios[0]=0.5                          
-    fig, axes = plt.subplots(nrows=len(keys) + 1, height_ratios=height_ratios, constrained_layout = True)
+    fig, axes = plt.subplots(nrows=n_plots, height_ratios=height_ratios, constrained_layout = True)
+    if n_plots==1:
+        axes=[axes]
+    
     #fig.set_size_inches(13, 13)
     #model = models[list(models.keys())[0]]
     forces_from_motions = model.forces_from_motions(data=data)
-    force_predictions = {name:predict(model=model, data=data) for name, model in models.items()}
+    force_predictions = {name:predict(model=model_, data=data) for name, model_ in models.items()}
     
-    ax = axes[0]
+    if do_track_plot:        
+        ax = axes[0]
 
-    
+        #style='--'
+        #data.plot(y="beta", style=style,color="red", label=r'$\beta$', ax=ax)
+        #data.plot(y="delta",  style=style,color="g", label=r'$\delta$', ax=ax)
+        #ax.set_xlim(data.index[0], data.index[-1])
+        #ax.legend(loc="upper left")
+        #
+        if delta_corners:
+            starts, ends, corners = get_delta_corners(data=data)
+            ax.set_xticks(corners.index)
+        #
+        #ax.set_xticklabels([])
+        #ax.set_yticklabels([])
+        ## ax.grid(False)
+#   
+        #ax2 = ax.twinx()
+        #data.plot(y="r",  style=style,color="b", label=r'$r$', ax=ax2)
+        #ax2.legend(loc="lower left")
+        #ax2.grid(False)
+        #ax2.set_yticklabels([])
 
-    #style='--'
-    #data.plot(y="beta", style=style,color="red", label=r'$\beta$', ax=ax)
-    #data.plot(y="delta",  style=style,color="g", label=r'$\delta$', ax=ax)
-    #ax.set_xlim(data.index[0], data.index[-1])
-    #ax.legend(loc="upper left")
-    #
-    if delta_corners:
-        starts, ends, corners = get_delta_corners(data=data)
-        ax.set_xticks(corners.index)
-    #
-    #ax.set_xticklabels([])
-    #ax.set_yticklabels([])
-    ## ax.grid(False)
-#
-    #ax2 = ax.twinx()
-    #data.plot(y="r",  style=style,color="b", label=r'$r$', ax=ax2)
-    #ax2.legend(loc="lower left")
-    #ax2.grid(False)
-    #ax2.set_yticklabels([])
-    
-    ax2 = ax.twinx()
-    data['delta_deg'] = np.rad2deg(data['delta'])
-    data.plot(y='delta_deg', style='-', color='gray', zorder=-100, ax=ax2)
-    ax2.set_ylim(-20,20)
-    ax2.set_yticks([])
-    ax2.set_ylabel(r'$\delta$ [deg]', color='gray')
-    
-    
-    
-    data['time'] = data.index
-    ax = track_plot(data, lpp=model.ship_parameters['L'], beam=model.ship_parameters['B'], flip=True, ax=ax, equal=False, delta=True, x_dataset='time')
-    #ax.axis('scaled')
-    #ax.set_xlim(data['x0'].min(), data['x0'].max())
-    #ax.set_ylim(data['y0'].min(), data['y0'].max())
+        ax2 = ax.twinx()
+        data['delta_deg'] = np.rad2deg(data['delta'])
+        data.plot(y='delta_deg', style='-', color='gray', zorder=-100, ax=ax2)
+        ax2.set_ylim(-20,20)
+        ax2.set_yticks([])
+        ax2.set_ylabel(r'$\delta$ [deg]', color='gray')
+
+        data['time'] = data.index
+        beam = scale_ship*model.ship_parameters['B']
+        lpp = scale_ship*model.ship_parameters['L']
         
-    ax.get_legend().set_visible(False)
-    ax.set_title('')
+        ax = track_plot(data, lpp=lpp, beam=beam, flip=True, ax=ax, equal=False, delta=True, x_dataset='time')
+        #ax.axis('scaled')
+        #ax.set_xlim(data['x0'].min(), data['x0'].max())
+        #ax.set_ylim(data['y0'].min(), data['y0'].max())
+
+        ax.get_legend().set_visible(False)
+        ax.set_title('')
     
-    
-    for key, ax in zip(keys, axes[1:]):
+    if do_track_plot:
+        plot_axes = axes[1:]
+    else:
+        plot_axes = axes
+        
+    for key, ax in zip(keys, plot_axes):
         
         unit = units.get(key,'-')
         symbol = symbols.get(key,key)
@@ -304,7 +317,12 @@ def plot_compare_model_forces(
         ax.set_xticklabels([])
         ax.set_xlabel("")
     
-    axes[1].legend()
+    if do_track_plot:
+        first_plot = 1
+    else:
+        first_plot = 0
+        
+    axes[first_plot].legend()
     axes[-1].set_xlabel("Time [s]")
         
     #axes[-1].set_xticklabels(np.round(axes[-1].get_xticks(), 0))
@@ -347,8 +365,8 @@ def plot_compare_model_forces(
             ax.set_ylim(*ylim_dict[unit])
             #print(f'updating {key} {ylim_dict[unit]}')
 
-    
-    axes[0].set_xlim(axes[1].get_xlim())
+    if do_track_plot:
+        axes[0].set_xlim(axes[1].get_xlim())
     
     loc = plticker.MultipleLocator(base=2.0) # this locator puts ticks at regular intervals
     for ax in axes:

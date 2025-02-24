@@ -30,7 +30,15 @@ def register_pipelines() -> Dict[str, Pipeline]:
     """
     # pipelines = find_pipelines()
     pipelines = {}
-    ships=['wPCC','optiwise','DM']
+    ships=['wPCC',
+           'optiwise',
+           #'DM',
+           #'smallPCTC',
+           'smallPCTC_ballast',
+           'smallPCTC_fin',
+           'smallPCTC_longfin',
+           'smallPCTC_ballast_longfin',
+           ]
     for ship_name in ships:
         pipelines[ship_name] = ship_pipeline(ship_name=ship_name)
 
@@ -65,9 +73,9 @@ def ship_pipeline(ship_name:str):
     
     ## ship pipeline (wPCC)
     the_pipeline = (
-        pipeline(models.create_pipeline(), namespace=ship_name)
+        pipeline(models.create_pipeline(), namespace=ship_name) # generate_model
 
-        + pipeline(regression_VCT.create_pipeline(ship_name=ship_name), namespace=ship_name)
+        + pipeline(regression_VCT.create_pipeline(ship_name=ship_name), namespace=ship_name)  # regression_VCT
 
         + pipeline(add_propeller.create_pipeline(), namespace=ship_name)
 

@@ -478,6 +478,9 @@ def _regress_hull_VCT(
     optimize_rudder_inflow=True,
     optimize_rudder_drag=True,
 ):
+    
+    model = model.copy()
+    
     # log.info("Regressing hull VCT")
     from .regression_pipeline import pipeline, pipeline_RHI
     

@@ -56,7 +56,9 @@ def resimulate(
     u0 = data.iloc[0]["u"]
     # rev=float(data['rev'].mean())
 
-    result_optimization = find_initial_equilibrium_rev(data=data, model=model)
+    data_ = data.copy()
+    data_['delta'] = 0
+    result_optimization = find_initial_equilibrium_rev(data=data_, model=model)
     if result_optimization.success:
         rev = result_optimization.x[0]
     else:

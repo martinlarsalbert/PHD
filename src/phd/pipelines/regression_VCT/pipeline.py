@@ -76,49 +76,49 @@ def create_pipeline(ship_name:str, **kwargs) -> Pipeline:
                 inputs=["base_models", "df_VCT_scaled","params:VCT_exclude_parameters", "params:optimize_rudder_inflow", "params:optimize_rudder_drag"],
                 outputs="models_VCT",
                 name="regress_hull_VCT",
-                tags=["generate_model", "regression_VCT"]
+                tags=[ "regression_VCT"]
             ),
             #node(
             #    func=regress_hull_VCT,
             #    inputs=["base_models", "df_VCT_scaled","params:VCT_nonlinear_exclude_parameters"],
             #    outputs="models_VCT_nonlinear",
             #    name="regress_hull_VCT_nonlinear",
-            #    tags=["generate_model", "regression_VCT"]
+            #    tags=[ "regression_VCT"]
             #),
             #node(
             #    func=regress_hull_rudder_VCT,
             #    inputs=["base_models", "df_VCT_scaled_limited", "params:VCT_exclude_parameters"],
             #    outputs="models_rudder_VCT",
             #    name="regress_hull_rudder_VCT",
-            #    tags=["generate_model", "regression_VCT"]
+            #    tags=[ "regression_VCT"]
             #),
             node(
                 func=adopting_to_MDL,
                 inputs=["models_VCT", "resistance_MDL"],
                 outputs="models_VCT_MDL",
                 name="adopting_to_MDL",
-                tags=["generate_model", "regression_VCT", "adopting_to_MDL"],
+                tags=[ "regression_VCT", "adopting_to_MDL"],
             ),
             node(
                 func=meassured_rudder_force_model,
                 inputs=["models_VCT_MDL"],
                 outputs="models_measured_rudder_force",
                 name="meassured_rudder_force_model",
-                tags=["generate_model", "regression_VCT", "adopting_to_MDL"],
+                tags=[ "regression_VCT", "adopting_to_MDL"],
             ),
             node(
                 func=regress_polynomial_rudder,
                 inputs=["models_VCT","df_VCT_scaled","params:polynomial_rudder_models"],
                 outputs="models_VCT_polynomial_rudder",
                 name="regress_polynomial_rudder",
-                tags=["generate_model", "regression_VCT", "polynomial_model"],
+                tags=[ "regression_VCT", "polynomial_model"],
             ),
             node(
                 func=adopting_to_MDL,
                 inputs=["models_VCT_polynomial_rudder", "resistance_MDL"],
                 outputs="models_VCT_polynomial_rudder_MDL",
                 name="regress_polynomial_rudder_MDL",
-                tags=["generate_model", "regression_VCT", "adopting_to_MDL", "polynomial_model"],
+                tags=[ "regression_VCT", "adopting_to_MDL", "polynomial_model"],
             ),
             
             #node(
@@ -126,14 +126,14 @@ def create_pipeline(ship_name:str, **kwargs) -> Pipeline:
             #    inputs=["models_rudder_VCT", "resistance_MDL", "models_VCT_MDL"],
             #    outputs="models_rudder_VCT_MDL",
             #    name="adopting_rudder_VCT_to_MDL",
-            #    tags=["generate_model", "regression_VCT", "adopting_to_MDL"],
+            #    tags=[ "regression_VCT", "adopting_to_MDL"],
             #),
             #node(
             #    func=adopting_nonlinear_to_MDL,
             #    inputs=["models_VCT_nonlinear", "resistance_MDL"],
             #    outputs="models_VCT_nonlinear_MDL",
             #    name="adopting_nonlinear_to_MDL",
-            #    tags=["generate_model", "regression_VCT", "adopting_to_MDL"],
+            #    tags=[ "regression_VCT", "adopting_to_MDL"],
             #),
             #node(
             #    func=shape_optimization,

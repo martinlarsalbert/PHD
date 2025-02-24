@@ -45,11 +45,11 @@ plt.rcParams["font.family"] = "serif"
 
 paper_path = r"/home/maa/dev/PHD/docs/paper5"
 
-equations={}
-
 import phd.paper.helpers
 phd.paper.helpers.paper_path = paper_path
 from phd.paper.helpers import *
+equations=phd.paper.helpers.equations
+
 
 styles={
     'Experiment':{'style':'k-'},

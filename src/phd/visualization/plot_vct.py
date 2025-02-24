@@ -314,7 +314,7 @@ def plot_VCT(df_VCT:pd.DataFrame, predictions={}, test_type='Drift angle', y_key
                         continue
                 
                     ax = axes_map[y_key][V]
-                    plot_group(df=group, dof=y_key, ax=ax, style=style, label=label, prime=prime)
+                    plot_group(df=group, dof=y_key, ax=ax, style=style, label=label, prime=prime, test_types=test_types)
                     ax.set_ylabel(y_key)
                     keys.append(y_key)
                 else:
@@ -324,7 +324,7 @@ def plot_VCT(df_VCT:pd.DataFrame, predictions={}, test_type='Drift angle', y_key
                             continue
                 
                         ax = axes_map[sub_key][V]
-                        plot_group(df=group, dof=sub_key, ax=ax, style=style, label=f"{sub_key} {label}", prime=prime)
+                        plot_group(df=group, dof=sub_key, ax=ax, style=style, label=f"{sub_key} {label}", prime=prime, test_types=test_types)
                         keys.append(sub_key)
                     
                     if len(keys) > 0:
@@ -402,7 +402,7 @@ def plot_VCT_components(df_VCT:pd.DataFrame, df_prediction:pd.DataFrame, test_ty
                     
     #y_keys = flat_keys(y_keys)
     
-    def plot_dataset(data, label:str, style='.'):
+    def plot_dataset(data, label:str, style='.', test_type=None):
         for V, group in data.groupby(by='V'):
             first_row=True
             for y_key in y_keys:
@@ -415,7 +415,7 @@ def plot_VCT_components(df_VCT:pd.DataFrame, df_prediction:pd.DataFrame, test_ty
                     ax = axes_map[y_key][V]
                     color = colors.get(key,'k')
                     
-                    plot_group(df=group, dof=y_key, ax=ax, style=new_style, label=label, prime=prime)
+                    plot_group(df=group, dof=y_key, ax=ax, style=new_style, label=label, prime=prime, test_type=test_type)
                     ax.set_ylabel(y_key)
                     keys.append(y_key)
                 else:
@@ -432,7 +432,7 @@ def plot_VCT_components(df_VCT:pd.DataFrame, df_prediction:pd.DataFrame, test_ty
                         else:
                             label_new=fr"${sub_key}$" 
                         
-                        plot_group(df=group, dof=sub_key, ax=ax, style=style, label=label_new, prime=prime, color=color)
+                        plot_group(df=group, dof=sub_key, ax=ax, style=style, label=label_new, prime=prime, color=color, test_type=test_type)
                         keys.append(sub_key)
                     
                     if len(keys) > 0:
@@ -460,19 +460,23 @@ def plot_VCT_components(df_VCT:pd.DataFrame, df_prediction:pd.DataFrame, test_ty
     
     
     if df_prediction is None:
-        plot_dataset(data=data_VCT, label='VCT', style='.')
+        plot_dataset(data=data_VCT, label='VCT', style='.', test_type=test_type)
     else:
-        plot_dataset(data=data_VCT, label='__none__', style='.')
+        plot_dataset(data=data_VCT, label='__none__', style='.', test_type=test_type)
         
         data_prediction = df_prediction.groupby(by='test type').get_group(test_type)
-        plot_dataset(data=data_prediction, label='', style='-')
+        plot_dataset(data=data_prediction, label='', style='-', test_type=test_type)
 
     fig.suptitle(test_type)
     
     return fig
 
-def plot_group(df, dof, ax, style, label, annotate=False, prime=False, **kwargs):
-    test_type = df.iloc[0]["test type"]
+def plot_group(df, dof, ax, style, label, annotate=False, prime=False, test_types=None, test_type=None, **kwargs):
+    
+    if test_type is None: 
+        test_type = df.iloc[0]["test type"]
+        
+    
     if test_type == "Rudder and drift angle":
         plot_rudder_drift(df, dof, ax, style, label, **kwargs)
         ax.get_legend().set_visible(False)
@@ -484,7 +488,7 @@ def plot_group(df, dof, ax, style, label, annotate=False, prime=False, **kwargs)
         plot_thrust_variation(df, dof, ax, style, label, **kwargs)
         # ax.get_legend().set_visible(False)
     else:
-        plot_standard(df, dof, ax, style, label, annotate, prime=prime, **kwargs)
+        plot_standard(df, dof, ax, style, label, annotate, prime=prime, test_types=test_types, **kwargs)
 
 
 def plot_rudder_drift(df, dof, ax, style, label, **kwargs):
@@ -540,13 +544,20 @@ def plot_thrust_variation(df, dof, ax, style, label, **kwargs):
     x = "thrust"
     df = df.copy()
     df["delta"] = df["delta"].round(decimals=2)
+    first=True
     for beta, group in df.groupby(by=["delta"]):
+        if first:
+            first=False
+            label_ = label
+        else:
+            label_ = "__none__"
+        
         group.sort_values(by=x).plot(
-            x=x, y=dof, ax=ax, style=style, label=label, **kwargs
+            x=x, y=dof, ax=ax, style=style, label=label_, **kwargs
         )
 
 
-def plot_standard(df, dof, ax, style, label, annotate=False, prime=False, **kwargs):
+def plot_standard(df, dof, ax, style, label, annotate=False, prime=False, test_types=None, **kwargs):
     df_ = df.copy()
     
     df_["vr"] = df_["v"] * df_["r"]
@@ -598,12 +609,22 @@ def plot_standard(df, dof, ax, style, label, annotate=False, prime=False, **kwar
         }
     
     df_["index"] = df_.index
-    test_type = df.iloc[0]["test type"]
+    
+    if test_types is None:
+        test_type = df.iloc[0]["test type"]
+    else:
+        test_type = test_types[0]
+    
     x = xs.get(test_type, "index")
 
     df_.sort_values(by=x).plot(x=x, y=dof, ax=ax, style=style, label=label, **kwargs)
 
-    xlabel=f"{xlabels[x]} {units[x]}"
+    
+    if x in units:
+        xlabel=f"{xlabels.get(x,x)} {units[x]}"
+    else:
+        xlabel=f"{xlabels.get(x,x)}"
+    
     ax.set_xlabel(xlabel)
 
     if annotate:

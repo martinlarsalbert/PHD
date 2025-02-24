@@ -45,11 +45,11 @@ optiwise:
       kappa_r_gamma_g: 0
       gamma_0: -0.023212879051524585
       Xudot: -0.001864  # These values were calculated with OCTOPUS office (see: 13.10_added_mass_OCTOPUS.ipynb)
-      Yvdot: -0.015473
+      Yvdot: -0.015473 # From pure sway -0.012838800797744054 (see:11.50_ShipFlowMotions_pure_sway.ipynb) OCTOPUS: -0.015473
       Nrdot: -0.0007267535092566891 # From pure yaw (see: 11.10_ShipFlowMotions_pure_yaw_no_FFT.ipynb)
       Yrdot: -0.000537
       Nvdot: -0.000537
-      w_p0: 0.5049  # Very large indead! (But should you change the wake or CL?)
+      w_p0: 0.5049  # Very large indead! (But should you change the wake or CL?) (TT:0.297)
   create_jacobians : False
   optimize_rudder_inflow : True
   optimize_rudder_drag: True
