@@ -413,9 +413,9 @@ def plot_VCT_components(df_VCT:pd.DataFrame, df_prediction:pd.DataFrame, test_ty
                         continue
                 
                     ax = axes_map[y_key][V]
-                    color = colors.get(key,'k')
+                    color = colors.get(y_key,'k')
                     
-                    plot_group(df=group, dof=y_key, ax=ax, style=new_style, label=label, prime=prime, test_type=test_type)
+                    plot_group(df=group, dof=y_key, ax=ax, style=style, label=label, prime=prime, test_type=test_type)
                     ax.set_ylabel(y_key)
                     keys.append(y_key)
                 else:
