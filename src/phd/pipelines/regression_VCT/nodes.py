@@ -590,6 +590,17 @@ def _regress_hull_VCT(
         exclude_parameters=exclude_parameters,
     )
 
+    # Covariance matrix:
+    model.cov = pd.concat([fit.cov_params() for name, fit in fits.items()]).fillna(0)
+    mask=model.cov.abs().iloc[0]!=np.inf
+    model.cov=model.cov.loc[mask,model.cov.columns[mask]].copy()
+    if 'const' in model.cov:
+        model.cov = model.cov.drop(index='const', columns='const')
+    assert len(model.cov.index) == len(model.cov.index)
+    assert model.cov.index.is_unique
+    assert model.cov.columns.is_unique
+    model.cov = model.cov[model.cov.index].copy()
+
     fits_all = fits_RHI
     fits_all.update(fits)
 
