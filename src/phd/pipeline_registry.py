@@ -39,6 +39,7 @@ def register_pipelines() -> Dict[str, Pipeline]:
            'smallPCTC_longfin',
            'smallPCTC_ballast_longfin',
            'm5225B_scantling',
+           'm5225B_ballast',
            ]
     for ship_name in ships:
         pipelines[ship_name] = ship_pipeline(ship_name=ship_name)

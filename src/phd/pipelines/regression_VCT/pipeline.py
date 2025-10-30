@@ -73,7 +73,7 @@ def create_pipeline(ship_name:str, **kwargs) -> Pipeline:
             #),
             node(
                 func=regress_hull_VCT,
-                inputs=["base_models", "df_VCT_scaled","params:VCT_exclude_parameters", "params:optimize_rudder_inflow", "params:optimize_rudder_drag"],
+                inputs=["base_models", "df_VCT_scaled","params:VCT_exclude_parameters", "params:optimize_rudder_inflow", "params:optimize_rudder_drag", "params:fit_rudder_hull_interaction"],
                 outputs="models_VCT",
                 name="regress_hull_VCT",
                 tags=[ "regression_VCT"]

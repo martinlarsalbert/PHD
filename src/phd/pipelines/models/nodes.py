@@ -45,7 +45,7 @@ import logging
 log = logging.getLogger(__name__)
 
 
-def base_models(ship_data: dict, parameters: dict, create_jacobians) -> dict:
+def base_models(ship_data: dict, parameters: dict, create_jacobians, use_manual_lift_slope=False) -> dict:
     models = {}
 
     #name = "semiempirical_covered"
@@ -55,7 +55,7 @@ def base_models(ship_data: dict, parameters: dict, create_jacobians) -> dict:
 
     name = "semiempirical_covered_inertia"
     log.info(f'Creating: "{name}"')
-    model = ModelSemiempiricalCoveredInertia(ship_data=ship_data, create_jacobians=create_jacobians)
+    model = ModelSemiempiricalCoveredInertia(ship_data=ship_data, create_jacobians=create_jacobians, use_manual_lift_slope=use_manual_lift_slope)
     models[name] = model
 
 

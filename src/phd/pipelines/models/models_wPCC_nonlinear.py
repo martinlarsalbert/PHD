@@ -41,7 +41,7 @@ from vessel_manoeuvring_models.models.fossen import eq_main_expanded_matrix
 
 
 class MainModel(ModularVesselSimulator):
-    def __init__(self, create_jacobians=True):
+    def __init__(self, create_jacobians=True, use_manual_lift_slope=False):
         """General model that is used to create all other models
 
         Returns
@@ -104,10 +104,12 @@ class MainModel(ModularVesselSimulator):
         )
         self.create_jacobians = create_jacobians
         
+        self.use_manual_lift_slope = use_manual_lift_slope
+        
 
 class ModelTowed(MainModel):
-    def __init__(self, ship_data: dict, create_jacobians=True):
-        super().__init__(create_jacobians=create_jacobians)
+    def __init__(self, ship_data: dict, create_jacobians=True, use_manual_lift_slope=False):
+        super().__init__(create_jacobians=create_jacobians, use_manual_lift_slope=use_manual_lift_slope)
 
         self.setup_parameters(ship_data=ship_data)
         self.setup_subsystems()
@@ -283,6 +285,7 @@ class ModelTowedSemiempiricalCovered(ModelTowed):
             create_jacobians=self.create_jacobians,
             in_propeller_race=in_propeller_race,
             suffix="port",
+            use_manual_lift_slope=self.use_manual_lift_slope,
         )
         self.subsystems["rudder_port"] = rudder_port
 
@@ -291,6 +294,7 @@ class ModelTowedSemiempiricalCovered(ModelTowed):
             create_jacobians=self.create_jacobians,
             in_propeller_race=in_propeller_race,
             suffix="stbd",
+            use_manual_lift_slope=self.use_manual_lift_slope,
         )
         self.subsystems["rudder_stbd"] = rudder_stbd
 
@@ -346,6 +350,7 @@ class ModelSemiempiricalCovered(ModelTowedSemiempiricalCovered):
             create_jacobians=self.create_jacobians,
             in_propeller_race=in_propeller_race,
             suffix="port",
+            use_manual_lift_slope=self.use_manual_lift_slope,
         )
         self.subsystems["rudder_port"] = rudder_port
 
@@ -354,6 +359,7 @@ class ModelSemiempiricalCovered(ModelTowedSemiempiricalCovered):
             create_jacobians=self.create_jacobians,
             in_propeller_race=in_propeller_race,
             suffix="stbd",
+            use_manual_lift_slope=self.use_manual_lift_slope,
         )
         self.subsystems["rudder_stbd"] = rudder_stbd
 
@@ -392,6 +398,9 @@ class ModelSemiempiricalCovered(ModelTowedSemiempiricalCovered):
             "delta_1": np.deg2rad(30),  # end of lift gap loss (S-curve)
             "s": 0,  # "stall" due to gap loss (S-curve), alternative to use delta_0 and delta_1
         }
+        if self.use_manual_lift_slope:
+            rudder_parameters['a_0'] = 0.9*2*np.pi
+        
         for key, value in rudder_parameters.items():
             if not key in self.parameters:
                 self.parameters[key] = value
@@ -407,6 +416,7 @@ class ModelSemiempiricalCovered(ModelTowedSemiempiricalCovered):
             create_jacobians=self.create_jacobians,
             in_propeller_race=in_propeller_race,
             suffix="",
+            use_manual_lift_slope=self.use_manual_lift_slope,
         )
         self.subsystems["rudder"] = rudder
 
@@ -442,6 +452,10 @@ class ModelSemiempiricalCovered(ModelTowedSemiempiricalCovered):
             "delta_1": np.deg2rad(30),  # end of lift gap loss (S-curve)
             "s": 0,  # "stall" due to gap loss (S-curve), alternative to use delta_0 and delta_1
         }
+        
+        if self.use_manual_lift_slope:
+            rudder_parameters['a_0'] = 0.9*2*np.pi
+            
         for key, value in rudder_parameters.items():
             if not key in self.parameters:
                 self.parameters[key] = value

@@ -416,6 +416,7 @@ def regress_hull_VCT(
     exclude_parameters: dict = {},
     optimize_rudder_inflow = True,
     optimize_rudder_drag = True,
+    fit_rudder_hull_interaction = True
 ):
     #    log.info("""
     # ____________________________________
@@ -441,6 +442,7 @@ def regress_hull_VCT(
             exclude_parameters=exclude_parameters,
             optimize_rudder_inflow=optimize_rudder_inflow,
             optimize_rudder_drag=optimize_rudder_drag,
+            fit_rudder_hull_interaction = fit_rudder_hull_interaction
         )
 
         models[name] = model
@@ -477,6 +479,7 @@ def _regress_hull_VCT(
     try_to_remove_centripetal=True,
     optimize_rudder_inflow=True,
     optimize_rudder_drag=True,
+    fit_rudder_hull_interaction=True,
 ):
     
     model = model.copy()
@@ -534,54 +537,55 @@ def _regress_hull_VCT(
     else:
         log.info("Skipping rudder drag optimization")
 
-    model, fits_RHI = regress_VCT(
-        model=model,
-        df_VCT=df_VCT,
-        pipeline=pipeline_RHI,
-        exclude_parameters=exclude_parameters,
-    )
-    # Separating the rudder hull interaction coefficients:
-    model.parameters["a_H"] = model.parameters["a_H"] - 1
-    model.parameters["x_H"] = model.parameters["x_H"] - 1
-    #model.parameters.pop("aH")
-    #model.parameters.pop("xH")
-    log.info(f"a_H is:{model.parameters['a_H']}")
-    log.info(f"x_H is:{model.parameters['x_H']}")
+    if fit_rudder_hull_interaction:
+        model, fits_RHI = regress_VCT(
+            model=model,
+            df_VCT=df_VCT,
+            pipeline=pipeline_RHI,
+            exclude_parameters=exclude_parameters,
+        )
+        # Separating the rudder hull interaction coefficients:
+        model.parameters["a_H"] = model.parameters["a_H"] - 1
+        model.parameters["x_H"] = model.parameters["x_H"] - 1
+        #model.parameters.pop("aH")
+        #model.parameters.pop("xH")
+        log.info(f"a_H is:{model.parameters['a_H']}")
+        log.info(f"x_H is:{model.parameters['x_H']}")
 
-    # Subtracting the rudder hull interaction from the hull forces:
-    calculation = {}
-    control = df_VCT[model.control_keys]
-    states = df_VCT[model.states_str]
+        # Subtracting the rudder hull interaction from the hull forces:
+        calculation = {}
+        control = df_VCT[model.control_keys]
+        states = df_VCT[model.states_str]
     
     
-    if model.is_twin_screw:
-        #To slice the calculation up till the rudders system:
-        precalculate_subsystems=model.find_providing_subsystems_recursive(model.subsystems['rudders'])
-        precalculate_subsystems = list(np.flipud(precalculate_subsystems))  # calculation order...
-    else:
-        precalculate_subsystems=model.find_providing_subsystems_recursive(model.subsystems['rudder'])
-        precalculate_subsystems = list(np.flipud(precalculate_subsystems))  # calculation order...
-    
-    calculation = {}
-    for precalculate_subsystem in precalculate_subsystems:
-        calculation = model.subsystems[precalculate_subsystem].calculate_forces(
-            states_dict=states, control=control, calculation=calculation)
-        
-    
-    if model.is_twin_screw:
-        calculation = model.subsystems["rudders"].calculate_forces(
-            states_dict=states, control=control, calculation=calculation
-        )
-    else:
-        calculation = model.subsystems["rudder"].calculate_forces(
-            states_dict=states, control=control, calculation=calculation
-        )
-        
-    df_force_predicted = pd.DataFrame(calculation)
-    df_VCT["Y_H"] -= model.parameters["a_H"] * df_force_predicted["Y_R"]
-    df_VCT["N_H"] -= model.parameters["x_H"] * df_force_predicted["N_R"]
-    # df_VCT["Y_H"] -= model.parameters["a_H"] * df_VCT["Y_R"]
-    # df_VCT["N_H"] -= model.parameters["x_H"] * df_VCT["N_R"]
+        if model.is_twin_screw:
+            #To slice the calculation up till the rudders system:
+            precalculate_subsystems=model.find_providing_subsystems_recursive(model.subsystems['rudders'])
+            precalculate_subsystems = list(np.flipud(precalculate_subsystems))  # calculation order...
+        else:
+            precalculate_subsystems=model.find_providing_subsystems_recursive(model.subsystems['rudder'])
+            precalculate_subsystems = list(np.flipud(precalculate_subsystems))  # calculation order...
+
+        calculation = {}
+        for precalculate_subsystem in precalculate_subsystems:
+            calculation = model.subsystems[precalculate_subsystem].calculate_forces(
+                states_dict=states, control=control, calculation=calculation)
+
+
+        if model.is_twin_screw:
+            calculation = model.subsystems["rudders"].calculate_forces(
+                states_dict=states, control=control, calculation=calculation
+            )
+        else:
+            calculation = model.subsystems["rudder"].calculate_forces(
+                states_dict=states, control=control, calculation=calculation
+            )
+
+        df_force_predicted = pd.DataFrame(calculation)
+        df_VCT["Y_H"] -= model.parameters["a_H"] * df_force_predicted["Y_R"]
+        df_VCT["N_H"] -= model.parameters["x_H"] * df_force_predicted["N_R"]
+        # df_VCT["Y_H"] -= model.parameters["a_H"] * df_VCT["Y_R"]
+        # df_VCT["N_H"] -= model.parameters["x_H"] * df_VCT["N_R"]
 
     model, fits = regress_VCT(
         model=model,
@@ -601,8 +605,11 @@ def _regress_hull_VCT(
     assert model.cov.columns.is_unique
     model.cov = model.cov[model.cov.index].copy()
 
-    fits_all = fits_RHI
-    fits_all.update(fits)
+    if fit_rudder_hull_interaction:
+        fits_all = fits_RHI
+        fits_all.update(fits)
+    else:
+        fits_all = fits
 
     if full_output:
         return model, fits_all
@@ -765,7 +772,7 @@ def regress_VCT(
         "N_R": "mz_rudders",
     }
     for key, replacement in replacements.items():
-        if not key in df_VCT:
+        if not key in df_VCT and replacement in df_VCT:
             df_VCT[key] = df_VCT[replacement]
 
     zeros = [
@@ -798,7 +805,7 @@ def regress_VCT(
     #    rho=df_VCT.iloc[0]["rho"],
     # )
     # df_VCT_prime = prime_system_ship.prime(df_VCT_u0[keys], U=df_VCT["U"])
-
+    keys = list(set(df_VCT_u0.columns) & set(keys))
     df_VCT_prime = model.prime_system.prime(df_VCT_u0[keys], U=df_VCT["U"])
 
     # for name, subsystem in model.subsystems.items():
