@@ -1,0 +1,45 @@
+DM:
+  thrust_channels:
+    - Prop/PS/Thrust
+    - Prop/SB/Thrust
+  VCT_exclude_parameters:
+    #Yrrr: 0  # From visual inspection of VCT
+    #Nrrr: 0  # From visual inspection of VCT
+    Y0: 0  
+    N0: 0
+    #Nvvr: 0  # Till I get more data...
+    #Nvrr: 0
+    #Yvvr: 0
+    #Yvrr: 0
+    C_L_tune: 0.85
+    C_2_beta_p_neg: 1.87
+    C_1: 8
+
+  #VCT_nonlinear_exclude_parameters: {}
+  skip: {}
+  tests: {}
+  VCT_selection: null 
+
+  parameters:
+    default:
+      #delta_lim: 1000000000000000 # Vert large value in CFD (no play between hull and rudder for large angles)
+      s: 0
+      C_2_beta_p_neg: 1.1
+      C_2_beta_p_pos: 1.6
+      C_1: 2.0
+      kappa_v: 0.6
+      kappa_v_gamma_g: 0
+      kappa_r: 0.8
+      kappa_r_gamma_g: 0
+      gamma_0: 0.005235987755982988
+      #Xudot: -0.000379  # These values were calculated with OCTOPUS office (see: 146.10_added_mass_wPCC.ipynb)
+      #Yvdot: -0.003839
+      #Nrdot: -0.000329
+      #Yrdot: -0.000173
+      #Nvdot: -0.000163
+      #w_p0: 0.5049  # Very large indead! (But should you change the wake or CL?)
+      
+  create_jacobians : False
+  optimize_rudder_inflow : True
+  optimize_rudder_drag: True
+  add_mirror_circle_drift: False  # The ship is not symmetric.

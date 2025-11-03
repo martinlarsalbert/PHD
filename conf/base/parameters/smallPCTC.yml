@@ -1,0 +1,88 @@
+smallPCTC:
+  thrust_channels:
+    - Prop/1/Thrust
+  VCT_exclude_parameters:
+    Yrrr: 0  # From visual inspection of VCT
+    Nrrr: 0  # From visual inspection of VCT
+    Y0: 0  
+    N0: 0
+    #Nvvr: 0  # Till I get more data...
+    #Nvrr: 0
+    #Yvvr: 0
+    #Yvrr: 0
+
+  #VCT_nonlinear_exclude_parameters: {}
+  #skip: {}
+  tests: {}
+  VCT_selection: null
+  VCT_limits: {}
+  polynomial_rudder_models:
+    simple:
+        base_model: semiempirical_covered_inertia
+        degree_Y_R: 4
+        treshold_Y_R: 0.0007
+        degree_X_R: 4
+        treshold_X_R: 0.0000005
+    
+    complex:
+        base_model: semiempirical_covered_inertia
+        degree_Y_R: 4
+        treshold_Y_R: 0.0001
+        degree_X_R: 4
+        treshold_X_R: 0.0002
+
+  parameters:
+    default:
+      #delta_lim: 1000000000000000 # Vert large value in CFD (no play between hull and rudder for large angles)
+      s: 0
+      C_2_beta_p_neg: 1.1
+      C_2_beta_p_pos: 1.6
+      C_1: 2.0
+      kappa_v: 0.6
+      kappa_v_gamma_g: 0
+      kappa_r: 0.8
+      kappa_r_gamma_g: 0
+      gamma_0: 0
+      #Xudot: -0.001864  # These values were calculated with OCTOPUS office (see: 13.10_added_mass_OCTOPUS.ipynb)
+      #Yvdot: -0.015473
+      Nrdot: -0.0003806072869455754 # From pure yaw (see: smallPCTC/11.10_ShipFlowMotions_pure_yaw_no_FFT.ipynb)
+      #Yrdot: -0.000537
+      #Nvdot: -0.000537
+      w_p0: 0.262
+  create_jacobians : False
+  optimize_rudder_inflow : True
+  optimize_rudder_drag: True
+  add_mirror_circle_drift: False  # The ship is not symmetric.
+
+  WL_to_roll_centre: 0.09958290111232058  # [m]  (see OPTIWISE/20.01_roll_centre_speed.ipynb)
+  rev_channels:
+    - Prop/1/N
+
+  ## MDL resistance:
+  resistance_ids: []
+  
+  ## Kalman filter:
+  ek_covariance_input:
+    process_variance:
+      u : 1.7
+      v : 1.7
+      r : 1.7  # [deg]
+    measurement_error_max:
+      positions: 0.01
+      psi: 0.25  # [deg]
+  ek_covariance_input2:
+    process_variance:
+      u : 0.05
+      v : 0.05
+      r : 0.1  # [deg]
+    measurement_error_max:
+      positions: 0.01
+      psi: 0.25  # [deg]
+  filter_model_name1: simple
+  filter_model_name2: simple
+  filter_model_name3: simple
+  SNR1: 0.1
+  SNR2: 1
+  SNR3: 10
+  skip: []
+    
