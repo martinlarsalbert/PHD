@@ -195,3 +195,6 @@ optiwise:
     - 23715  # reference speed Collision avoidance
     - 23716  # reference speed Collision avoidance
     - 23717  # reference speed Collision avoidance
+  
+  fit_rudder_hull_interaction: True
+  use_manual_lift_slope: False

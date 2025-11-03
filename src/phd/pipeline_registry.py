@@ -80,14 +80,18 @@ def ship_pipeline(ship_name:str):
         + pipeline(regression_VCT.create_pipeline(ship_name=ship_name), namespace=ship_name)  # regression_VCT
 
         + pipeline(add_propeller.create_pipeline(), namespace=ship_name)
-
-        + pipeline(regression_ID.create_pipeline(), namespace=ship_name)
-        
-        + pipeline(pipe=load_wPCC.create_pipeline(), namespace=ship_name)
-    
-        + pipeline(pipe=filter_wPCC.create_pipeline(), namespace=ship_name)
-
-        + pipeline(resistance_MDL.create_pipeline(), namespace=ship_name)
     
     )
+    
+    if ship_name == "wPCC" or ship_name == "optiwise":
+        
+        the_pipeline+=pipeline(pipe=load_wPCC.create_pipeline(), namespace=ship_name)
+    
+        the_pipeline+=pipeline(pipe=filter_wPCC.create_pipeline(), namespace=ship_name)
+        
+        the_pipeline+=pipeline(resistance_MDL.create_pipeline(), namespace=ship_name)
+    
+    if ship_name == "wPCC":
+        the_pipeline+=pipeline(regression_ID.create_pipeline(), namespace=ship_name)
+    
     return the_pipeline
