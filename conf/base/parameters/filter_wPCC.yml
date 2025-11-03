@@ -18,9 +18,9 @@ wPCC:
     #filter_model_name1: Abkowitz
     #filter_model_name2: Abkowitz
     #filter_model_name3: Abkowitz
-    filter_model_name1: semiempirical_covered
-    filter_model_name2: semiempirical_covered
-    filter_model_name3: semiempirical_covered
+    filter_model_name1: simple
+    filter_model_name2: simple
+    filter_model_name3: simple
     SNR1: 0.1
     SNR2: 1
     SNR3: 10
