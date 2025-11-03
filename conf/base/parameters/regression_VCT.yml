@@ -93,4 +93,6 @@ wPCC.add_mirror_circle_drift: False
     #Nvrr: 0
     #Yr: 0
     #Yrrr: 0
-    
+
+wPCC.fit_rudder_hull_interaction: False
+wPCC.use_manual_lift_slope: False
