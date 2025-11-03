@@ -30,35 +30,34 @@ def register_pipelines() -> Dict[str, Pipeline]:
     """
     # pipelines = find_pipelines()
     pipelines = {}
-    ships=['wPCC',
-           'optiwise',
-           #'DM',
-           #'smallPCTC',
-           'smallPCTC_ballast',
-           'smallPCTC_fin',
-           'smallPCTC_longfin',
-           'smallPCTC_ballast_longfin',
-           'm5225B_scantling',
-           'm5225B_ballast',
-           ]
+    ships = [
+        "wPCC",
+        "optiwise",
+        #'smallPCTC_ballast',
+        #'smallPCTC_fin',
+        #'smallPCTC_longfin',
+        #'smallPCTC_ballast_longfin',
+        #'m5225B_scantling',
+        #'m5225B_ballast',
+    ]
     for ship_name in ships:
         pipelines[ship_name] = ship_pipeline(ship_name=ship_name)
 
     ### KVLCC2
-    #pipelines["models_kvlcc2"] = pipeline(
+    # pipelines["models_kvlcc2"] = pipeline(
     #    models.create_pipeline(), namespace="kvlcc2_hsva"
-    #)
-#
+    # )
+    #
     ### 7m
-    #pipelines["load_7m"] = load_7m.create_pipeline()
-#
+    # pipelines["load_7m"] = load_7m.create_pipeline()
+    #
     ## pipelines["models_7m"] = pipeline(models_7m.create_pipeline())  # (Scaling MDL model to 7m scale)
-    #pipelines["models_7m"] = pipeline(models_7m.create_pipeline(), namespace="7m")
-#
-    #pipelines["filter_7m"] = pipeline(filter.create_pipeline(), namespace="7m")
-    #pipelines["regression_VCT_7m"] = pipeline(
+    # pipelines["models_7m"] = pipeline(models_7m.create_pipeline(), namespace="7m")
+    #
+    # pipelines["filter_7m"] = pipeline(filter.create_pipeline(), namespace="7m")
+    # pipelines["regression_VCT_7m"] = pipeline(
     #    regression_VCT_7m.create_pipeline(), namespace="7m"
-    #)
+    # )
 
     ## TT (captive)
     pipelines["captive"] = pipeline(
@@ -71,27 +70,29 @@ def register_pipelines() -> Dict[str, Pipeline]:
     pipelines["__default__"] = sum(pipelines.values())
     return pipelines
 
-def ship_pipeline(ship_name:str):
-    
+
+def ship_pipeline(ship_name: str):
+
     ## ship pipeline (wPCC)
-    the_pipeline = (
-        pipeline(models.create_pipeline(), namespace=ship_name) # generate_model
+    the_pipeline = pipeline(
+        models.create_pipeline(), namespace=ship_name
+    ) + pipeline(  # generate_model
+        regression_VCT.create_pipeline(ship_name=ship_name), namespace=ship_name
+    )  # regression_VCT
 
-        + pipeline(regression_VCT.create_pipeline(ship_name=ship_name), namespace=ship_name)  # regression_VCT
-
-        + pipeline(add_propeller.create_pipeline(), namespace=ship_name)
-    
-    )
-    
     if ship_name == "wPCC" or ship_name == "optiwise":
-        
-        the_pipeline+=pipeline(pipe=load_wPCC.create_pipeline(), namespace=ship_name)
-    
-        the_pipeline+=pipeline(pipe=filter_wPCC.create_pipeline(), namespace=ship_name)
-        
-        the_pipeline+=pipeline(resistance_MDL.create_pipeline(), namespace=ship_name)
-    
+
+        the_pipeline += pipeline(pipe=load_wPCC.create_pipeline(), namespace=ship_name)
+
+        the_pipeline += pipeline(
+            pipe=filter_wPCC.create_pipeline(), namespace=ship_name
+        )
+
+        the_pipeline += pipeline(resistance_MDL.create_pipeline(), namespace=ship_name)
+    else:
+        the_pipeline += pipeline(add_propeller.create_pipeline(), namespace=ship_name)
+
     if ship_name == "wPCC":
-        the_pipeline+=pipeline(regression_ID.create_pipeline(), namespace=ship_name)
-    
+        the_pipeline += pipeline(regression_ID.create_pipeline(), namespace=ship_name)
+
     return the_pipeline
