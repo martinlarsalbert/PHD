@@ -20,4 +20,5 @@ dependencies:
   - pip:
     - vessel-manoeuvring-models==0.0.18
     - pyfiglet
-    - pysindy==1.7.5
+    - pysindy==1.7.5cs
+    - ipynbname
